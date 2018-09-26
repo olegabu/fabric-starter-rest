@@ -63,3 +63,6 @@ typings/
 hfc-*
 
 .idea
+
+webapp/scripts
+webapp/src

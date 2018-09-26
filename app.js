@@ -9,6 +9,8 @@ const SocketServer = require('socket.io');
 const FabricStarterClient = require('./fabric-starter-client');
 const fabricStarterClient = new FabricStarterClient();
 
+const webappDir = process.env.WEBAPP_DIR || './webapp';
+
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({extended: true}));
 
@@ -22,6 +24,9 @@ app.use(bodyParser.urlencoded({extended: true}));
 
 app.use(cors());
 app.options('*', cors());
+
+// serve web app as static
+app.use('/webapp', express.static(webappDir));
 
 const asyncMiddleware = fn =>
   (req, res, next) => {
