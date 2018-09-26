@@ -99,6 +99,8 @@ class FabricStarterClient {
       targets: targets || [this.peer]
     };
 
+    logger.trace('invoke', proposal);
+
     const proposalResponse = await channel.sendTransactionProposal(proposal);
 
     // logger.trace('proposalResponse', proposalResponse);

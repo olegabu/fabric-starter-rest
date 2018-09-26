@@ -27,6 +27,7 @@ app.options('*', cors());
 
 // serve web app as static
 app.use('/webapp', express.static(webappDir));
+logger.info('serving webapp at /webapp from ' + webappDir);
 
 const asyncMiddleware = fn =>
   (req, res, next) => {
