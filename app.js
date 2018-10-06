@@ -7,28 +7,27 @@ const jwt = require('express-jwt');
 const cors = require('cors');
 const SocketServer = require('socket.io');
 const FabricStarterClient = require('./fabric-starter-client');
-const fabricStarterClient = new FabricStarterClient();
+let fabricStarterClient = new FabricStarterClient();
 
-const webappDir = process.env.WEBAPP_DIR || './webapp';
-
+// parse json payload and urlencoded params in GET
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({extended: true}));
 
-// relax cors
-// function corsCb(req, cb, next){
-//   cb(null, {origin: req.headers.origin, credentials:true});
-//   next();
-// }
-// app.options('*', cors(corsCb));
-// app.use(cors(corsCb));
-
+// allow CORS
 app.use(cors());
 app.options('*', cors());
 
 // serve web app as static
+const webappDir = process.env.WEBAPP_DIR || './webapp';
 app.use('/webapp', express.static(webappDir));
 logger.info('serving webapp at /webapp from ' + webappDir);
 
+// serve msp directory with certificates as static
+const mspDir = process.env.MSP_DIR || './msp';
+app.use('/msp', express.static(mspDir));
+logger.info('serving certificates at /msp from ' + mspDir);
+
+// catch promise rejections and return 500 errors
 const asyncMiddleware = fn =>
   (req, res, next) => {
     // logger.debug('asyncMiddleware');
@@ -40,19 +39,33 @@ const asyncMiddleware = fn =>
       });
   };
 
-app.use(jwt({secret: fabricStarterClient.getSecret()}).unless({path: ['/', '/users', '/mspid']}));
+// require presence of JWT in Authorization Bearer header
+const jwtSecret = fabricStarterClient.getSecret();
+app.use(jwt({secret: jwtSecret}).unless({path: ['/', '/users', '/mspid']}));
+
+// use fabricStarterClient for every logged in user
+const mapFabricStarterClient = {};
 
 app.use(async (req, res, next) => {
-  await fabricStarterClient.init();
   if (req.user) {
     const login = req.user.sub;
-    //TODO log request
-    logger.debug('login', login);
-    try {
-      await fabricStarterClient.loginOrRegister(login);
-    } catch(e) {
-      logger.error('loginOrRegister', e);
-      res.status(500).json(e.message);
+
+    let client = mapFabricStarterClient[login];
+    if(client) {
+      logger.debug('cached client for', login);
+      fabricStarterClient = client;
+    } else {
+      logger.debug('new client for', login);
+      await fabricStarterClient.init();
+
+      try {
+        await fabricStarterClient.loginOrRegister(login);
+      } catch(e) {
+        logger.error('loginOrRegister', e);
+        res.status(500).json(e.message);
+      }
+
+      mapFabricStarterClient[login] = fabricStarterClient;
     }
   }
   next();
@@ -82,7 +95,10 @@ const appRouter = (app) => {
   }));
 
   app.post('/users', asyncMiddleware(async (req, res, next) => {
+    await fabricStarterClient.init();
     await fabricStarterClient.loginOrRegister(req.body.username, req.body.password);
+    mapFabricStarterClient[req.body.username] = fabricStarterClient;
+
     const token = jsonwebtoken.sign({sub: fabricStarterClient.user.getName()}, fabricStarterClient.getSecret());
     logger.debug('token', token);
     res.json(token);
