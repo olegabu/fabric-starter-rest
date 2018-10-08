@@ -10,8 +10,8 @@ const FabricStarterClient = require('./fabric-starter-client');
 let fabricStarterClient = new FabricStarterClient();
 
 // parse json payload and urlencoded params in GET
-app.use(bodyParser.json());
-app.use(bodyParser.urlencoded({extended: true}));
+app.use(bodyParser.json({ limit: '100MB', type:'application/json'}));
+app.use(bodyParser.urlencoded({extended: true, limit: '100MB'}));
 
 // allow CORS from all urls
 app.use(cors());
