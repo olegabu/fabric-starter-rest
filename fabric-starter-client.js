@@ -9,7 +9,7 @@ const Client = require('fabric-client');
 const invokeTimeout = process.env.INVOKE_TIMEOUT || 60000;
 const asLocalhost = (process.env.DISCOVER_AS_LOCALHOST === 'true');
 
-logger.debug(`invokeTimeout=${invokeTimeout} asLocalhost=${asLocalhost} type ${typeof asLocalhost} process.env.DISCOVER_AS_LOCALHOST=${process.env.DISCOVER_AS_LOCALHOST}`);
+logger.debug(`invokeTimeout=${invokeTimeout} asLocalhost=${asLocalhost}`);
 
 class FabricStarterClient {
   constructor(networkConfig) {
