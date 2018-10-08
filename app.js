@@ -5,6 +5,7 @@ const logger = require('log4js').getLogger('app');
 const jsonwebtoken = require('jsonwebtoken');
 const jwt = require('express-jwt');
 const cors = require('cors');
+const path = require('path');
 const SocketServer = require('socket.io');
 const FabricStarterClient = require('./fabric-starter-client');
 let fabricStarterClient = new FabricStarterClient();
@@ -28,6 +29,10 @@ const serveIndex = require('serve-index');
 //TODO serveIndex should show directory listing to find certs but not working
 app.use('/msp', express.static(mspDir), serveIndex('/msp', {'icons': true}));
 logger.info('serving certificates at /msp from ' + mspDir);
+
+// serve favicon
+const favicon = require('serve-favicon');
+app.use(favicon(path.join(webappDir, 'favicon.ico')));
 
 // catch promise rejections and return 500 errors
 const asyncMiddleware = fn =>
