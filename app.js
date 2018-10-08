@@ -13,7 +13,7 @@ let fabricStarterClient = new FabricStarterClient();
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({extended: true}));
 
-// allow CORS
+// allow CORS from all urls
 app.use(cors());
 app.options('*', cors());
 
@@ -24,7 +24,9 @@ logger.info('serving webapp at /webapp from ' + webappDir);
 
 // serve msp directory with certificates as static
 const mspDir = process.env.MSP_DIR || './msp';
-app.use('/msp', express.static(mspDir));
+const serveIndex = require('serve-index');
+//TODO serveIndex should show directory listing to find certs but not working
+app.use('/msp', express.static(mspDir), serveIndex('/msp', {'icons': true}));
 logger.info('serving certificates at /msp from ' + mspDir);
 
 // catch promise rejections and return 500 errors
@@ -99,7 +101,7 @@ const appRouter = (app) => {
     await fabricStarterClient.loginOrRegister(req.body.username, req.body.password);
     mapFabricStarterClient[req.body.username] = fabricStarterClient;
 
-    const token = jsonwebtoken.sign({sub: fabricStarterClient.user.getName()}, fabricStarterClient.getSecret());
+    const token = jsonwebtoken.sign({sub: fabricStarterClient.user.getName()}, jwtSecret);
     logger.debug('token', token);
     res.json(token);
   }));
