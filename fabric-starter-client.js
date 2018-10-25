@@ -87,7 +87,7 @@ class FabricStarterClient {
     return channelEventHub;
   }
 
-  async invoke(channelId, chaincodeId, fcn, args, targets) {
+  async invoke(channelId, chaincodeId, fcn, args, targets, waitForTransactionEvent) {
     const channel = await this.getChannel(channelId);
 
     const tx_id = this.client.newTransactionID(/*true*/);
@@ -110,7 +110,7 @@ class FabricStarterClient {
       proposal: proposalResponse[1],
     };
 
-    const promise = this.waitForTransactionEvent(tx_id, channel);
+    const promise = waitForTransactionEvent ? this.waitForTransactionEvent(tx_id, channel) : Promise.resolve(tx_id);
 
     const broadcastResponse = await channel.sendTransaction(transactionRequest);
     logger.trace('broadcastResponse', broadcastResponse);
