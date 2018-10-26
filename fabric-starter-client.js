@@ -1,7 +1,10 @@
+const fs = require('fs');
 const log4js = require('log4js');
 log4js.configure({appenders: {stdout: { type: 'stdout' }},categories: {default: { appenders: ['stdout'], level: 'ALL'}}});
 const logger = log4js.getLogger('FabricStarterClient');
 const Client = require('fabric-client');
+const cfg = require('./config.js');
+const fabricCLI = require('./fabric-cli');
 
 //const networkConfigFile = '../crypto-config/network.json'; // or .yaml
 //const networkConfig = require('../crypto-config/network.json');
@@ -65,6 +68,34 @@ class FabricStarterClient {
     const chaincodeQueryResponse = await this.client.queryInstalledChaincodes(this.peer, true);
     return chaincodeQueryResponse.getChaincodes();
   }
+
+    createOrderer() {
+        let certData = fs.readFileSync(`${cfg.ORDERER_MSP_DIR}/tlscacerts/tlsca.example.com-cert.pem`);
+        return this.client.newOrderer(`grpcs://${cfg.ORDERER_ADDR}`, {pem: Buffer.from(certData).toString()});
+    }
+
+    async createChannel(channelId) {
+
+        const tx_id = this.client.newTransactionID();
+
+        fabricCLI.downloadOrdererMSP();
+        let orderer = this.createOrderer();
+
+        let channelReq = {
+            txId: tx_id,
+            name: channelId,
+            orderer: orderer
+        };
+
+        let channelTxContent = await fabricCLI.generateChannelConfigTxContent(channelId);
+        var config_update = this.client.extractChannelConfig(channelTxContent);
+        channelReq.config = config_update;
+        channelReq.signatures = [this.client.signChannelConfig(config_update)];
+
+        let res = await this.client.createChannel(channelReq);
+        console.log(`Create channel ${channelId}:`, res);
+        return tx_id;
+    }
 
   async getChannel(channelId) {
     let channel;

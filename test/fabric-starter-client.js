@@ -2,6 +2,7 @@
 //export DOMAIN=example.com ORG=org1 CRYPTO_CONFIG_DIR=/home/oleg/workspace/fabric-starter/crypto-config ORGS='{"org1":"localhost:7051","org2":"localhost:7056"}' CAS='{"org1":"localhost:7054"}'
 
 const assert = require('assert');
+const should = require('should');
 const logger = require('log4js').getLogger('FabricStarterClientTest');
 const fs = require('fs-extra');
 const randomstring = require('randomstring');
@@ -128,7 +129,10 @@ describe('FabricStarterClient.', function () {
 
       describe('#createChannelCommon', ()=>{
         it('create channel "Common"', async ()=>{
-            //'Not implemented'
+            let testChannelName = "test-channel8";
+            let tx_id = await fabricStarterClient.createChannel(testChannelName);
+            const channels = await fabricStarterClient.queryChannels();
+            channels.should.containEql(testChannelName).catch(()=>{throw "err"});
         })
       })
   });

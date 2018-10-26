@@ -1,4 +1,4 @@
-FROM node:8-alpine
+FROM fabric-starter/fabric-tools-extended
 
 MAINTAINER olegabu
 
@@ -9,11 +9,9 @@ WORKDIR /usr/src/app
 # COPY ["package.json", "package-lock.json"] .
 COPY "package.json" .
 
-RUN apk add --update python make alpine-sdk libc6-compat \
+RUN apt-get update && apt-get install python make  \
 && npm install && npm cache rm --force \
-&& apk del --purge python make alpine-sdk
-  # remove node-gyp dependancies (for alpine only)
-  # libc6-compat is essential for grps, so don't remove it
+&& apt-get remove -y python make && apt-get purge
 
 # add project files (see .dockerignore for a list of excluded files)
 COPY . .

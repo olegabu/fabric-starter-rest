@@ -1,5 +1,6 @@
 const fs = require('fs');
 
+// TODO get config parameters from config.js
 const myorg = process.env.ORG || 'org1';
 const domain = process.env.DOMAIN || 'example.com';
 const cryptoConfigDir = process.env.CRYPTO_CONFIG_DIR || '../fabric-starter/crypto-config';
