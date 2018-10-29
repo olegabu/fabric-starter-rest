@@ -1,4 +1,4 @@
-FROM fabric-starter/fabric-tools-extended
+FROM olegabu/fabric-tools-extended
 
 MAINTAINER olegabu
 
