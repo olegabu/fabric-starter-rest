@@ -16,7 +16,7 @@ class FabricStarterClient {
     this.networkConfig = networkConfig || require('./network')();
     logger.info('constructing with network config', JSON.stringify(this.networkConfig));
     this.client = Client.loadFromConfig(this.networkConfig); // or networkConfigFile
-    this.peer = this.client.getPeersForOrg()[0];
+    this.peer = this.client.getPeersForOrg();
     this.org = this.networkConfig.client.organization;
     this.affiliation = this.org;
   }
@@ -57,12 +57,12 @@ class FabricStarterClient {
   }
 
   async queryChannels() {
-    const channelQueryResponse = await this.client.queryChannels(this.peer, true);
+    const channelQueryResponse = await this.client.queryChannels(this.peer[0], true);
     return channelQueryResponse.getChannels();
   }
 
   async queryInstalledChaincodes() {
-    const chaincodeQueryResponse = await this.client.queryInstalledChaincodes(this.peer, true);
+    const chaincodeQueryResponse = await this.client.queryInstalledChaincodes(this.peer[0], true);
     return chaincodeQueryResponse.getChaincodes();
   }
 
@@ -81,24 +81,31 @@ class FabricStarterClient {
 
   getChannelEventHub(channel) {
     //const channelEventHub = channel.getChannelEventHub(this.peer.getName());
-    const channelEventHub = channel.newChannelEventHub(this.peer.getName());
+    const channelEventHub = channel.newChannelEventHub(this.peer[0].getName());
     // const channelEventHub = channel.getChannelEventHubsForOrg()[0];
     channelEventHub.connect();
     return channelEventHub;
   }
 
   async invoke(channelId, chaincodeId, fcn, args, targets, waitForTransactionEvent) {
+    let peers = [];
     const channel = await this.getChannel(channelId);
+    let peer = channel.getChannelPeers();
+
+    for (let i = 0; i < targets.length; i++) {
+      peers.push(peer[peer.findIndex(x => x._name === targets[i])]);
+    }
+    if(peers.length === 0)
+      peers.push(this.peer[0]);
 
     const tx_id = this.client.newTransactionID(/*true*/);
     const proposal = {
-      chaincodeId: chaincodeId,
-      fcn: fcn,
-      args: args,
-      txId: tx_id,
-      targets: targets || [this.peer]
+        chaincodeId: chaincodeId,
+        fcn: fcn,
+        args: args,
+        txId: tx_id,
+        targets: peers
     };
-
     logger.trace('invoke', proposal);
 
     const proposalResponse = await channel.sendTransactionProposal(proposal);
@@ -159,13 +166,21 @@ class FabricStarterClient {
   }
 
   async query(channelId, chaincodeId, fcn, args, targets) {
+    let peers = [];
     const channel = await this.getChannel(channelId);
+    let peer = channel.getChannelPeers();
+
+    for (let i = 0; i < targets.length; i++) {
+      peers.push(peer[peer.findIndex(x => x._name === targets[i])]);
+    }
+    if(peers.length === 0)
+      peers.push(this.peer[0]);
 
     const request = {
       chaincodeId: chaincodeId,
       fcn: fcn,
       args: args,
-      targets: targets || [this.peer]
+      targets: peers
     };
 
     logger.trace('query', request);
@@ -189,17 +204,17 @@ class FabricStarterClient {
 
   async queryInfo(channelId) {
     const channel = await this.getChannel(channelId);
-    return await channel.queryInfo(this.peer, true);
+    return await channel.queryInfo(this.peer[0], true);
   }
 
   async queryBlock(channelId, number) {
     const channel = await this.getChannel(channelId);
-    return await channel.queryBlock(number, this.peer, /*, true*/);
+    return await channel.queryBlock(number, this.peer[0], /*, true*/);
   }
 
   async queryTransaction(channelId, id) {
     const channel = await this.getChannel(channelId);
-    return await channel.queryTransaction(id, this.peer, /*, true*/);
+    return await channel.queryTransaction(id, this.peer[0], /*, true*/);
   }
 
   getPeersForOrg(mspid) {
@@ -214,8 +229,14 @@ class FabricStarterClient {
     return this.networkConfig;
   }
 
-  getPeersForOrgOnChannel(channelId) {
-    return this.client.getPeersForOrgOnChannel(channelId);
+  async getPeersForOrgOnChannel(channelId) {
+    let peers = [];
+    const channel = await this.getChannel(channelId);
+    console.log(channel.getChannelPeers());
+    for (let i = 0; i < channel.getChannelPeers().length; i++) {
+      peers.push(channel.getChannelPeers()[i]._name);
+    }
+    return peers;
   }
 
   async registerBlockEvent(channelId, onEvent, onError) {

@@ -128,7 +128,7 @@ const appRouter = (app) => {
   }));
 
   app.get('/channels/:channelId/peers', asyncMiddleware(async (req, res, next) => {
-    res.json(fabricStarterClient.getPeersForOrgOnChannel(req.params.channelId));
+    res.json(await fabricStarterClient.getPeersForOrgOnChannel(req.params.channelId));
   }));
 
   app.get('/orgs/:org/peers', asyncMiddleware(async (req, res, next) => {
