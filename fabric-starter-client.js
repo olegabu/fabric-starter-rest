@@ -76,7 +76,7 @@ class FabricStarterClient {
 
     async createChannel(channelId) {
 
-        const tx_id = this.client.newTransactionID();
+        const tx_id = this.client.newTransactionID(true);
 
         fabricCLI.downloadOrdererMSP();
         let orderer = this.createOrderer();
