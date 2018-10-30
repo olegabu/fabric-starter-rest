@@ -14,6 +14,7 @@ let orgs = process.env.ORGS || '"org1":"localhost:7051"';
 let cas = process.env.CAS || '"org1":"localhost:7054"';
 
 const ORDERER_MSP_DIR = `${cryptoConfigDir}/ordererOrganizations/${DOMAIN}/msp`;
+const PEER_CRYPTO_DIR = `${cryptoConfigDir}/peerOrganizations/${myorg}.${DOMAIN}`;
 
 const ordererAddr = `orderer.${DOMAIN}:7050`;
 
@@ -21,7 +22,7 @@ const systemChannelId="orderer-system-channel";
 
 module.exports = {
     domain: DOMAIN,
-    myorg: myorg,
+    org: myorg,
 
     enrollId: enrollId,
     enrollSecret: enrollSecret,
@@ -29,7 +30,10 @@ module.exports = {
     cas: cas,
 
     ORDERER_MSP_DIR: ORDERER_MSP_DIR,
+    ORDERER_TLS_CERT: `${ORDERER_MSP_DIR}/tlscacerts/tlsca.${DOMAIN}-cert.pem`,
     ORDERER_ADDR: ordererAddr,
+
+    PEER_CRYPTO_DIR:PEER_CRYPTO_DIR,
 
     systemChannelId: systemChannelId
 };

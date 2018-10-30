@@ -1,10 +1,13 @@
 const fs = require('fs');
+const _ = require('lodash');
 const log4js = require('log4js');
 log4js.configure({appenders: {stdout: { type: 'stdout' }},categories: {default: { appenders: ['stdout'], level: 'ALL'}}});
 const logger = log4js.getLogger('FabricStarterClient');
 const Client = require('fabric-client');
-const cfg = require('./config.js');
+const sdkHelper=require("./sdk-helper");
 const fabricCLI = require('./fabric-cli');
+const cfg = require('./config.js');
+
 
 //const networkConfigFile = '../crypto-config/network.json'; // or .yaml
 //const networkConfig = require('../crypto-config/network.json');
@@ -64,22 +67,32 @@ class FabricStarterClient {
     return channelQueryResponse.getChannels();
   }
 
+    createOrderer() {
+      return sdkHelper.createOrderer(this.client);
+        let certData = sdkHelper.loadPemFromFile(cfg.ORDERER_TLS_CERT);// fs.readFileSync(`${cfg.ORDERER_MSP_DIR}/tlscacerts/tlsca.example.com-cert.pem`);
+        return this.client.newOrderer(`grpcs://${cfg.ORDERER_ADDR}`, {pem: Buffer.from(certData).toString()});
+    }
+
+    async queryPeers(orgName, peer) {
+        orgName = orgName || this.org;
+        peer = peer || this.peer;
+        const peerQueryResponse = await this.client.queryPeers({target: peer}, true);
+        let peers = _.get(peerQueryResponse, `peers_by_org.${orgName}.peers`);
+        return _.map(peers, p => sdkHelper.createPeerFromUrl(this.client, p.endpoint));
+    }
+
   async queryInstalledChaincodes() {
     const chaincodeQueryResponse = await this.client.queryInstalledChaincodes(this.peer, true);
     return chaincodeQueryResponse.getChaincodes();
   }
 
-    createOrderer() {
-        let certData = fs.readFileSync(`${cfg.ORDERER_MSP_DIR}/tlscacerts/tlsca.example.com-cert.pem`);
-        return this.client.newOrderer(`grpcs://${cfg.ORDERER_ADDR}`, {pem: Buffer.from(certData).toString()});
-    }
 
     async createChannel(channelId) {
 
         const tx_id = this.client.newTransactionID(true);
 
         fabricCLI.downloadOrdererMSP();
-        let orderer = this.createOrderer();
+        let orderer = sdkHelper.createOrderer(this.client);
 
         let channelReq = {
             txId: tx_id,
@@ -93,9 +106,39 @@ class FabricStarterClient {
         channelReq.signatures = [this.client.signChannelConfig(config_update)];
 
         let res = await this.client.createChannel(channelReq);
-        console.log(`Create channel ${channelId}:`, res);
-        return tx_id;
+        if (!res || res.status != "SUCCESS") {
+            return res;
+        }
+        return await this.joinChannel(channelId, orderer);
     }
+
+    async joinChannel(channelId) {
+        const tx2_id = this.client.newTransactionID(true);
+        let orderer=sdkHelper.createOrderer(this.client);
+        let channel = this.client.newChannel(channelId);
+        channel.addOrderer(orderer);
+
+
+        // let channelConf = await channel.getChannelConfigFromOrderer();
+        let peers = await this.queryPeers();
+
+        channel.addPeer(_.find(peers, p=>_.startsWith(p.getName(),"peer0")) || peer[0]);
+
+        let genesis_block = await channel.getGenesisBlock({txId: tx2_id});
+
+        let gen_tx_id = this.client.newTransactionID(true);
+        let j_request = {
+            targets: peers,
+            block: genesis_block,
+            txId: gen_tx_id
+        };
+
+        // send genesis block to the peer
+        let result = await channel.joinChannel(j_request);
+        console.log(`Join channel ${channelId}:`, result);
+        return result;
+    }
+
 
   async getChannel(channelId) {
     let channel;

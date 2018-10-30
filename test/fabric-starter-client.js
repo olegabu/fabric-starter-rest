@@ -2,7 +2,6 @@
 //export DOMAIN=example.com ORG=org1 CRYPTO_CONFIG_DIR=/home/oleg/workspace/fabric-starter/crypto-config ORGS='{"org1":"localhost:7051","org2":"localhost:7056"}' CAS='{"org1":"localhost:7054"}'
 
 const assert = require('assert');
-const should = require('should');
 const logger = require('log4js').getLogger('FabricStarterClientTest');
 const fs = require('fs-extra');
 const randomstring = require('randomstring');
@@ -122,20 +121,36 @@ describe('FabricStarterClient.', function () {
     });
   });
 
-  describe('Create channel', ()=>{
-      before('login', async () => {
-          await fabricStarterClient.loginOrRegister(username, password);
-      });
+    describe('Create-Join channel', () => {
+        before('login', async () => {
+            await fabricStarterClient.loginOrRegister(username, password);
+        });
 
-      describe('#createChannelCommon', ()=>{
-        it('create channel "Common"', async ()=>{
-            let testChannelName = "test-channel8";
-            let tx_id = await fabricStarterClient.createChannel(testChannelName);
-            const channels = await fabricStarterClient.queryChannels();
-            channels.should.containEql(testChannelName).catch(()=>{throw "err"});
+        let testChannelName = "common";
+
+        describe('#createChannelCommon', () => {
+            it('create channel "Common"', async () => {
+                let result = await fabricStarterClient.createChannel(testChannelName);
+                await setTimeout(function () {}, 1000);
+                const channel = await fabricStarterClient.getChannel(testChannelName, true);
+                assert.equal(channel.getName(), testChannelName);
+            })
+        });
+
+        describe('#joinChannelCommon', () => {
+            it('join channel "Common"', async () => {
+                try {
+                    //await fabricStarterClient.joinChannel(testChannelName);
+                    assert.fail('should fail joining second time');
+                } catch (e) {
+                    console.log(e);
+                    assert.ok(e.actual == "should fail joining second time");
+                }
+            })
         })
-      })
-  });
+    });
+
+
 
   describe('Query peer.', () => {
 
