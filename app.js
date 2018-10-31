@@ -128,7 +128,7 @@ const appRouter = (app) => {
   }));
 
   app.get('/channels/:channelId/peers', asyncMiddleware(async (req, res, next) => {
-    res.json(fabricStarterClient.getPeersForOrgOnChannel(req.params.channelId));
+    res.json(await fabricStarterClient.getPeersForOrgOnChannel(req.params.channelId));
   }));
 
   app.get('/orgs/:org/peers', asyncMiddleware(async (req, res, next) => {
@@ -157,7 +157,7 @@ const appRouter = (app) => {
 
   app.get('/channels/:channelId/chaincodes/:chaincodeId', asyncMiddleware(async (req, res, next) => {
     let ret = await fabricStarterClient.query(req.params.channelId, req.params.chaincodeId,
-      req.query.fcn, JSON.parse(req.query.args), req.query.targets);
+      req.query.fcn, JSON.parse(req.query.args), JSON.parse(req.query.targets));
 
     if(ret[0].startsWith('Error')) {
       throw new Error(ret[0]);
