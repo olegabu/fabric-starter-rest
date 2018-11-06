@@ -162,16 +162,29 @@ class FabricStarterClient {
   }
 
   async invoke(channelId, chaincodeId, fcn, args, targets, waitForTransactionEvent) {
-    const channel = await this.getChannel(channelId);
-
-    const tx_id = this.client.newTransactionID(/*true*/);
-    const proposal = {
-      chaincodeId: chaincodeId,
-      fcn: fcn,
-      args: args,
-      txId: tx_id,
-      targets: targets || [this.peer]
-    };
+      let peers = [];
+      const channel = await this.getChannel(channelId);
+      let peer = channel.getChannelPeers();
+      if (_.isNil(targets) || _.isEmpty(targets)) {
+          logger.trace("Used default peer");
+          peers.push(this.peer);
+      }
+      else {
+          logger.trace("Used chosen peers");
+          _.each(targets, function (value) {
+              peers.push(_.find(peer, function (o) {
+                  return o._name === value;
+              }));
+          })
+      }
+      const tx_id = this.client.newTransactionID(/*true*/);
+      const proposal = {
+          chaincodeId: chaincodeId,
+          fcn: fcn,
+          args: args,
+          txId: tx_id,
+          targets: peers
+      };
 
     logger.trace('invoke', proposal);
 
@@ -233,14 +246,28 @@ class FabricStarterClient {
   }
 
   async query(channelId, chaincodeId, fcn, args, targets) {
-    const channel = await this.getChannel(channelId);
-
-    const request = {
-      chaincodeId: chaincodeId,
-      fcn: fcn,
-      args: args,
-      targets: targets || [this.peer]
-    };
+      let peers = [];
+      const channel = await this.getChannel(channelId);
+      let peer = channel.getChannelPeers();
+      targets = _.attempt(JSON.parse, targets);
+      if (_.isNil(targets) || _.isEmpty(targets)) {
+          logger.trace("Used default peer");
+          peers.push(this.peer);
+      }
+      else {
+          logger.trace("Used chosen peers");
+          _.each(targets, function (value) {
+              peers.push(_.find(peer, function (o) {
+                  return o._name === value;
+              }));
+          })
+      }
+      const request = {
+          chaincodeId: chaincodeId,
+          fcn: fcn,
+          args: args,
+          targets: peers
+      };
 
     logger.trace('query', request);
 
@@ -288,8 +315,13 @@ class FabricStarterClient {
     return this.networkConfig;
   }
 
-  getPeersForOrgOnChannel(channelId) {
-    return this.client.getPeersForOrgOnChannel(channelId);
+  async getPeersForOrgOnChannel(channelId) {
+      let peers = [];
+      const channel = await this.getChannel(channelId);
+      _.forEach(channel.getChannelPeers(), function (value) {
+          peers.push(value._name)
+      });
+      return peers;
   }
 
   async registerBlockEvent(channelId, onEvent, onError) {
