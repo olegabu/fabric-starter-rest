@@ -164,19 +164,40 @@ class FabricStarterClient {
   async invoke(channelId, chaincodeId, fcn, args, targets, waitForTransactionEvent) {
       let peers = [];
       const channel = await this.getChannel(channelId);
-      let peer = channel.getChannelPeers();
-      if (_.isNil(targets) || _.isEmpty(targets)) {
+      // if (_.isNil(targets) || _.isEmpty(targets)) {
+      //     logger.trace("Used default peer");
+      //     peers.push(this.peer);
+      // }
+      // else {
+      //     logger.trace("Used chosen peers");
+      //     _.each(targets, function (value) {
+      //         let peer = _.find(channel.getChannelPeers(), function (o) {
+      //             return o._name === value;
+      //         });
+      //         if (_.isNil(peer))
+      //             logger.error(`Peer ${value} not found`);
+      //         else
+      //             peers.push(peer);
+      //     });
+      //     if (_.isEmpty(peers)) {
+      //         logger.trace("Used default peer");
+      //         peers.push(this.peer);
+      //     }
+      // }
+      _.each(targets, function (value) {
+          let peer = _.find(channel.getChannelPeers(), function (o) {
+              return o._name === value;
+          });
+          if (_.isNil(peer))
+              logger.error(`Peer ${value} not found`);
+          else
+              peers.push(peer);
+      });
+      if (_.isEmpty(peers)) {
           logger.trace("Used default peer");
           peers.push(this.peer);
-      }
-      else {
-          logger.trace("Used chosen peers");
-          _.each(targets, function (value) {
-              peers.push(_.find(peer, function (o) {
-                  return o._name === value;
-              }));
-          })
-      }
+      }else
+          logger.trace("Used chosen peer");
       const tx_id = this.client.newTransactionID(/*true*/);
       const proposal = {
           chaincodeId: chaincodeId,
@@ -246,28 +267,42 @@ class FabricStarterClient {
   }
 
   async query(channelId, chaincodeId, fcn, args, targets) {
-      let peers = [];
-      const channel = await this.getChannel(channelId);
-      let peer = channel.getChannelPeers();
-      targets = _.attempt(JSON.parse, targets);
-      if (_.isNil(targets) || _.isEmpty(targets)) {
-          logger.trace("Used default peer");
-          peers.push(this.peer);
-      }
-      else {
-          logger.trace("Used chosen peers");
-          _.each(targets, function (value) {
-              peers.push(_.find(peer, function (o) {
-                  return o._name === value;
-              }));
-          })
-      }
-      const request = {
-          chaincodeId: chaincodeId,
-          fcn: fcn,
-          args: args,
-          targets: peers
-      };
+    let peers = [];
+    const channel = await this.getChannel(channelId);
+    targets = _.attempt(JSON.parse, targets);
+      // let peer = channel.getChannelPeers();
+      // if (_.isNil(targets) || _.isEmpty(targets)) {
+      //     logger.trace("Used default peer");
+      //     peers.push(this.peer);
+      // }
+      // else {
+      //     logger.trace("Used chosen peers");
+      //     _.each(targets, function (value) {
+      //         peers.push(_.find(peer, function (o) {
+      //             return o._name === value;
+      //         }));
+      //     })
+      // }
+    _.each(targets, function (value) {
+        let peer = _.find(channel.getChannelPeers(), function (o) {
+            return o._name === value;
+        });
+        if (_.isNil(peer))
+            logger.error(`Peer ${value} not found`);
+        else
+            peers.push(peer);
+    });
+    if (_.isEmpty(peers)) {
+        logger.trace("Used default peer");
+        peers.push(this.peer);
+    }else
+        logger.trace("Used chosen peer");
+    const request = {
+        chaincodeId: chaincodeId,
+        fcn: fcn,
+        args: args,
+        targets: peers
+    };
 
     logger.trace('query', request);
 
