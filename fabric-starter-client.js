@@ -188,8 +188,10 @@ class FabricStarterClient {
 
     const broadcastResponse = await channel.sendTransaction(transactionRequest);
     logger.trace('broadcastResponse', broadcastResponse);
-
-    return promise;
+    return promise.then(function (res) {
+        res.badPeers = peers[1];
+        return res;
+    });
   }
 
   async waitForTransactionEvent(tx_id, channel) {
