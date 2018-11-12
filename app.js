@@ -116,7 +116,7 @@ const appRouter = (app) => {
   }));
 
   app.post('/channels', asyncMiddleware(async (req, res, next) => {
-    res.json(await fabricStarterClient.createChannel(req.body.channelId));
+    res.status(501).json('adding channel not implemented');
   }));
 
   app.get('/channels/:channelId', asyncMiddleware(async (req, res, next) => {
@@ -152,7 +152,7 @@ const appRouter = (app) => {
   }));
 
   app.post('/channels/:channelId/chaincodes', asyncMiddleware(async (req, res, next) => {
-      res.json(await fabricStarterClient.instantiateChaincode(req.params.channelId, req.body.chaincodeId));
+    res.status(501).json('instantiating chaincode on channel not implemented');
   }));
 
   app.get('/channels/:channelId/chaincodes/:chaincodeId', asyncMiddleware(async (req, res, next) => {
