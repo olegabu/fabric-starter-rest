@@ -161,6 +161,42 @@ class FabricStarterClient {
     return channelEventHub;
   }
 
+  async instantiateChaincode(channelId, chaincodeId, args,  waitForTransactionEvent){
+
+      const channel = await this.getChannel(channelId);
+      const tx_id = this.client.newTransactionID();
+      const proposal = {
+          chaincodeId: chaincodeId,
+          chaincodeVersion: '1.0',
+          chaincodeType: 'node',
+          args: [],
+          txId: tx_id,
+          targets: [this.peer],
+          /*'endorsement-policy': {
+              identities: [
+                  { role: { name: "admin", mspId: "org1" }}
+              ],
+              policy: {
+                  "1-of": [{ "signed-by": 0 }]
+              }
+          }*/
+      };
+      const proposalResponse = await channel.sendInstantiateProposal(proposal);
+
+      const transactionRequest = {
+          proposalResponses: proposalResponse[0],
+          proposal: proposalResponse[1],
+      };
+      const promise = waitForTransactionEvent ? this.waitForTransactionEvent(tx_id, channel) : Promise.resolve(tx_id);
+
+      const broadcastResponse = await channel.sendTransaction(transactionRequest);
+      logger.trace('broadcastResponse', broadcastResponse);
+
+      return promise;
+
+  }
+
+
   async invoke(channelId, chaincodeId, fcn, args, targets, waitForTransactionEvent) {
       const channel = await this.getChannel(channelId);
       const peers = this.createTargetsList(channel, targets);
