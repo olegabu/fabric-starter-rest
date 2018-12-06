@@ -7,6 +7,10 @@ const logger = log4js.getLogger('FabricStarterClient');
 const Client = require('fabric-client');
 const fabricCLI = require('./fabric-cli');
 const cfg = require('./config.js');
+const unzip = require('unzip');
+const path = require('path');
+const os = require('os');
+const urlParseLax = require('url-parse-lax');
 
 
 //const networkConfigFile = '../crypto-config/network.json'; // or .yaml
@@ -94,7 +98,8 @@ class FabricStarterClient {
     }
 
     async createChannel(channelId) {
-
+      logger.info(channelId);
+      logger.info('AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA');
         const tx_id = this.client.newTransactionID(true);
 
         fabricCLI.downloadOrdererMSP();
@@ -110,8 +115,8 @@ class FabricStarterClient {
         var config_update = this.client.extractChannelConfig(channelTxContent);
         channelReq.config = config_update;
         channelReq.signatures = [this.client.signChannelConfig(config_update)];
-
         let res = await this.client.createChannel(channelReq);
+        logger.info('AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA');
         if (!res || res.status != "SUCCESS") {
             return res;
         }
@@ -119,6 +124,7 @@ class FabricStarterClient {
     }
 
     async joinChannel(channelId) {
+        logger.info('BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB');
         const tx2_id = this.client.newTransactionID(true);
         let channel = this.constructChannel(channelId);
 
@@ -175,6 +181,70 @@ class FabricStarterClient {
     channelEventHub.connect();
     return channelEventHub;
   }
+
+    async installChaincode(channelId, chaincodeId, chaincodePath, version, language, targets, storage) {
+        const channel = await this.getChannel(channelId);
+        const peer = this.createTargetsList(channel, targets);
+        const client = this.client;
+        return new Promise((resolve, reject) => {
+            fs.createReadStream(chaincodePath).pipe(unzip.Extract({path: storage}))
+                .on('close', async function () {
+                    fs.unlink(chaincodePath);
+                    let chaincode_path = path.resolve(__dirname, `${storage}/${chaincodeId}`);
+                    const proposal = {
+                        targets: peer[0]._peer,
+                        channelNames: channelId,
+                        chaincodeId: chaincodeId,
+                        chaincodePath: chaincode_path,
+                        chaincodeVersion: version || '1.0',
+                        chaincodeType: language || 'node',
+                    };
+                    const result = await client.installChaincode(proposal);
+                    if (result[0].toString().startsWith('Error')) {
+                        logger.error(result[0].toString());
+                        reject(result[0].toString());
+                    } else {
+                        let msg = `Chaincode ${chaincodeId} successfully installed`;
+                        logger.info(msg);
+                        resolve(msg);
+                    }
+                });
+        });
+    }
+
+    async instantiateChaincode(channelId, chaincodeId, type, fnc, args, version, targets, waitForTransactionEvent) {
+        const channel = await this.getChannel(channelId);
+        const peers = this.createTargetsList(channel, targets);
+        const tx_id = this.client.newTransactionID(true);
+        const proposal = {
+            chaincodeId: chaincodeId,
+            chaincodeType: type || 'node',
+            fcn: fnc || 'init',
+            args: args || [],
+            chaincodeVersion: version || '1.0',
+            txId: tx_id,
+            targets: peers[0]
+        };
+        let results = null;
+        try {
+            results = await channel.sendInstantiateProposal(proposal);
+            logger.info('Sent instantiate proposal');
+        } catch (error) {
+            logger.error('In catch - sendInstantiateProposal', error.message);
+        }
+        const transactionRequest = {
+            txId: tx_id,
+            proposalResponses: results[0],
+            proposal: results[1],
+        };
+        const promise = waitForTransactionEvent ? this.waitForTransactionEvent(tx_id, channel) : Promise.resolve(tx_id);
+        const broadcastResponse = await channel.sendTransaction(transactionRequest);
+        logger.trace('broadcastResponse', broadcastResponse);
+        return promise.then(function (res) {
+            res.badPeers = peers[1];
+            return res;
+        });
+    }
 
   async invoke(channelId, chaincodeId, fcn, args, targets, waitForTransactionEvent) {
       const channel = await this.getChannel(channelId);

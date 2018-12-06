@@ -7,6 +7,11 @@ const jwt = require('express-jwt');
 const cors = require('cors');
 const path = require('path');
 const SocketServer = require('socket.io');
+const multer = require('multer');
+const os = require('os');
+const storage = os.tmpdir() || './upload';
+const upload = multer({ dest: storage});
+let cpUpload = upload.fields([{ name: 'file', maxCount: 1 }, { name: 'channelId', maxCount: 1 },{ name: 'targets'},{ name: 'version', maxCount: 1 },{ name: 'language', maxCount: 1 }]);
 const FabricStarterClient = require('./fabric-starter-client');
 let fabricStarterClient = new FabricStarterClient();
 
@@ -97,8 +102,9 @@ const appRouter = (app) => {
     res.json(await fabricStarterClient.queryInstalledChaincodes());
   }));
 
-  app.post('/chaincodes', asyncMiddleware(async (req, res, next) => {
-    res.status(501).json('installing chaincode on peer not implemented');
+  app.post('/chaincodes', cpUpload, asyncMiddleware(async (req, res, next) => {
+      res.json(await fabricStarterClient.installChaincode(req.body.channelId, req.files['file'][0].originalname.substring(0, req.files['file'][0].originalname.length-4),
+        req.files['file'][0].path, req.body.version, req.body.language, req.body.targets.split(','), storage));
   }));
 
   app.post('/users', asyncMiddleware(async (req, res, next) => {
@@ -116,7 +122,7 @@ const appRouter = (app) => {
   }));
 
   app.post('/channels', asyncMiddleware(async (req, res, next) => {
-    res.status(501).json('adding channel not implemented');
+    res.json(await fabricStarterClient.createChannel(req.body.channelId));
   }));
 
   app.get('/channels/:channelId', asyncMiddleware(async (req, res, next) => {
@@ -152,7 +158,8 @@ const appRouter = (app) => {
   }));
 
   app.post('/channels/:channelId/chaincodes', asyncMiddleware(async (req, res, next) => {
-    res.status(501).json('instantiating chaincode on channel not implemented');
+    res.json(await fabricStarterClient.instantiateChaincode(req.params.channelId, req.body.chaincodeId,
+        req.body.type, req.body.fcn, req.body.args,  req.body.version,  req.body.targets));
   }));
 
   app.get('/channels/:channelId/chaincodes/:chaincodeId', asyncMiddleware(async (req, res, next) => {
