@@ -48,7 +48,7 @@ const asyncMiddleware = fn =>
 
 // require presence of JWT in Authorization Bearer header
 const jwtSecret = fabricStarterClient.getSecret();
-app.use(jwt({secret: jwtSecret}).unless({path: ['/', '/users', '/mspid']}));
+app.use(jwt({secret: jwtSecret}).unless({path: ['/', '/users', '/mspid', /\/consortium/]}));
 
 // use fabricStarterClient for every logged in user
 const mapFabricStarterClient = {};
@@ -168,7 +168,11 @@ const appRouter = (app) => {
 
   app.post('/channels/:channelId/chaincodes/:chaincodeId', asyncMiddleware(async (req, res, next) => {
     res.json(await fabricStarterClient.invoke(req.params.channelId, req.params.chaincodeId,
-      req.body.fcn, req.body.args, req.body.targets));
+      req.body.fcn, req.body.args, req.body.targets, req.query.waitForTransactionEvent));
+  }));
+
+  app.get('/consortium/members', asyncMiddleware(async (req, res, next) => {
+    res.json(await fabricStarterClient.getConsortiumMemberList());
   }));
 
 

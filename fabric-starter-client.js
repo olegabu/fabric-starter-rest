@@ -1,10 +1,10 @@
 const fs = require('fs');
+const axios = require('axios');
 const _ = require('lodash');
 const log4js = require('log4js');
 log4js.configure({appenders: {stdout: { type: 'stdout' }},categories: {default: { appenders: ['stdout'], level: 'ALL'}}});
 const logger = log4js.getLogger('FabricStarterClient');
 const Client = require('fabric-client');
-const sdkHelper=require("./sdk-helper");
 const fabricCLI = require('./fabric-cli');
 const cfg = require('./config.js');
 
@@ -67,18 +67,12 @@ class FabricStarterClient {
     return channelQueryResponse.getChannels();
   }
 
-    createOrderer() {
-      return sdkHelper.createOrderer(this.client);
-        let certData = sdkHelper.loadPemFromFile(cfg.ORDERER_TLS_CERT);// fs.readFileSync(`${cfg.ORDERER_MSP_DIR}/tlscacerts/tlsca.example.com-cert.pem`);
-        return this.client.newOrderer(`grpcs://${cfg.ORDERER_ADDR}`, {pem: Buffer.from(certData).toString()});
-    }
-
     async queryPeers(orgName, peer) {
         orgName = orgName || this.org;
         peer = peer || this.peer;
         const peerQueryResponse = await this.client.queryPeers({target: peer}, true);
         let peers = _.get(peerQueryResponse, `peers_by_org.${orgName}.peers`);
-        return _.map(peers, p => sdkHelper.createPeerFromUrl(this.client, p.endpoint));
+        return _.map(peers, p => this.createPeerFromUrl(p.endpoint));
     }
 
   async queryInstalledChaincodes() {
@@ -86,13 +80,25 @@ class FabricStarterClient {
     return chaincodeQueryResponse.getChaincodes();
   }
 
+    async getConsortiumMemberList(systemChannelId) {
+      if (cfg.isOrderer) {
+          let channel = await this.getChannel(systemChannelId || cfg.systemChannelId);
+          let sysChannelConfig = await channel.getChannelConfigFromOrderer();
+          logger.debug(sysChannelConfig);
+          let consortium = _.get(sysChannelConfig, "config.channel_group.groups.map.Consortiums");
+          logger.debug("Consortium", consortium);
+      } else {
+          let result = await axios.get(`http://${cfg.ORDERER_API_ADDR}/consortium/members`, {params:{systemChannelId}});
+          return result;
+      }
+    }
 
     async createChannel(channelId) {
 
         const tx_id = this.client.newTransactionID(true);
 
         fabricCLI.downloadOrdererMSP();
-        let orderer = sdkHelper.createOrderer(this.client);
+        let orderer = this.createOrderer();
 
         let channelReq = {
             txId: tx_id,
@@ -114,10 +120,7 @@ class FabricStarterClient {
 
     async joinChannel(channelId) {
         const tx2_id = this.client.newTransactionID(true);
-        let orderer=sdkHelper.createOrderer(this.client);
-        let channel = this.client.newChannel(channelId);
-        channel.addOrderer(orderer);
-
+        let channel = this.constructChannel(channelId);
 
         // let channelConf = await channel.getChannelConfigFromOrderer();
         let peers = await this.queryPeers();
@@ -135,20 +138,32 @@ class FabricStarterClient {
 
         // send genesis block to the peer
         let result = await channel.joinChannel(j_request);
-        console.log(`Join channel ${channelId}:`, result);
+        logger.debug(`Join channel ${channelId}:`, result);
         return result;
     }
 
 
-  async getChannel(channelId) {
+    constructChannel(channelId) {
+        let channel = this.client.newChannel(channelId);
+        channel.addOrderer(this.createOrderer());
+        return channel;
+    }
+
+    async getChannel(channelId) {
     let channel;
     try {
       channel = this.client.getChannel(channelId);
+      logger.debug("GetChannel successful:");
     } catch (e) {
-      channel = this.client.newChannel(channelId);
-      channel.addPeer(this.peer);
+      logger.debug("GetChannel unsuccessful:", e);
+      channel = this.constructChannel(channelId);
+      try {
+          channel.addPeer(this.peer);
+      } catch(e) {
+          logger.debug(`No peer for channel ${channelId}`);
+      }
+      await channel.initialize({discover: true, asLocalhost: asLocalhost});
     }
-    await channel.initialize({discover: true, asLocalhost: asLocalhost});
     // logger.trace('channel', channel);
     return channel;
   }
@@ -257,21 +272,20 @@ class FabricStarterClient {
         let peers = [];
         let badPeers = [];
         _.each(targets, function (value) {
-            let peer = _.find(channel.getChannelPeers(), function (o) {
-                return o._name === value;
-            });
+            let peer = _.find(channel.getChannelPeers(), p => p._name === value);
             if (_.isNil(peer)) {
                 logger.error(`Peer ${value} not found`);
                 badPeers.push(value);
             }
-            else
+            else {
                 peers.push(peer);
+            }
         });
         if (_.isEmpty(peers)) {
-            logger.trace("Used default peer");
+            logger.trace("Using default peer");
             peers.push(this.peer);
         } else
-            logger.trace("Used chosen peer");
+            logger.trace("Using specified peer(s)");
         return [peers, badPeers];
     }
 
@@ -332,6 +346,33 @@ class FabricStarterClient {
     const channelEventHub = this.getChannelEventHub(channel);
     return channelEventHub.disconnect();
   }
+
+  createOrderer() {
+      return this.client.newOrderer(`grpcs://${cfg.ORDERER_ADDR}`, {pem: this.loadPemFromFile(cfg.ORDERER_TLS_CERT)});
+  }
+
+  createPeerFromUrl(peerEndpoint) {
+      let connectionOptions = this.defaultConnectionOptions(peerEndpoint);
+      return this.client.newPeer(`grpcs://${peerEndpoint}`, connectionOptions);
+  }
+
+  loadPemFromFile(pemFilePath) {
+      let certData = fs.readFileSync(pemFilePath);
+      return Buffer.from(certData).toString()
+  }
+
+  defaultConnectionOptions(peerUrl, org, domain) {
+    let parsedUrl = urlParseLax(peerUrl);
+    let mspSubPath = parsedUrl.hostname;
+    let connectionOptions = {
+        'ssl-target-name-override': peerUrl,
+        //'ssl-target-name-override': 'localhost',
+        'grpc.keepalive_time_ms': 600000,
+        pem: this.loadPemFromFile(`${cfg.PEER_CRYPTO_DIR}/peers/${mspSubPath}/msp/tlscacerts/tlsca.${org || cfg.org}.${domain || cfg.domain}-cert.pem`)
+    };
+    return connectionOptions;
+  }
+
 }
 
 module.exports = FabricStarterClient;
