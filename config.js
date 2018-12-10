@@ -44,5 +44,8 @@ module.exports = {
     systemChannelId: systemChannelId,
 
 
-    isOrderer: ordererName == myorg
+    isOrderer: ordererName == myorg,
+
+    INVOKE_RETRY_COUNT: process.env.INVOKE_RETRY_COUNT || 10
+
 };

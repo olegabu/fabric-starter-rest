@@ -14,7 +14,7 @@ function addOrg(t, org) {
     // mspid: `${org}MSP`,
     mspid: `${org}`,
     peers: [
-      `peer0.${org}.${cfg.domain}`
+      `peer0.${org}.${cfg.domain}:7051`
     ]
   };
 
@@ -39,7 +39,8 @@ function addPeer(t, org, i, peerAddress) {
   if(!t.peers) {
     t.peers = {};
   }
-  t.peers[`peer${i}.${org}.${cfg.domain}`] = {
+    const peerName = `peer${i}.${org}.${cfg.domain}:7051`;
+    t.peers[peerName] = {
     url: `grpcs://${peerAddress}`,
     grpcOptions: {
        'ssl-target-name-override': `peer${i}.${org}.${cfg.domain}`,
