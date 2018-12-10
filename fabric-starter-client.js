@@ -278,7 +278,7 @@ class FabricStarterClient {
                     fcn: fcn,
                     args: args,
                     txId: tx_id,
-                    targets: targets || [fsClient.peer]
+                    targets: peers[0]
                 };
 
                 logger.trace('invoke', proposal);
