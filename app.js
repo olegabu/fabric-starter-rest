@@ -142,7 +142,7 @@ const appRouter = (app) => {
   }));
 
   app.post('/channels/:channelId/orgs', asyncMiddleware(async (req, res, next) => {
-    res.status(501).json('adding organization to channel not implemented');
+      res.json(fabricStarterClient.addOrgToChannel(req.params.channelId, req.body.orgId));
   }));
 
   app.get('/channels/:channelId/blocks/:number', asyncMiddleware(async (req, res, next) => {
