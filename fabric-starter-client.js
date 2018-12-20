@@ -148,7 +148,6 @@ class FabricStarterClient {
         return result;
     }
 
-
     async addOrgToChannel(channelId, orgId) {
         let channelConfigFile = fabricCLI.fetchChannelConfig(channelId);
         let channelConfigBlock = await fabricCLI.translateChannelConfig(channelConfigFile);
@@ -187,27 +186,17 @@ class FabricStarterClient {
         }
     }
 
-    chmodCryptoFolder() {
-        chmodPlus.directory(777, cfg.CRYPTO_CONFIG_DIR, {recursive: true});
-        logger.debug(`Permissions for ${cfg.CRYPTO_CONFIG_DIR} folder are set to 777`);
-    }
-
-    invalidateChannelsCache(channelId) {
-        this.client._channels = new Map(); //TODO: workaround until sdk supports cache invalidating
-        this.channelsInitializationMap = new Map();
-    }
-
     async constructChannel(channelId, optionalPeer) {
         let channel = this.client.newChannel(channelId);
         channel.addOrderer(this.createOrderer());
-        if (!optionalPeer) {
-            optionalPeer = await this.queryPeers();
-        }
-        if (_.isArray(optionalPeer)) {
-            optionalPeer = _.find(optionalPeer, p => _.startsWith(p.getName(), "peer0")) || optionalPeer[0];
-        }
 
         try {
+            optionalPeer = optionalPeer || await this.queryPeers();
+
+            if (_.isArray(optionalPeer)) {
+                optionalPeer = _.find(optionalPeer, p => _.startsWith(p.getName(), "peer0")) || optionalPeer[0];
+            }
+
             channel.addPeer(optionalPeer);
         } catch (e) {
             logger.warn(`Error adding peer ${optionalPeer.getName()} to channel ${channelId}`);
@@ -227,10 +216,13 @@ class FabricStarterClient {
                     logger.debug(`Initialise channel: ${channelId}`);
                     const channel = this.client.getChannel(channelId, false) || await this.constructChannel(channelId);
                     await channel.initialize({discover: true, asLocalhost: asLocalhost});
+                    await channel.queryInfo(this.peer, true);
                     resolve(channel);
                 } catch (e) {
                     logger.error(e);
                     reject(e);
+                } finally {
+                    this.channelsInitializationMap.set(channelId, null);
                 }
             });
             this.channelsInitializationMap.set(channelId, inProcessPromise);
@@ -435,6 +427,16 @@ class FabricStarterClient {
         } else
             logger.trace("Using specified peer(s)");
         return [peers, badPeers];
+    }
+
+
+    chmodCryptoFolder() {
+        chmodPlus.directory(666, cfg.CRYPTO_CONFIG_DIR, {recursive: true});
+        logger.debug(`Permissions for ${cfg.CRYPTO_CONFIG_DIR} folder are set to 666`);
+    }
+
+    invalidateChannelsCache(channelId) {
+        this.client._channels = new Map(); //TODO: workaround until sdk supports cache invalidating
     }
 
     async getOrganizations(channelId) {
