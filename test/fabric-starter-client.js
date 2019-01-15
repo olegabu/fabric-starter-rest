@@ -6,6 +6,8 @@ const logger = require('log4js').getLogger('FabricStarterClientTest');
 const fs = require('fs-extra');
 const randomstring = require('randomstring');
 
+const cfg = require('../config.js');
+
 describe('FabricStarterClient.', function () {
   this.timeout(4000);
 
@@ -150,6 +152,21 @@ describe('FabricStarterClient.', function () {
         })
     });
 
+    describe('Consortium access', () => {
+        before('login', async () => {
+            await fabricStarterClient.loginOrRegister(username, password);
+        });
+
+        describe('#getConsortiumMembers', () => {
+            it('get Consortium members', async () => {
+                let result = await fabricStarterClient.getConsortiumMemberList(cfg.systemChannelId);
+                await setTimeout(function () {}, 1000);
+                const channel = await fabricStarterClient.getChannel(cfg.systemChannelId, true);
+                assert.equal(channel.getName(), cfg.systemChannelId);
+            })
+        })
+
+    });
 
 
   describe('Query peer.', () => {

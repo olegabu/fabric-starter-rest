@@ -1,14 +1,5 @@
 const fs = require('fs');
-
-// TODO get config parameters from config.js
-const myorg = process.env.ORG || 'org1';
-const domain = process.env.DOMAIN || 'example.com';
-const cryptoConfigDir = process.env.CRYPTO_CONFIG_DIR || '../fabric-starter/crypto-config';
-const enrollId = process.env.ENROLL_ID || 'admin';
-const enrollSecret = process.env.ENROLL_SECRET || 'adminpw';
-// default to peer0.org1.example.com:7051 inside docker-compose or export ORGS='{"org1":"peer0.org1.example.com:7051","org2":"peer0.org2.example.com:7051"}'
-let orgs = process.env.ORGS || '"org1":"localhost:7051"';
-let cas = process.env.CAS || '"org1":"localhost:7054"';
+const cfg = require('./config.js');
 
 const t = {
   name: 'Network',
@@ -23,38 +14,41 @@ function addOrg(t, org) {
     // mspid: `${org}MSP`,
     mspid: `${org}`,
     peers: [
-      `peer0.${org}.${domain}`
+      `peer0.${org}.${cfg.domain}:7051`
     ]
   };
 
-  if(org === myorg) {
-    const keystorePath = `${cryptoConfigDir}/peerOrganizations/${org}.${domain}/users/Admin@${org}.${domain}/msp/keystore`;
-    const keystoreFiles = fs.readdirSync(keystorePath);
-    const keyPath = `${keystorePath}/${keystoreFiles[0]}`;
+    if (org === cfg.org) {
+        const certDomain = `${(cfg.isOrderer ? "" : org + ".") + cfg.domain}`;
+        const mspPath = `${cfg.isOrderer ? cfg.ORDERER_CRYPTO_DIR : cfg.PEER_CRYPTO_DIR}/users/Admin@${certDomain}/msp`;
+        const keystorePath = `${mspPath}/keystore`;
+        const keystoreFiles = fs.readdirSync(keystorePath);
+        const keyPath = `${keystorePath}/${keystoreFiles[0]}`;
 
-    t.organizations[org].certificateAuthorities = [org];
-    t.organizations[org].adminPrivateKey = {
-      path: keyPath
-    };
-    t.organizations[org].signedCert = {
-      path: `${cryptoConfigDir}/peerOrganizations/${org}.${domain}/users/Admin@${org}.${domain}/msp/signcerts/Admin@${org}.${domain}-cert.pem`
-    };
-  }
+        t.organizations[org].certificateAuthorities = [org];
+        t.organizations[org].adminPrivateKey = {
+            path: keyPath
+        };
+        t.organizations[org].signedCert = {
+            path: `${mspPath}/signcerts/Admin@${certDomain}-cert.pem`
+        };
+    }
 }
 
 function addPeer(t, org, i, peerAddress) {
   if(!t.peers) {
     t.peers = {};
   }
-  t.peers[`peer${i}.${org}.${domain}`] = {
+    const peerName = `peer${i}.${org}.${cfg.domain}:7051`;
+    t.peers[peerName] = {
     url: `grpcs://${peerAddress}`,
     grpcOptions: {
-       'ssl-target-name-override': `peer${i}.${org}.${domain}`,
+       'ssl-target-name-override': `peer${i}.${org}.${cfg.domain}`,
       //'ssl-target-name-override': 'localhost',
       'grpc.keepalive_time_ms': 600000
     },
     tlsCACerts: {
-      path: `${cryptoConfigDir}/peerOrganizations/${org}.${domain}/peers/peer${i}.${org}.${domain}/msp/tlscacerts/tlsca.${org}.${domain}-cert.pem`
+      path: `${cfg.PEER_CRYPTO_DIR}/peers/peer${i}.${org}.${cfg.domain}/msp/tlscacerts/tlsca.${org}.${cfg.domain}-cert.pem`
     }
   };
 }
@@ -70,12 +64,12 @@ function addCA(t, org, caAddress) {
       verify: false
     },
     tlsCACerts: {
-      path: `${cryptoConfigDir}/peerOrganizations/${org}.${domain}/ca/ca.${org}.${domain}-cert.pem`
+      path: `${cfg.PEER_CRYPTO_DIR}/ca/ca.${org}.${cfg.domain}-cert.pem`
     },
     registrar: [
       {
-        enrollId: enrollId,
-        enrollSecret: enrollSecret
+        enrollId: cfg.enrollId,
+        enrollSecret: cfg.enrollSecret
       }
     ],
     caName: 'default'
@@ -84,31 +78,37 @@ function addCA(t, org, caAddress) {
 
 module.exports = function () {
   t.client = {
-    organization: myorg,
+    organization: cfg.org,
     credentialStore: {
-      path: `hfc-kvs/${myorg}`,
+      path: `hfc-kvs/${cfg.org}`,
       cryptoStore: {
-        path: `hfc-cvs/${myorg}`
+        path: `hfc-cvs/${cfg.org}`
       }
     }
   };
 
   try {
-    orgs = JSON.parse(orgs);
+    orgs = JSON.parse(cfg.orgs);
   } catch(e) {
-    orgs = JSON.parse('{' + orgs + '}');
+    orgs = JSON.parse('{' + cfg.orgs + '}');
   }
 
   try {
-    cas = JSON.parse(cas);
+    cas = JSON.parse(cfg.cas);
   } catch(e) {
-    cas = JSON.parse('{' + cas + '}');
+    cas = JSON.parse('{' + cfg.cas + '}');
   }
 
   Object.keys(orgs).forEach(k => {
     addOrg(t, k);
-    addPeer(t, k, 0, orgs[k]);
+    if (!cfg.isOrderer) {
+        addPeer(t, k, 0, orgs[k]);
+    }
   });
+
+    if (cfg.isOrderer) {
+      addOrg(t, cfg.ordererName)
+    }
 
   Object.keys(cas).forEach(k => {
     addCA(t, k, cas[k]);

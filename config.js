@@ -1,26 +1,35 @@
-const fs = require('fs');
+const fs=require('fs');
+const log4js = require('log4js');
+log4js.configure({appenders: {stdout: {type: 'stdout'}}, categories: {default: {appenders: ['stdout'], level: 'ALL'}}});
+const logger = log4js.getLogger('config.js');
 
 const myorg = process.env.ORG || 'org1';
 const DOMAIN = process.env.DOMAIN || 'example.com';
 
-const devCryptoConfigDir = '../fabric-starter/crypto-config';
-const cryptoConfigDir = fs.existsSync(devCryptoConfigDir) ? devCryptoConfigDir : process.env.CRYPTO_CONFIG_DIR;
+const CRYPTO_CONFIG_DIR = "crypto-config";
+let cryptoConfigPath = fs.realpathSync(process.env.CRYPTO_CONFIG_DIR || '../fabric-starter/crypto-config');
+
+logger.info(`Crypto-config path: ${cryptoConfigPath}`);
 
 const enrollId = process.env.ENROLL_ID || 'admin';
 const enrollSecret = process.env.ENROLL_SECRET || 'adminpw';
 
 // default to peer0.org1.example.com:7051 inside docker-compose or export ORGS='{"org1":"peer0.org1.example.com:7051","org2":"peer0.org2.example.com:7051"}'
-let orgs = process.env.ORGS || '"org1":"localhost:7051"';
-let cas = process.env.CAS || '"org1":"localhost:7054"';
+let orgs = process.env.ORGS || '"org1":"peer0.org1.example.com:7051"';
+let cas = process.env.CAS || '"org1":"peer0.org1.example.com:7054"';
 
-const ORDERER_MSP_DIR = `${cryptoConfigDir}/ordererOrganizations/${DOMAIN}/msp`;
-const PEER_CRYPTO_DIR = `${cryptoConfigDir}/peerOrganizations/${myorg}.${DOMAIN}`;
+const ORDERER_CRYPTO_DIR = `${cryptoConfigPath}/ordererOrganizations/${DOMAIN}`;
+const PEER_CRYPTO_DIR = `${cryptoConfigPath}/peerOrganizations/${myorg}.${DOMAIN}`;
 
+const ordererName = 'orderer';
 const ordererAddr = `orderer.${DOMAIN}:7050`;
+const ordererApiPort = process.env.ORDERER_API_PORT || '4500';
+const ordererApiAddr = `api.${DOMAIN}:${ordererApiPort}`;
 
-const systemChannelId="orderer-system-channel";
+const systemChannelId = "orderer-system-channel";
 
 module.exports = {
+    log4js: log4js,
     domain: DOMAIN,
     org: myorg,
 
@@ -29,11 +38,21 @@ module.exports = {
     orgs: orgs,
     cas: cas,
 
-    ORDERER_MSP_DIR: ORDERER_MSP_DIR,
-    ORDERER_TLS_CERT: `${ORDERER_MSP_DIR}/tlscacerts/tlsca.${DOMAIN}-cert.pem`,
+    ordererName: ordererName,
+    CRYPTO_CONFIG_DIR: CRYPTO_CONFIG_DIR,
+    ORDERER_CRYPTO_DIR: ORDERER_CRYPTO_DIR,
+    ORDERER_TLS_CERT: `${ORDERER_CRYPTO_DIR}/msp/tlscacerts/tlsca.${DOMAIN}-cert.pem`,
     ORDERER_ADDR: ordererAddr,
+    ORDERER_API_ADDR: ordererApiAddr,
 
-    PEER_CRYPTO_DIR:PEER_CRYPTO_DIR,
+    PEER_CRYPTO_DIR: PEER_CRYPTO_DIR,
+    orgCryptoConfigPath: (org) => `${cryptoConfigPath}/peerOrganizations/${org}.${DOMAIN}`,
 
-    systemChannelId: systemChannelId
+    systemChannelId: systemChannelId,
+
+
+    isOrderer: ordererName == myorg,
+
+    INVOKE_RETRY_COUNT: process.env.INVOKE_RETRY_COUNT || 10
+
 };
