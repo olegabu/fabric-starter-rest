@@ -78,7 +78,7 @@ class FabricStarterClient {
         orgName = orgName || this.org;
         peer = peer || this.peer;
         const peerQueryResponse = await this.client.queryPeers({target: peer}, true);
-        let peers = _.get(peerQueryResponse, `peers_by_org.${orgName}.peers`);
+        let peers = _.get(peerQueryResponse, `local_peers.${orgName}.peers`);
         return _.map(peers, p => this.createPeerFromUrl(p.endpoint));
     }
 
@@ -199,7 +199,7 @@ class FabricStarterClient {
 
             channel.addPeer(optionalPeer);
         } catch (e) {
-            logger.warn(`Error adding peer ${optionalPeer.getName()} to channel ${channelId}`);
+            logger.warn(`Error adding peer ${optionalPeer} to channel ${channelId}`);
         }
         return channel;
     }
@@ -316,16 +316,23 @@ class FabricStarterClient {
 
     async invoke(channelId, chaincodeId, fcn, args, targets, waitForTransactionEvent) {
         const channel = await this.getChannel(channelId);
-        const peers = this.createTargetsList(channel, targets);
+        const targetsList = this.createTargetsList(channel, targets);
+        const foundPeers = targetsList[0];
+        const badPeers = targetsList[1];
         let fsClient = this;
+
         return new Promise((resolve, reject) => {
 
             fsClient.retryInvoke(cfg.INVOKE_RETRY_COUNT, resolve, reject, async function () {
 
                 const tx_id = fsClient.client.newTransactionID(/*true*/);
                 const proposal = {
-                    chaincodeId: chaincodeId, fcn: fcn, args: args, txId: tx_id,targets: peers[0]
+                    chaincodeId: chaincodeId, fcn: fcn, args: args, txId: tx_id
                 };
+
+                if(targets) {
+                    proposal.targets = foundPeers;
+                }
 
                 logger.trace('invoke', proposal);
 
@@ -343,7 +350,7 @@ class FabricStarterClient {
                 const broadcastResponse = await channel.sendTransaction(transactionRequest);
                 logger.trace('broadcastResponse', broadcastResponse);
                 return promise.then(function (res) {
-                    res.badPeers = peers[1];
+                    res.badPeers = badPeers;
                     return res;
                 });
             });
