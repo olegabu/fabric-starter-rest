@@ -316,23 +316,28 @@ class FabricStarterClient {
 
     async invoke(channelId, chaincodeId, fcn, args, targets, waitForTransactionEvent) {
         const channel = await this.getChannel(channelId);
-        const targetsList = this.createTargetsList(channel, targets);
-        const foundPeers = targetsList[0];
-        const badPeers = targetsList[1];
         let fsClient = this;
+
+        const proposal = {
+            chaincodeId: chaincodeId, fcn: fcn, args: args
+        };
+
+        let badPeers;
+
+        if(targets) {
+            const targetsList = this.createTargetsList(channel, targets);
+            const foundPeers = targetsList[0];
+            badPeers = targetsList[1];
+
+            proposal.targets = foundPeers;
+        }
 
         return new Promise((resolve, reject) => {
 
             fsClient.retryInvoke(cfg.INVOKE_RETRY_COUNT, resolve, reject, async function () {
+                const txId = fsClient.client.newTransactionID(/*true*/);
 
-                const tx_id = fsClient.client.newTransactionID(/*true*/);
-                const proposal = {
-                    chaincodeId: chaincodeId, fcn: fcn, args: args, txId: tx_id
-                };
-
-                if(targets) {
-                    proposal.targets = foundPeers;
-                }
+                proposal.txId = txId;
 
                 logger.trace('invoke', proposal);
 
@@ -345,7 +350,7 @@ class FabricStarterClient {
                     proposal: proposalResponse[1],
                 };
 
-                const promise = waitForTransactionEvent ? fsClient.waitForTransactionEvent(tx_id, channel) : Promise.resolve(tx_id);
+                const promise = waitForTransactionEvent ? fsClient.waitForTransactionEvent(txId, channel) : Promise.resolve(txId);
 
                 const broadcastResponse = await channel.sendTransaction(transactionRequest);
                 logger.trace('broadcastResponse', broadcastResponse);
