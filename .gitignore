@@ -67,3 +67,4 @@ hfc-*
 webapp/scripts
 webapp/src
 ./upload
+./Dockerfile

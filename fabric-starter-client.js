@@ -88,8 +88,11 @@ class FabricStarterClient {
         peer = peer || this.peer;
         const peerQueryResponse = await this.client.queryPeers({target: peer}, true);
         let peers = _.get(peerQueryResponse, `local_peers.${orgName}.peers`);
+<<<<<<< HEAD
         //TODO: peers_by_org (does't work) | local_peers (work) ???
         // let peers = _.get(peerQueryResponse, `peers_by_org.${orgName}.peers`);
+=======
+>>>>>>> 3b8a8bf10f5ffc345c76879f7464c98bb4191ee1
         return _.map(peers, p => this.createPeerFromUrl(p.endpoint));
     }
 
