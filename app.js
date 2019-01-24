@@ -6,7 +6,6 @@ const jsonwebtoken = require('jsonwebtoken');
 const jwt = require('express-jwt');
 const cors = require('cors');
 const path = require('path');
-const SocketServer = require('socket.io');
 const multer = require('multer');
 const os = require('os');
 const storage = os.tmpdir() || './upload';
@@ -98,6 +97,10 @@ const appRouter = (app) => {
     res.json(fabricStarterClient.getNetworkConfig());
   });
 
+  app.post('/cert', cpUpload, asyncMiddleware(async (req, res, next) => {
+    res.json(await fabricStarterClient.decodeCert(req.body.cert));
+  }));
+
   app.get('/chaincodes', asyncMiddleware(async (req, res, next) => {
     res.json(await fabricStarterClient.queryInstalledChaincodes());
   }));
@@ -164,7 +167,7 @@ const appRouter = (app) => {
 
   app.get('/channels/:channelId/chaincodes/:chaincodeId', asyncMiddleware(async (req, res, next) => {
     let ret = await fabricStarterClient.query(req.params.channelId, req.params.chaincodeId,
-      req.query.fcn, JSON.parse(req.query.args), req.query.targets);
+      req.query.fcn, JSON.parse(req.query.args), JSON.parse(req.query.targets));
 
     if(ret[0].startsWith('Error')) {
       throw new Error(ret[0]);
@@ -187,26 +190,36 @@ const appRouter = (app) => {
 
 appRouter(app);
 
+// const server = app.listen(process.env.PORT || 3000, function () {
+//   logger.info('started fabric-starter rest server on port', server.address().port);
+// });
+//
+// async function startSocketServer() {
+//   const io = new SocketServer(server, {origins: '*:*'});
+//
+//   const channels = await fabricStarterClient.queryChannels();
+//
+//   channels.map(c => {return c.channel_id;}).forEach(async channelId => {
+//     await fabricStarterClient.registerBlockEvent(channelId, block => {
+//       logger.debug(`block ${block.number} on ${block.channel_id}`);
+//       io.emit('chainblock', block);
+//     }, e => {
+//       logger.error('registerBlockEvent', e);
+//     });
+//     logger.debug(`registered for block event on ${channelId}`);
+//   });
+// }
+//
+// startSocketServer().then(() => {
+//   logger.info('started socket server');
+// });
+
 const server = app.listen(process.env.PORT || 3000, function () {
-  logger.info('started fabric-starter rest server on port', server.address().port);
+    logger.info('started fabric-starter rest server on port', server.address().port);
 });
 
-async function startSocketServer() {
-  const io = new SocketServer(server, {origins: '*:*'});
+const socket = fabricStarterClient.restSocket;
 
-  const channels = await fabricStarterClient.queryChannels();
-
-  channels.map(c => {return c.channel_id;}).forEach(async channelId => {
-    await fabricStarterClient.registerBlockEvent(channelId, block => {
-      logger.debug(`block ${block.number} on ${block.channel_id}`);
-      io.emit('chainblock', block);
-    }, e => {
-      logger.error('registerBlockEvent', e);
-    });
-    logger.debug(`registered for block event on ${channelId}`);
-  });
-}
-
-startSocketServer().then(() => {
-  logger.info('started socket server');
+socket.startSocketServer(server).then(() => {
+    logger.info('started socket server');
 });
