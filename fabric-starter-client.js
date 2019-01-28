@@ -270,7 +270,10 @@ class FabricStarterClient {
 
     async instantiateChaincode(channelId, chaincodeId, type, fnc, args, version, targets, waitForTransactionEvent) {
         const channel = await this.getChannel(channelId);
-        const peers = this.createTargetsList(channel, targets);
+        const targetsList = this.createTargetsList(channel, targets);
+        const foundPeers = targetsList[0];
+        const badPeers = targetsList[1];
+
         const tx_id = this.client.newTransactionID(true);
         const proposal = {
             chaincodeId: chaincodeId,
@@ -279,7 +282,7 @@ class FabricStarterClient {
             args: args || [],
             chaincodeVersion: version || '1.0',
             txId: tx_id,
-            targets: peers[0]
+            targets: foundPeers
         };
         let results = null;
         try {
@@ -297,7 +300,7 @@ class FabricStarterClient {
         const broadcastResponse = await channel.sendTransaction(transactionRequest);
         logger.trace('broadcastResponse', broadcastResponse);
         return promise.then(function (res) {
-            res.badPeers = peers[1];
+            res.badPeers = badPeers;
             return res;
         });
     }
@@ -339,7 +342,7 @@ class FabricStarterClient {
 
                 proposal.txId = txId;
 
-                logger.trace('invoke', proposal);
+                logger.trace('invoke proposal', proposal);
 
                 const proposalResponse = await channel.sendTransactionProposal(proposal);
 
@@ -404,17 +407,37 @@ class FabricStarterClient {
 
     async query(channelId, chaincodeId, fcn, args, targets) {
         const channel = await this.getChannel(channelId);
-        targets = _.attempt(JSON.parse, targets);
-        const peers = this.createTargetsList(channel, targets);
-        const request = {
-            chaincodeId: chaincodeId,
-            fcn: fcn,
-            args: args,
-            targets: peers[0]
-        };
-        logger.trace('query', request);
 
-        const responses = await channel.queryByChaincode(request);
+        const proposal = {
+            chaincodeId: chaincodeId, fcn: fcn
+        };
+
+        logger.trace('query args', args);
+
+        if(args) {
+            proposal.args = JSON.parse(args);
+        }
+        else {
+            proposal.args = [];
+        }
+
+        logger.trace('query targets', targets);
+
+        if(targets) {
+            const targetsList = this.createTargetsList(channel, JSON.parse(targets));
+            const foundPeers = targetsList[0];
+            const badPeers = targetsList[1];
+            logger.trace('badPeers', badPeers);
+
+            proposal.targets = foundPeers;
+        }
+        // else {
+        //     proposal.targets = [this.peer];
+        // }
+
+        logger.trace('query proposal', proposal);
+
+        const responses = await channel.queryByChaincode(proposal);
 
         return responses.map(r => {
             return r.toString('utf8');
