@@ -168,7 +168,7 @@ const appRouter = (app) => {
 
   app.get('/channels/:channelId/chaincodes/:chaincodeId', asyncMiddleware(async (req, res, next) => {
     let ret = await fabricStarterClient.query(req.params.channelId, req.params.chaincodeId,
-      req.query.fcn, JSON.parse(req.query.args), JSON.parse(req.query.targets));
+      req.query.fcn, req.query.args, req.query.targets);
 
     if(ret[0].startsWith('Error')) {
       throw new Error(ret[0]);
