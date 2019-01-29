@@ -8,9 +8,7 @@ const unzip = require('unzip');
 const path = require('path');
 const urlParseLax = require('url-parse-lax');
 const chmodPlus  = require('chmod-plus');
-const x509 = require('x509');
 const fabricCLI = require('./fabric-cli');
-const Socket = require('./rest-socket-server');
 
 //const networkConfigFile = '../crypto-config/network.json'; // or .yaml
 //const networkConfig = require('../crypto-config/network.json');
@@ -29,15 +27,6 @@ class FabricStarterClient {
         this.org = this.networkConfig.client.organization;
         this.affiliation = this.org;
         this.channelsInitializationMap = new Map();
-        this._restSocket = new Socket(this);
-    }
-
-    get restSocket() {
-        return this._restSocket;
-    }
-
-    set restSocket(value) {
-        this._restSocket = value;
     }
 
     async init() {
@@ -156,7 +145,6 @@ class FabricStarterClient {
         let result = await channel.joinChannel(j_request);
         logger.debug(`Join channel ${channelId}:`, result);
         channel.initialize({discover: true, asLocalhost: asLocalhost});
-        await this._restSocket.updateServer(channelId);
         return result;
     }
 
@@ -281,7 +269,6 @@ class FabricStarterClient {
 
     async instantiateChaincode(channelId, chaincodeId, type, fnc, args, version, targets, waitForTransactionEvent) {
         const channel = await this.getChannel(channelId);
-        const peers = this.createTargetsList(channel, targets);
         const tx_id = this.client.newTransactionID(true);
         const proposal = {
             chaincodeId: chaincodeId,
@@ -289,12 +276,22 @@ class FabricStarterClient {
             fcn: fnc || 'init',
             args: args || [],
             chaincodeVersion: version || '1.0',
-            txId: tx_id,
-            targets: peers[0]
+            txId: tx_id
         };
+
+        let badPeers;
+
+        if(targets) {
+            const targetsList = this.createTargetsList(channel, targets);
+            const foundPeers = targetsList[0];
+            badPeers = targetsList[1];
+
+            proposal.targets = foundPeers;
+        }
+
         let results = null;
         try {
-            results = await channel.sendInstantiateProposal(proposal, 600000);
+            results = await channel.sendInstantiateProposal(proposal, invokeTimeout);
             logger.info('Sent instantiate proposal');
         } catch (error) {
             logger.error('In catch - sendInstantiateProposal', error.message);
@@ -308,7 +305,7 @@ class FabricStarterClient {
         const broadcastResponse = await channel.sendTransaction(transactionRequest);
         logger.trace('broadcastResponse', broadcastResponse);
         return promise.then(function (res) {
-            res.badPeers = peers[1];
+            res.badPeers = badPeers;
             return res;
         });
     }
@@ -532,10 +529,6 @@ class FabricStarterClient {
     loadPemFromFile(pemFilePath) {
         let certData = fs.readFileSync(pemFilePath);
         return Buffer.from(certData).toString()
-    }
-
-    decodeCert(cert){
-        return x509.parseCert(cert);
     }
 
     defaultConnectionOptions(peerUrl, org, domain) {
