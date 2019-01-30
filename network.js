@@ -45,7 +45,6 @@ function addPeer(t, org, i, peerAddress) {
     grpcOptions: {
        'ssl-target-name-override': `peer${i}.${org}.${cfg.domain}`,
       //'ssl-target-name-override': 'localhost',
-      'grpc.keepalive_time_ms': 600000
     },
     tlsCACerts: {
       path: `${cfg.PEER_CRYPTO_DIR}/peers/peer${i}.${org}.${cfg.domain}/msp/tlscacerts/tlsca.${org}.${cfg.domain}-cert.pem`

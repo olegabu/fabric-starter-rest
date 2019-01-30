@@ -25,10 +25,38 @@ class FabricStarterClient {
         this.networkConfig = networkConfig || require('./network')();
         logger.info('constructing with network config', JSON.stringify(this.networkConfig));
         this.client = Client.loadFromConfig(this.networkConfig); // or networkConfigFile
+        this.setConnectionOptions();
         this.peer = this.client.getPeersForOrg()[0];
         this.org = this.networkConfig.client.organization;
         this.affiliation = this.org;
         this.channelsInitializationMap = new Map();
+    }
+
+    setConnectionOptions() {
+        const defaultConnectionOptions = this.client.getConfigSetting('connection-options');
+
+        logger.debug('defaultConnectionOptions', defaultConnectionOptions);
+
+        const newConnectionOptions = {
+            'grpc.http2.max_pings_without_data': 0,
+            'grpc.max_pings_without_data': 0,
+            'grpc.http2.keepalive_time': 5,
+            'grpc.keepalive_time_ms': 5000,
+            'grpc.http2.keepalive_timeout': 20,
+            'grpc.keepalive_timeout_ms': 20000,
+            'grpc.http2.min_time_between_pings_ms': 5000,
+            'grpc.min_time_between_pings_ms': 5000,
+            'grpc.http2.keepalive_permit_without_calls': 1,
+            'grpc.keepalive_permit_without_calls': 1
+        };
+
+        // use the assign call to keep all other options and only update
+        // the one setting or add a setting.
+        const updatedDefaultConnectionOptions = Object.assign(defaultConnectionOptions, newConnectionOptions);
+
+        logger.debug('updatedDefaultConnectionOptions', updatedDefaultConnectionOptions);
+
+        this.client.setConfigSetting('connection-options', updatedDefaultConnectionOptions);
     }
 
     async init() {
@@ -552,7 +580,6 @@ class FabricStarterClient {
         let connectionOptions = {
             'ssl-target-name-override': peerUrl,
             //'ssl-target-name-override': 'localhost',
-            'grpc.keepalive_time_ms': 600000,
             pem: this.loadPemFromFile(`${cfg.PEER_CRYPTO_DIR}/peers/${mspSubPath}/msp/tlscacerts/tlsca.${org || cfg.org}.${domain || cfg.domain}-cert.pem`)
         };
         return connectionOptions;
