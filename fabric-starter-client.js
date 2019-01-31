@@ -75,10 +75,8 @@ class FabricStarterClient {
     async queryPeers(orgName, peer) {
         orgName = orgName || this.org;
         peer = peer || this.peer;
-        const peerQueryResponse = await this.client.queryPeers({target: peer}, true);
+        const peerQueryResponse = await this.client.queryPeers({target: peer, useAdmin: true});
         let peers = _.get(peerQueryResponse, `local_peers.${orgName}.peers`);
-        //TODO: peers_by_org (does't work) | local_peers (work) ???
-        // let peers = _.get(peerQueryResponse, `peers_by_org.${orgName}.peers`);
         return _.map(peers, p => this.createPeerFromUrl(p.endpoint));
     }
 
@@ -123,7 +121,7 @@ class FabricStarterClient {
                 logger.error(res);
                 return res;
             }
-            return await this.joinChannel(channelId);
+            return await this.joinChannel(channelId, orderer);
         } finally {
             this.chmodCryptoFolder();
         }
@@ -131,10 +129,8 @@ class FabricStarterClient {
 
     async joinChannel(channelId) {
         const tx2_id = this.client.newTransactionID(true);
-
         let peers = await this.queryPeers();
         let channel = await this.constructChannel(channelId, peers);
-
         let genesis_block = await channel.getGenesisBlock({txId: tx2_id});
         let gen_tx_id = this.client.newTransactionID(true);
         let j_request = {
@@ -144,7 +140,6 @@ class FabricStarterClient {
         };
         let result = await channel.joinChannel(j_request);
         logger.debug(`Join channel ${channelId}:`, result);
-        channel.initialize({discover: true, asLocalhost: asLocalhost});
         return result;
     }
 
@@ -269,9 +264,6 @@ class FabricStarterClient {
 
     async instantiateChaincode(channelId, chaincodeId, type, fnc, args, version, targets, waitForTransactionEvent) {
         const channel = await this.getChannel(channelId);
-        const targetsList = this.createTargetsList(channel, targets);
-        const foundPeers = targetsList[0];
-        const badPeers = targetsList[1];
 
         const tx_id = this.client.newTransactionID(true);
         const proposal = {
@@ -280,10 +272,18 @@ class FabricStarterClient {
             fcn: fnc || 'init',
             args: args || [],
             chaincodeVersion: version || '1.0',
-            txId: tx_id,
-            targets: foundPeers
+            txId: tx_id
         };
 
+        let badPeers;
+
+        if(targets) {
+            const targetsList = this.createTargetsList(channel, targets);
+            const foundPeers = targetsList[0];
+            badPeers = targetsList[1];
+
+            proposal.targets = foundPeers;
+        }
         let results = null;
         try {
             results = await channel.sendInstantiateProposal(proposal, invokeTimeout);

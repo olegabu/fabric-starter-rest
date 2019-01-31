@@ -149,6 +149,11 @@ const appRouter = (app) => {
       res.json(fabricStarterClient.addOrgToChannel(req.params.channelId, req.body.orgId));
   }));
 
+    app.post('/channels/:channelId', asyncMiddleware(async (req, res, next) => {
+        let ret = await fabricStarterClient.joinChannel(req.params.channelId);
+        res.json(ret);
+    }));
+
   app.get('/channels/:channelId/blocks/:number', asyncMiddleware(async (req, res, next) => {
     res.json(await fabricStarterClient.queryBlock(req.params.channelId, parseInt(req.params.number)));
   }));
