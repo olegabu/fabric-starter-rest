@@ -7,7 +7,7 @@ const Client = require('fabric-client');
 const unzip = require('unzip');
 const path = require('path');
 const urlParseLax = require('url-parse-lax');
-const chmodPlus  = require('chmod-plus');
+const chmodPlus = require('chmod-plus');
 const fabricCLI = require('./fabric-cli');
 
 //const networkConfigFile = '../crypto-config/network.json'; // or .yaml
@@ -121,7 +121,7 @@ class FabricStarterClient {
                 logger.error(res);
                 return res;
             }
-            return await this.joinChannel(channelId, orderer);
+            return await this.joinChannel(channelId);
         } finally {
             this.chmodCryptoFolder();
         }
@@ -150,12 +150,12 @@ class FabricStarterClient {
 
         try {
             let channelConfigEnvelope = JSON.parse(channelConfigBlock.toString());
-            let origChannelGroupConfig = _.get(channelConfigEnvelope,"data.data[0].payload.data.config");
+            let origChannelGroupConfig = _.get(channelConfigEnvelope, "data.data[0].payload.data.config");
 
             let newOrgConfigResp = await fabricCLI.prepareNewOrgConfig(orgId);
 
             let updatedConfig = _.merge({}, origChannelGroupConfig);
-            if (_.get(updatedConfig,"channel_group.groups")) {
+            if (_.get(updatedConfig, "channel_group.groups")) {
                 _.merge(updatedConfig.channel_group.groups, newOrgConfigResp.outputJson);
             }
 
@@ -171,7 +171,7 @@ class FabricStarterClient {
                 });
                 logger.info(`Update channel result ${channelId}:`, update);
                 this.invalidateChannelsCache(channelId);
-            } catch(e) {
+            } catch (e) {
                 logger.error(e);
             }
         } catch (e) {
@@ -277,7 +277,7 @@ class FabricStarterClient {
 
         let badPeers;
 
-        if(targets) {
+        if (targets) {
             const targetsList = this.createTargetsList(channel, targets);
             const foundPeers = targetsList[0];
             badPeers = targetsList[1];
@@ -327,7 +327,7 @@ class FabricStarterClient {
 
         let badPeers;
 
-        if(targets) {
+        if (targets) {
             const targetsList = this.createTargetsList(channel, targets);
             const foundPeers = targetsList[0];
             badPeers = targetsList[1];
@@ -414,7 +414,7 @@ class FabricStarterClient {
 
         logger.trace('query args', args);
 
-        if(args) {
+        if (args) {
             proposal.args = JSON.parse(args);
         }
         else {
@@ -423,7 +423,7 @@ class FabricStarterClient {
 
         logger.trace('query targets', targets);
 
-        if(targets) {
+        if (targets) {
             const targetsList = this.createTargetsList(channel, JSON.parse(targets));
             const foundPeers = targetsList[0];
             const badPeers = targetsList[1];
