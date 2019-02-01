@@ -28,6 +28,18 @@ class RestSocketServer {
         });
         logger.debug(`registered for block event on ${channel}`);
     }
+
+    async retryJoin(nTimes, fn) {
+        if (nTimes <= 0){
+            logger.error(`Invocation unsuccessful for 10 retries.`);
+        }
+        try {
+            return await fn();
+        } catch (err) {
+            logger.trace(`Error: `, err, `\nRe-trying invocation: ${nTimes}.`);
+            setTimeout(() => {this.retryJoin(--nTimes, fn)}, 3000);
+        }
+    }
 }
 
 module.exports = RestSocketServer;

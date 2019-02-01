@@ -1,6 +1,7 @@
 const express = require("express");
 const bodyParser = require("body-parser");
 const app = express();
+const cfg = require('./config.js');
 const logger = require('log4js').getLogger('app');
 const jsonwebtoken = require('jsonwebtoken');
 const jwt = require('express-jwt');
@@ -151,9 +152,9 @@ const appRouter = (app) => {
 
   app.post('/channels/:channelId', asyncMiddleware(async (req, res, next) => {
     let ret = await fabricStarterClient.joinChannel(req.params.channelId);
-    setTimeout(async function () {
-        await socket.updateServer(req.params.channelId);
-    }, 10000);
+      socket.retryJoin(cfg.JOIN_RETRY_COUNT, async function() {
+          await socket.updateServer(req.params.channelId);
+      });
     res.json(ret);
   }));
 
