@@ -149,7 +149,6 @@ class FabricStarterClient {
                 logger.error(res);
                 return res;
             }
-            return await this.joinChannel(channelId);
         } finally {
             this.chmodCryptoFolder();
         }

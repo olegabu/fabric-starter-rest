@@ -123,12 +123,23 @@ const appRouter = (app) => {
   }));
 
   app.post('/channels', asyncMiddleware(async (req, res, next) => {
-    let ret = await fabricStarterClient.createChannel(req.body.channelId);
-    if(ret.status === 'BAD_REQUEST')
-        res.json(ret);
-    await socket.updateServer(req.body.channelId);
-    res.json(ret);
+      await fabricStarterClient.createChannel(req.body.channelId);
+      res.json(await joinChannel(req.body.channelId));
   }));
+
+    async function joinChannel(channelId) {
+        try {
+            const ret = await fabricStarterClient.joinChannel(channelId);
+            socket.retryJoin(cfg.JOIN_RETRY_COUNT, async function () {
+                await socket.updateServer(channelId);
+            });
+            return ret;
+        } catch (error) {
+            logger.error(error.message);
+            return error.message;
+        }
+    }
+
 
   app.get('/channels/:channelId', asyncMiddleware(async (req, res, next) => {
     res.json(await fabricStarterClient.queryInfo(req.params.channelId));
@@ -151,11 +162,7 @@ const appRouter = (app) => {
   }));
 
   app.post('/channels/:channelId', asyncMiddleware(async (req, res, next) => {
-    let ret = await fabricStarterClient.joinChannel(req.params.channelId);
-      socket.retryJoin(cfg.JOIN_RETRY_COUNT, async function() {
-          await socket.updateServer(req.params.channelId);
-      });
-    res.json(ret);
+      res.json(await joinChannel(req.params.channelId));
   }));
 
   app.get('/channels/:channelId/blocks/:number', asyncMiddleware(async (req, res, next) => {
