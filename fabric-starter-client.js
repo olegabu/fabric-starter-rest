@@ -23,38 +23,10 @@ class FabricStarterClient {
         this.networkConfig = networkConfig || require('./network')();
         logger.info('constructing with network config', JSON.stringify(this.networkConfig));
         this.client = Client.loadFromConfig(this.networkConfig); // or networkConfigFile
-        this.setConnectionOptions();
         this.peer = this.client.getPeersForOrg()[0];
         this.org = this.networkConfig.client.organization;
         this.affiliation = this.org;
         this.channelsInitializationMap = new Map();
-    }
-
-    setConnectionOptions() {
-        const defaultConnectionOptions = this.client.getConfigSetting('connection-options');
-
-        logger.debug('defaultConnectionOptions', defaultConnectionOptions);
-
-        const newConnectionOptions = {
-            'grpc.http2.max_pings_without_data': 0,
-            'grpc.max_pings_without_data': 0,
-            'grpc.http2.keepalive_time': 5,
-            'grpc.keepalive_time_ms': 5000,
-            'grpc.http2.keepalive_timeout': 20,
-            'grpc.keepalive_timeout_ms': 20000,
-            'grpc.http2.min_time_between_pings_ms': 5000,
-            'grpc.min_time_between_pings_ms': 5000,
-            'grpc.http2.keepalive_permit_without_calls': 1,
-            'grpc.keepalive_permit_without_calls': 1
-        };
-
-        // use the assign call to keep all other options and only update
-        // the one setting or add a setting.
-        const updatedDefaultConnectionOptions = Object.assign(defaultConnectionOptions, newConnectionOptions);
-
-        logger.debug('updatedDefaultConnectionOptions', updatedDefaultConnectionOptions);
-
-        this.client.setConfigSetting('connection-options', updatedDefaultConnectionOptions);
     }
 
     async init() {
@@ -222,6 +194,7 @@ class FabricStarterClient {
         } catch (e) {
             logger.warn(`Error adding peer ${optionalPeer} to channel ${channelId}`);
         }
+
         return channel;
     }
 
@@ -345,7 +318,7 @@ class FabricStarterClient {
     }
 
     async invoke(channelId, chaincodeId, fcn, args, targets, waitForTransactionEvent) {
-        const channel = await this.getChannel(channelId);
+        const channel = this.client.getChannel(channelId, false);//await this.getChannel(channelId);
         let fsClient = this;
 
         const proposal = {
@@ -376,6 +349,7 @@ class FabricStarterClient {
                 // logger.trace('proposalResponse', proposalResponse);
 
                 const transactionRequest = {
+                    // tx_id: tx_id,
                     proposalResponses: proposalResponse[0],
                     proposal: proposalResponse[1],
                 };

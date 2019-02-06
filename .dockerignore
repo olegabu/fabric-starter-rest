@@ -3,3 +3,5 @@ test
 .storage
 hfc-cvs
 hfc-kvs
+.idea
+.git

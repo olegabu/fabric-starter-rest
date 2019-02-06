@@ -75,6 +75,11 @@ function addCA(t, org, caAddress) {
   };
 }
 
+function envOptionToSetting(envVarName, optionName, normalizeFactor) {
+  const optionValue = Math.round(Number(process.env[envVarName]) / (normalizeFactor ? normalizeFactor : 1));
+  return process.env[envVarName] && {[optionName]: optionValue};
+}
+
 module.exports = function () {
   t.client = {
     organization: cfg.org,
@@ -82,6 +87,24 @@ module.exports = function () {
       path: `hfc-kvs/${cfg.org}`,
       cryptoStore: {
         path: `hfc-cvs/${cfg.org}`
+      }
+    },
+    connection: {
+      options: {
+        // @formatter:off
+        ...envOptionToSetting('GRPC_MAX_RECEIVE_MESSAGE_LENGTH', 'grpc.max_receive_message_length'),  //-1
+        ...envOptionToSetting('GRPC_MAX_SEND_MESSAGE_LENGTH','grpc.max_send_message_length'),         //-1
+        ...{'grpc.max_pings_without_data': 0, 'grpc.http2.max_pings_without_data': 0}, //until defaults are updated in fabric-sdk
+        ...envOptionToSetting('GRPC_MAX_PINGS_WITHOUT_DATA','grpc.max_pings_without_data'),                 ...envOptionToSetting('GRPC_MAX_PINGS_WITHOUT_DATA','grpc.http2.max_pings_without_data'),  //0
+        ...envOptionToSetting('GRPC_KEEP_ALIVE_MS','grpc.keepalive_time_ms'),                               ...envOptionToSetting('GRPC_KEEP_ALIVE_MS','grpc.http2.keepalive_time', 1000),                   //120000
+        ...envOptionToSetting('GRPC_KEEP_ALIVE_TIMEOUT_MS','grpc.keepalive_timeout_ms'),                    ...envOptionToSetting('GRPC_KEEP_ALIVE_TIMEOUT_MS','grpc.http2.keepalive_timeout', 1000),        //120000
+        ...envOptionToSetting('GRPC_KEEP_ALIVE_PERMIT_WITHOUT_CALLS','grpc.keepalive_permit_without_calls'), ...envOptionToSetting('GRPC_KEEP_ALIVE_PERMIT_WITHOUT_CALLS','grpc.http2.keepalive_permit_without_calls'), //1
+
+        //set default for 'min_time_between_pings_ms' then set it to the keep alive time, and override if it's set itself (until defaults are updated in fabric-sdk):
+        ...{'grpc.min_time_between_pings_ms':60000, 'grpc.http2.min_time_between_pings_ms': 60000},
+        ...envOptionToSetting('GRPC_KEEP_ALIVE_MS','grpc.min_time_between_pings_ms', 1.1),              ...envOptionToSetting('GRPC_KEEP_ALIVE_MS','grpc.http2.min_time_between_pings_ms', 1.1),
+        ...envOptionToSetting('GRPC_MIN_TIME_BETWEEN_PINGS_MS','grpc.min_time_between_pings_ms'),  ...envOptionToSetting('GRPC_MIN_TIME_BETWEEN_PINGS_MS','grpc.http2.min_time_between_pings_ms')
+        // @formatter:on
       }
     }
   };

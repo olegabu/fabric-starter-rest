@@ -15,8 +15,8 @@ const enrollId = process.env.ENROLL_ID || 'admin';
 const enrollSecret = process.env.ENROLL_SECRET || 'adminpw';
 
 // default to peer0.org1.example.com:7051 inside docker-compose or export ORGS='{"org1":"peer0.org1.example.com:7051","org2":"peer0.org2.example.com:7051"}'
-let orgs = process.env.ORGS || '"org1":"peer0.org1.example.com:7051"';
-let cas = process.env.CAS || '"org1":"peer0.org1.example.com:7054"';
+let orgs = process.env.ORGS || `"${myorg}":"peer0.${myorg}.${DOMAIN}:7051"`;
+let cas = process.env.CAS || `"${myorg}":"ca.${myorg}.${DOMAIN}:7054"`;
 
 const ORDERER_CRYPTO_DIR = `${cryptoConfigPath}/ordererOrganizations/${DOMAIN}`;
 const PEER_CRYPTO_DIR = `${cryptoConfigPath}/peerOrganizations/${myorg}.${DOMAIN}`;
@@ -53,7 +53,7 @@ module.exports = {
 
     isOrderer: ordererName == myorg,
 
-    INVOKE_RETRY_COUNT: process.env.INVOKE_RETRY_COUNT || 10,
+    INVOKE_RETRY_COUNT: process.env.INVOKE_RETRY_COUNT || 3,
     JOIN_RETRY_COUNT: process.env.JOIN_RETRY_COUNT || 10
 
 };
