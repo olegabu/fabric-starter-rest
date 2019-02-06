@@ -1,12 +1,12 @@
 const express = require("express");
 const bodyParser = require("body-parser");
 const app = express();
+const cfg = require('./config.js');
 const logger = require('log4js').getLogger('app');
 const jsonwebtoken = require('jsonwebtoken');
 const jwt = require('express-jwt');
 const cors = require('cors');
 const path = require('path');
-const SocketServer = require('socket.io');
 const multer = require('multer');
 const os = require('os');
 const storage = os.tmpdir() || './upload';
@@ -14,6 +14,7 @@ const upload = multer({ dest: storage});
 let cpUpload = upload.fields([{ name: 'file', maxCount: 1 }, { name: 'channelId', maxCount: 1 },{ name: 'targets'},{ name: 'version', maxCount: 1 },{ name: 'language', maxCount: 1 }]);
 const FabricStarterClient = require('./fabric-starter-client');
 let fabricStarterClient = new FabricStarterClient();
+const Socket = require('./rest-socket-server');
 
 // parse json payload and urlencoded params in GET
 app.use(bodyParser.json({ limit: '100MB', type:'application/json'}));
@@ -122,8 +123,23 @@ const appRouter = (app) => {
   }));
 
   app.post('/channels', asyncMiddleware(async (req, res, next) => {
-    res.json(await fabricStarterClient.createChannel(req.body.channelId));
+      await fabricStarterClient.createChannel(req.body.channelId);
+      res.json(await joinChannel(req.body.channelId));
   }));
+
+    async function joinChannel(channelId) {
+        try {
+            const ret = await fabricStarterClient.joinChannel(channelId);
+            socket.retryJoin(cfg.JOIN_RETRY_COUNT, async function () {
+                await socket.updateServer(channelId);
+            });
+            return ret;
+        } catch (error) {
+            logger.error(error.message);
+            return error.message;
+        }
+    }
+
 
   app.get('/channels/:channelId', asyncMiddleware(async (req, res, next) => {
     res.json(await fabricStarterClient.queryInfo(req.params.channelId));
@@ -143,6 +159,10 @@ const appRouter = (app) => {
 
   app.post('/channels/:channelId/orgs', asyncMiddleware(async (req, res, next) => {
       res.json(fabricStarterClient.addOrgToChannel(req.params.channelId, req.body.orgId));
+  }));
+
+  app.post('/channels/:channelId', asyncMiddleware(async (req, res, next) => {
+      res.json(await joinChannel(req.params.channelId));
   }));
 
   app.get('/channels/:channelId/blocks/:number', asyncMiddleware(async (req, res, next) => {
@@ -188,25 +208,11 @@ const appRouter = (app) => {
 appRouter(app);
 
 const server = app.listen(process.env.PORT || 3000, function () {
-  logger.info('started fabric-starter rest server on port', server.address().port);
+    logger.info('started fabric-starter rest server on port', server.address().port);
 });
 
-async function startSocketServer() {
-  const io = new SocketServer(server, {origins: '*:*'});
+const socket = new Socket(fabricStarterClient);
 
-  const channels = await fabricStarterClient.queryChannels();
-
-  channels.map(c => {return c.channel_id;}).forEach(async channelId => {
-    await fabricStarterClient.registerBlockEvent(channelId, block => {
-      logger.debug(`block ${block.number} on ${block.channel_id}`);
-      io.emit('chainblock', block);
-    }, e => {
-      logger.error('registerBlockEvent', e);
-    });
-    logger.debug(`registered for block event on ${channelId}`);
-  });
-}
-
-startSocketServer().then(() => {
-  logger.info('started socket server');
+socket.startSocketServer(server).then(() => {
+    logger.info('started socket server');
 });

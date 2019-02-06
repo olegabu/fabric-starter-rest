@@ -53,6 +53,7 @@ module.exports = {
 
     isOrderer: ordererName == myorg,
 
-    INVOKE_RETRY_COUNT: process.env.INVOKE_RETRY_COUNT || 10
+    INVOKE_RETRY_COUNT: process.env.INVOKE_RETRY_COUNT || 10,
+    JOIN_RETRY_COUNT: process.env.JOIN_RETRY_COUNT || 10
 
 };

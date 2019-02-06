@@ -31,7 +31,8 @@
     "shelljs": "^0.8.2",
     "socket.io": "^2.1.1",
     "unzip": "^0.1.11",
-    "url-parse-lax": "^3.0.0"
+    "url-parse-lax": "^3.0.0",
+    "x509": "^0.3.4"
   },
   "devDependencies": {
     "fs-extra": "^7.0.0",
@@ -40,7 +41,9 @@
   },
   "nodemonConfig": {
     "ignore": [
-      "./upload"
+      "./upload",
+      "./crypto-config",
+      "msp"
     ]
   }
 }
