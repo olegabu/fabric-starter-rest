@@ -27,6 +27,7 @@ class FabricStarterClient {
         this.org = this.networkConfig.client.organization;
         this.affiliation = this.org;
         this.channelsInitializationMap = new Map();
+        this.registerQueue = new Map();
     }
 
     async init() {
@@ -53,12 +54,20 @@ class FabricStarterClient {
     }
 
     async loginOrRegister(username, password, affiliation) {
-        try {
-            await this.login(username, password);
-        } catch (e) {
-            await this.register(username, password, affiliation);
-            await this.login(username, password);
+        if (this.registerQueue[username]) {
+            return this.registerQueue[username];
         }
+        this.registerQueue[username] = new Promise((resolve, reject) => {
+            return this.login(username, password).then(resolve)
+                .catch((err) => {
+                    return this.register(username, password, affiliation)
+                })
+                    .then(() => this.login(username, password)).then(()=>this.registerQueue[username]=null).then(resolve)
+                .catch(err=>{
+                    reject()
+                });
+        });
+        return this.registerQueue[username];
     }
 
     getSecret() {
@@ -209,7 +218,7 @@ class FabricStarterClient {
                 try {
                     logger.debug(`Initialise channel: ${channelId}`);
                     const channel = this.client.getChannel(channelId, false) || await this.constructChannel(channelId);
-                    await channel.initialize({discover: true, asLocalhost: asLocalhost});
+                    await channel.initialize({discover: true, asLocalhost: asLocalhost, target: this.peer}); //TODO: is target needed
                     await channel.queryInfo(this.peer, true);
                     resolve(channel);
                 } catch (e) {
@@ -318,7 +327,7 @@ class FabricStarterClient {
     }
 
     async invoke(channelId, chaincodeId, fcn, args, targets, waitForTransactionEvent) {
-        const channel = this.client.getChannel(channelId, false);//await this.getChannel(channelId);
+        const channel = await this.getChannel(channelId, false);//await this.getChannel(channelId);
         let fsClient = this;
 
         const proposal = {
@@ -425,7 +434,7 @@ class FabricStarterClient {
         logger.trace('query targets', targets);
 
         if (targets) {
-            const targetsList = this.createTargetsList(channel, JSON.parse(targets));
+            const targetsList = this.createTargetsList(channel, targets);
             const foundPeers = targetsList[0];
             const badPeers = targetsList[1];
             logger.trace('badPeers', badPeers);
@@ -448,7 +457,7 @@ class FabricStarterClient {
     createTargetsList(channel, targets) {
         let peers = [];
         let badPeers = [];
-        _.each(targets, function (value) {
+        _.each(_.compact(_.concat([], targets.targets, targets.peers)), function (value) {
             let peer = _.find(channel.getChannelPeers(), p => p._name === value);
             if (_.isNil(peer)) {
                 logger.error(`Peer ${value} not found`);
@@ -457,6 +466,7 @@ class FabricStarterClient {
                 peers.push(peer);
             }
         });
+
         if (_.isEmpty(peers)) {
             logger.trace("Using default peer");
             peers.push(this.peer);
