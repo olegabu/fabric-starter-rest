@@ -46,3 +46,14 @@ GRPC_KEEP_ALIVE_MS | 120000 (120 seconds)| Ping interval in milliseconds
 GRPC_KEEP_ALIVE_TIMEOUT_MS|20000 (20 seconds) |Timeout period for the ping request itself
 GRPC_KEEP_ALIVE_PERMIT_WITHOUT_CALLS|1|Allows pings with no payload
 GRPC_MIN_TIME_BETWEEN_PINGS_MS| 300000 (5 minutes)|_Fabric-starter-rest_ resets this to 60 seconds to avoid disconnect of Azure Load Balancer (if GRPC_KEEP_ALIVE_TIMEOUT_MS is specified then the interval is set to GRPC_KEEP_ALIVE_TIMEOUT_MS/1.1)
+
+
+
+# Versioning
+
+`snapshot-0.2-1.4`:
+- Support multiple users login
+- Fix parallel simultaneous logons of same user 
+
+`snapshot-0.1-1.4`:  
+- Tag stable version
