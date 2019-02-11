@@ -336,7 +336,7 @@ class FabricStarterClient {
 
         let badPeers;
 
-        if (targets) {
+        if (targets.targets || targets.peers) {
             const targetsList = this.createTargetsList(channel, targets);
             const foundPeers = targetsList[0];
             badPeers = targetsList[1];
@@ -433,7 +433,7 @@ class FabricStarterClient {
 
         logger.trace('query targets', targets);
 
-        if (targets) {
+        if (targets.targets || targets.peers) {
             const targetsList = this.createTargetsList(channel, targets);
             const foundPeers = targetsList[0];
             const badPeers = targetsList[1];

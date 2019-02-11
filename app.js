@@ -221,13 +221,15 @@ function extractTargets(req, prop) {
     if (targets) result.targets = targets;
 
     if (!targets) {
-        let peers = _.concat([], _.get(req, `${prop}.peer`) || _.get(req, `${prop}.peers`));
-        result.peers = _.map(peers, p => {
-            let parts = _.split(p, "/"); //format: org/peer0
-            let peerOrg = parts[0];
-            let peerName = parts[1];
-            return `${peerName}.${peerOrg}.${cfg.domain}:7051`;
-        })
+        let peers = _.concat([], _.get(req, `${prop}.peer`) || _.get(req, `${prop}.peers`) || []);
+        if (!_.isEmpty(peers)) {
+            result.peers = _.map(peers, p => {
+                let parts = _.split(p, "/"); //format: org/peer0
+                let peerOrg = parts[0];
+                let peerName = parts[1];
+                return `${peerName}.${peerOrg}.${cfg.domain}:7051`;
+            })
+        }
     }
 
     return result;
