@@ -13,10 +13,9 @@ const fabricCLI = require('./fabric-cli');
 //const networkConfigFile = '../crypto-config/network.json'; // or .yaml
 //const networkConfig = require('../crypto-config/network.json');
 
-const invokeTimeout = process.env.INVOKE_TIMEOUT || 60000;
 const asLocalhost = (process.env.DISCOVER_AS_LOCALHOST === 'true');
 
-logger.debug(`invokeTimeout=${invokeTimeout} asLocalhost=${asLocalhost}`);
+logger.debug(`invokeTimeout=${cfg.INVOKE_TIMEOUT} asLocalhost=${asLocalhost}`);
 
 class FabricStarterClient {
     constructor(networkConfig) {
@@ -293,13 +292,9 @@ class FabricStarterClient {
 
             proposal.targets = foundPeers;
         }
-        let results = null;
-        try {
-            results = await channel.sendInstantiateProposal(proposal, invokeTimeout);
-            logger.info('Sent instantiate proposal');
-        } catch (error) {
-            logger.error('In catch - sendInstantiateProposal', error.message);
-        }
+        logger.info('Sent instantiate proposal');
+        const results = await channel.sendInstantiateProposal(proposal, cfg.INVOKE_TIMEOUT);
+        this.errorCheck(results);
         const transactionRequest = {
             txId: tx_id,
             proposalResponses: results[0],
@@ -346,16 +341,20 @@ class FabricStarterClient {
 
         return new Promise((resolve, reject) => {
 
-            fsClient.retryInvoke(cfg.INVOKE_RETRY_COUNT, resolve, reject, async function () {
+            return fsClient.retryInvoke(cfg.INVOKE_RETRY_COUNT, resolve, reject, async function () {
                 const txId = fsClient.client.newTransactionID(/*true*/);
 
                 proposal.txId = txId;
 
                 logger.trace('invoke proposal', proposal);
+                let proposalResponse;
+                try {
+                    proposalResponse = await channel.sendTransactionProposal(proposal);
+                    fsClient.errorCheck(proposalResponse);
 
-                const proposalResponse = await channel.sendTransactionProposal(proposal);
-
-                // logger.trace('proposalResponse', proposalResponse);
+                }catch (e) {
+                    return reject(e);
+                }
 
                 const transactionRequest = {
                     // tx_id: tx_id,
@@ -375,8 +374,16 @@ class FabricStarterClient {
         })
     }
 
+    errorCheck(results){
+        // logger.trace('proposalResponse', proposalResponse);
+        let errorCheck = _.get(results, [0][0]).toString();
+        if (_.startsWith(errorCheck, 'Error')) {
+            throw new Error(errorCheck);
+        }
+    }
+
     async waitForTransactionEvent(tx_id, channel) {
-        const timeout = invokeTimeout;
+        const timeout = cfg.INVOKE_TIMEOUT;
         const id = tx_id.getTransactionID();
         let timeoutHandle;
 
