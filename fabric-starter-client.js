@@ -13,10 +13,9 @@ const fabricCLI = require('./fabric-cli');
 //const networkConfigFile = '../crypto-config/network.json'; // or .yaml
 //const networkConfig = require('../crypto-config/network.json');
 
-const invokeTimeout = process.env.INVOKE_TIMEOUT || 60000;
 const asLocalhost = (process.env.DISCOVER_AS_LOCALHOST === 'true');
 
-logger.debug(`invokeTimeout=${invokeTimeout} asLocalhost=${asLocalhost}`);
+logger.debug(`invokeTimeout=${cfg.INVOKE_TIMEOUT} asLocalhost=${asLocalhost}`);
 
 class FabricStarterClient {
     constructor(networkConfig) {
@@ -294,11 +293,8 @@ class FabricStarterClient {
             proposal.targets = foundPeers;
         }
         logger.info('Sent instantiate proposal');
-        const results = await channel.sendInstantiateProposal(proposal, invokeTimeout);
-        if (_.startsWith(results[0][0].toString(), 'Error')) {
-            logger.error(results[0][0].toString());
-            throw new Error(results[0][0].toString());
-        }
+        const results = await channel.sendInstantiateProposal(proposal, cfg.INVOKE_TIMEOUT);
+        this.errorCheck(results);
         const transactionRequest = {
             txId: tx_id,
             proposalResponses: results[0],
@@ -353,8 +349,7 @@ class FabricStarterClient {
                 logger.trace('invoke proposal', proposal);
 
                 const proposalResponse = await channel.sendTransactionProposal(proposal);
-
-                // logger.trace('proposalResponse', proposalResponse);
+                fsClient.errorCheck(proposalResponse);
 
                 const transactionRequest = {
                     // tx_id: tx_id,
@@ -374,8 +369,16 @@ class FabricStarterClient {
         })
     }
 
+    errorCheck(results){
+        // logger.trace('proposalResponse', proposalResponse);
+        let errorCheck = _.get(results, [0][0]).toString();
+        if (_.startsWith(errorCheck, 'Error')) {
+            throw new Error(errorCheck);
+        }
+    }
+
     async waitForTransactionEvent(tx_id, channel) {
-        const timeout = invokeTimeout;
+        const timeout = cfg.INVOKE_TIMEOUT;
         const id = tx_id.getTransactionID();
         let timeoutHandle;
 

@@ -93,7 +93,7 @@ const appRouter = (app) => {
   });
 
   app.get('/mspid', (req, res) => {
-    res.json(req.fabricStarterClient.getMspid());
+    res.json(fabricStarterClient.getMspid());
   });
 
   //TODO use for development only as it may expose sensitive data
