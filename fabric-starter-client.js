@@ -341,15 +341,20 @@ class FabricStarterClient {
 
         return new Promise((resolve, reject) => {
 
-            fsClient.retryInvoke(cfg.INVOKE_RETRY_COUNT, resolve, reject, async function () {
+            return fsClient.retryInvoke(cfg.INVOKE_RETRY_COUNT, resolve, reject, async function () {
                 const txId = fsClient.client.newTransactionID(/*true*/);
 
                 proposal.txId = txId;
 
                 logger.trace('invoke proposal', proposal);
+                let proposalResponse;
+                try {
+                    proposalResponse = await channel.sendTransactionProposal(proposal);
+                    fsClient.errorCheck(proposalResponse);
 
-                const proposalResponse = await channel.sendTransactionProposal(proposal);
-                fsClient.errorCheck(proposalResponse);
+                }catch (e) {
+                    return reject(e);
+                }
 
                 const transactionRequest = {
                     // tx_id: tx_id,

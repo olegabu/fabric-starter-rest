@@ -127,19 +127,19 @@ const appRouter = (app) => {
 
   app.post('/channels', asyncMiddleware(async (req, res, next) => {
       await req.fabricStarterClient.createChannel(req.body.channelId);
-      res.json(await joinChannel(req.body.channelId, req));
+      res.json(await joinChannel(req.body.channelId, req.fabricStarterClient));
   }));
 
-    async function joinChannel(channelId, req) {
+    async function joinChannel(channelId, fabricStarterClient) {
         try {
-            const ret = await req.fabricStarterClient.joinChannel(channelId);
+            const ret = await fabricStarterClient.joinChannel(channelId);
             socket.retryJoin(cfg.JOIN_RETRY_COUNT, async function () {
                 await socket.updateServer(channelId);
             });
             return ret;
         } catch (error) {
             logger.error(error.message);
-            return error.message;
+            throw new Error(error.message);
         }
     }
 
@@ -165,7 +165,7 @@ const appRouter = (app) => {
   }));
 
   app.post('/channels/:channelId', asyncMiddleware(async (req, res, next) => {
-      res.json(await joinChannel(req.params.channelId));
+      res.json(await joinChannel(req.params.channelId, req.fabricStarterClient));
   }));
 
   app.get('/channels/:channelId/blocks/:number', asyncMiddleware(async (req, res, next) => {
@@ -197,8 +197,9 @@ const appRouter = (app) => {
   }));
 
   app.post('/channels/:channelId/chaincodes/:chaincodeId', asyncMiddleware(async (req, res, next) => {
-    res.json(await req.fabricStarterClient.invoke(req.params.channelId, req.params.chaincodeId,
-      req.body.fcn, req.body.args, extractTargets(req, "body"), req.body.waitForTransactionEvent));
+      let result = await req.fabricStarterClient.invoke(req.params.channelId, req.params.chaincodeId,
+          req.body.fcn, req.body.args, extractTargets(req, "body"), req.body.waitForTransactionEvent);
+      res.json(result);
   }));
 
   app.get('/consortium/members', asyncMiddleware(async (req, res, next) => {
