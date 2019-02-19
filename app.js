@@ -198,7 +198,7 @@ const appRouter = (app) => {
 
   app.post('/channels/:channelId/chaincodes/:chaincodeId', asyncMiddleware(async (req, res, next) => {
     res.json(await req.fabricStarterClient.invoke(req.params.channelId, req.params.chaincodeId,
-      req.body.fcn, req.body.args, extractTargets(req, "body"), req.query.waitForTransactionEvent));
+      req.body.fcn, req.body.args, extractTargets(req, "body"), req.body.waitForTransactionEvent));
   }));
 
   app.get('/consortium/members', asyncMiddleware(async (req, res, next) => {
