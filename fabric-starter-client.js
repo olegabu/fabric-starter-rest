@@ -293,12 +293,11 @@ class FabricStarterClient {
 
             proposal.targets = foundPeers;
         }
-        let results = null;
-        try {
-            results = await channel.sendInstantiateProposal(proposal, invokeTimeout);
-            logger.info('Sent instantiate proposal');
-        } catch (error) {
-            logger.error('In catch - sendInstantiateProposal', error.message);
+        logger.info('Sent instantiate proposal');
+        const results = await channel.sendInstantiateProposal(proposal, invokeTimeout);
+        if (_.startsWith(results[0][0].toString(), 'Error')) {
+            logger.error(results[0][0].toString());
+            throw new Error(results[0][0].toString());
         }
         const transactionRequest = {
             txId: tx_id,

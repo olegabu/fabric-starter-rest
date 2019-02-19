@@ -127,10 +127,10 @@ const appRouter = (app) => {
 
   app.post('/channels', asyncMiddleware(async (req, res, next) => {
       await req.fabricStarterClient.createChannel(req.body.channelId);
-      res.json(await joinChannel(req.body.channelId));
+      res.json(await joinChannel(req.body.channelId, req));
   }));
 
-    async function joinChannel(channelId) {
+    async function joinChannel(channelId, req) {
         try {
             const ret = await req.fabricStarterClient.joinChannel(channelId);
             socket.retryJoin(cfg.JOIN_RETRY_COUNT, async function () {
@@ -182,7 +182,7 @@ const appRouter = (app) => {
 
   app.post('/channels/:channelId/chaincodes', asyncMiddleware(async (req, res, next) => {
     res.json(await req.fabricStarterClient.instantiateChaincode(req.params.channelId, req.body.chaincodeId,
-        req.body.type, req.body.fcn, req.body.args,  req.body.version,  req.body.targets));
+        req.body.chaincodeType, req.body.fcn, req.body.args,  req.body.chaincodeVersion,  req.body.targets));
   }));
 
   app.get('/channels/:channelId/chaincodes/:chaincodeId', asyncMiddleware(async (req, res, next) => {
