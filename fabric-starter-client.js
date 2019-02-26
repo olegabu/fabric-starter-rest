@@ -63,7 +63,7 @@ class FabricStarterClient {
                 })
                     .then(() => this.login(username, password)).then(()=>this.registerQueue[username]=null).then(resolve)
                 .catch(err=>{
-                    reject()
+                    reject(err);
                 });
         });
         return this.registerQueue[username];
