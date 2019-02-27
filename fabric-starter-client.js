@@ -440,7 +440,7 @@ class FabricStarterClient {
 
         logger.trace('query targets', targets);
 
-        if (targets.targets || targets.peers) {
+        if (targets && (targets.targets || targets.peers)) {
             const targetsList = this.createTargetsList(channel, targets);
             const foundPeers = targetsList[0];
             const badPeers = targetsList[1];
