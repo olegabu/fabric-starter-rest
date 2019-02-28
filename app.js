@@ -12,14 +12,17 @@ const _ = require('lodash');
 const cfg = require('./config.js');
 
 const storage = os.tmpdir() || './upload';
-const upload = multer({ dest: storage});
-let cpUpload = upload.fields([{ name: 'file', maxCount: 1 }, { name: 'channelId', maxCount: 1 },{ name: 'targets'},{ name: 'version', maxCount: 1 },{ name: 'language', maxCount: 1 }]);
+const upload = multer({dest: storage});
+let cpUpload = upload.fields([{name: 'file', maxCount: 1}, {
+    name: 'channelId',
+    maxCount: 1
+}, {name: 'targets'}, {name: 'version', maxCount: 1}, {name: 'language', maxCount: 1}]);
 const FabricStarterClient = require('./fabric-starter-client');
 let fabricStarterClient = new FabricStarterClient();
 const Socket = require('./rest-socket-server');
 
 // parse json payload and urlencoded params in GET
-app.use(bodyParser.json({ limit: '100MB', type:'application/json'}));
+app.use(bodyParser.json({limit: '100MB', type: 'application/json'}));
 app.use(bodyParser.urlencoded({extended: true, limit: '100MB'}));
 
 // allow CORS from all urls
@@ -44,15 +47,15 @@ app.use(favicon(path.join(webappDir, 'favicon.ico')));
 
 // catch promise rejections and return 500 errors
 const asyncMiddleware = fn =>
-  (req, res, next) => {
-    // logger.debug('asyncMiddleware');
-    Promise.resolve(fn(req, res, next))
-      .catch(e => {
-        logger.error('asyncMiddleware', e);
-        res.status(500).json(e && e.message);
-        next();
-      });
-  };
+    (req, res, next) => {
+        // logger.debug('asyncMiddleware');
+        Promise.resolve(fn(req, res, next))
+            .catch(e => {
+                logger.error('asyncMiddleware', e);
+                res.status((e && e.status) || 500).json(e && e.message);
+                next();
+            });
+    };
 
 // require presence of JWT in Authorization Bearer header
 const jwtSecret = fabricStarterClient.getSecret();
@@ -62,77 +65,77 @@ app.use(jwt({secret: jwtSecret}).unless({path: ['/', '/users', '/mspid', '/confi
 const mapFabricStarterClient = {};
 
 app.use(async (req, res, next) => {
-  if (req.user) {
-    const login = req.user.sub;
+    if (req.user) {
+        const login = req.user.sub;
 
-    let client = mapFabricStarterClient[login];
-    if(client) {
-      logger.debug('cached client for', login);
-      req.fabricStarterClient = client;
-    } else {
-      logger.debug('new client for', login); //TODO: should not be reachable
-      req.fabricStarterClient=new FabricStarterClient();
-      await req.fabricStarterClient.init();
-      try {
-        await req.fabricStarterClient.loginOrRegister(login);
-      } catch(e) {
-        logger.error('loginOrRegister', e);
-        res.status(500).json(e && e.message);
-      }
+        let client = mapFabricStarterClient[login];
+        if (client) {
+            logger.debug('cached client for', login);
+            req.fabricStarterClient = client;
+        } else {
+            logger.debug('new client for', login); //TODO: should not be reachable
+            req.fabricStarterClient = new FabricStarterClient();
+            await req.fabricStarterClient.init();
+            try {
+                await req.fabricStarterClient.loginOrRegister(login);
+            } catch (e) {
+                logger.error('loginOrRegister', e);
+                res.status(500).json(e && e.message);
+            }
 
-      mapFabricStarterClient[login] = req.fabricStarterClient;
+            mapFabricStarterClient[login] = req.fabricStarterClient;
+        }
     }
-  }
-  next();
+    next();
 });
 
 const appRouter = (app) => {
 
-  app.get('/', (req, res) => {
-    res.status(200).send('Welcome to fabric-starter REST server');
-  });
+    app.get('/', (req, res) => {
+        res.status(200).send('Welcome to fabric-starter REST server');
+    });
 
-  app.post('/cert', (req, res) => {
-    res.json(fabricStarterClient.decodeCert(req.body.cert));
-  });
+    app.post('/cert', (req, res) => {
+        res.json(fabricStarterClient.decodeCert(req.body.cert));
+    });
 
-  app.get('/mspid', (req, res) => {
-    res.json(fabricStarterClient.getMspid());
-  });
+    app.get('/mspid', (req, res) => {
+        res.json(fabricStarterClient.getMspid());
+    });
 
-  //TODO use for development only as it may expose sensitive data
-  app.get('/config', (req, res) => {
-    res.json(fabricStarterClient.getNetworkConfig());
-  });
+    //TODO use for development only as it may expose sensitive data
+    app.get('/config', (req, res) => {
+        res.json(fabricStarterClient.getNetworkConfig());
+    });
 
-  app.get('/chaincodes', asyncMiddleware(async (req, res, next) => {
-    res.json(await req.fabricStarterClient.queryInstalledChaincodes());
-  }));
+    app.get('/chaincodes', asyncMiddleware(async (req, res, next) => {
+        res.json(await req.fabricStarterClient.queryInstalledChaincodes());
+    }));
 
-  app.post('/chaincodes', cpUpload, asyncMiddleware(async (req, res, next) => {
-      res.json(await req.fabricStarterClient.installChaincode(req.body.channelId, req.files['file'][0].originalname.substring(0, req.files['file'][0].originalname.length-4),
-        req.files['file'][0].path, req.body.version, req.body.language, req.body.targets.split(','), storage));
-  }));
+    app.post('/chaincodes', cpUpload, asyncMiddleware(async (req, res, next) => {
+        res.json(await req.fabricStarterClient.installChaincode(req.body.channelId, req.files['file'][0].originalname.substring(0, req.files['file'][0].originalname.length - 4),
+            req.files['file'][0].path, req.body.version, req.body.language, req.body.targets.split(','), storage));
+    }));
 
-  app.post('/users', asyncMiddleware(async (req, res, next) => {
-    if (!mapFabricStarterClient[req.body.username]) mapFabricStarterClient[req.body.username]  = new FabricStarterClient();
-    req.fabricStarterClient=mapFabricStarterClient[req.body.username];
-    await req.fabricStarterClient.init();
-    await req.fabricStarterClient.loginOrRegister(req.body.username, req.body.password || req.body.username);
+    app.post('/users', asyncMiddleware(async (req, res, next) => {
+        if (!mapFabricStarterClient[req.body.username]) mapFabricStarterClient[req.body.username] = new FabricStarterClient();
+        req.fabricStarterClient = mapFabricStarterClient[req.body.username];
+        await req.fabricStarterClient.init();
+        await req.fabricStarterClient.loginOrRegister(req.body.username, req.body.password || req.body.username);
 
-    const token = jsonwebtoken.sign({sub: req.fabricStarterClient.user.getName()}, jwtSecret);
-    logger.debug('token', token);
-    res.json(token);
-  }));
+        const token = jsonwebtoken.sign({sub: req.fabricStarterClient.user.getName()}, jwtSecret);
+        logger.debug('token', token);
+        res.json(token);
+    }));
 
-  app.get('/channels', asyncMiddleware(async (req, res, next) => {
-    res.json(await req.fabricStarterClient.queryChannels());
-  }));
+    app.get('/channels', asyncMiddleware(async (req, res, next) => {
+        res.json(await req.fabricStarterClient.queryChannels());
+    }));
 
-  app.post('/channels', asyncMiddleware(async (req, res, next) => {
-      await req.fabricStarterClient.createChannel(req.body.channelId);
-      res.json(await joinChannel(req.body.channelId, req.fabricStarterClient));
-  }));
+    app.post('/channels', asyncMiddleware(async (req, res, next) => {
+        await req.fabricStarterClient.createChannel(req.body.channelId);
+        res.json(await joinChannel(req.body.channelId, req.fabricStarterClient));
+    }));
 
     async function joinChannel(channelId, fabricStarterClient) {
         try {
@@ -148,81 +151,76 @@ const appRouter = (app) => {
     }
 
 
-  app.get('/channels/:channelId', asyncMiddleware(async (req, res, next) => {
-    res.json(await req.fabricStarterClient.queryInfo(req.params.channelId));
-  }));
+    app.get('/channels/:channelId', asyncMiddleware(async (req, res, next) => {
+        res.json(await req.fabricStarterClient.queryInfo(req.params.channelId));
+    }));
 
-  app.get('/channels/:channelId/orgs', asyncMiddleware(async (req, res, next) => {
-    res.json(await req.fabricStarterClient.getOrganizations(req.params.channelId));
-  }));
+    app.get('/channels/:channelId/orgs', asyncMiddleware(async (req, res, next) => {
+        res.json(await req.fabricStarterClient.getOrganizations(req.params.channelId));
+    }));
 
-  app.get('/channels/:channelId/peers', asyncMiddleware(async (req, res, next) => {
-    res.json(await req.fabricStarterClient.getPeersForOrgOnChannel(req.params.channelId));
-  }));
+    app.get('/channels/:channelId/peers', asyncMiddleware(async (req, res, next) => {
+        res.json(await req.fabricStarterClient.getPeersForOrgOnChannel(req.params.channelId));
+    }));
 
-  app.get('/orgs/:org/peers', asyncMiddleware(async (req, res, next) => {
-    res.json(await req.fabricStarterClient.getPeersForOrg(req.params.org));
-  }));
+    app.get('/orgs/:org/peers', asyncMiddleware(async (req, res, next) => {
+        res.json(await req.fabricStarterClient.getPeersForOrg(req.params.org));
+    }));
 
-  app.post('/channels/:channelId/orgs', asyncMiddleware(async (req, res, next) => {
-      res.json(req.fabricStarterClient.addOrgToChannel(req.params.channelId, req.body.orgId));
-  }));
+    app.post('/channels/:channelId/orgs', asyncMiddleware(async (req, res, next) => {
+        res.json(req.fabricStarterClient.addOrgToChannel(req.params.channelId, req.body.orgId));
+    }));
 
-  app.post('/channels/:channelId', asyncMiddleware(async (req, res, next) => {
-      res.json(await joinChannel(req.params.channelId, req.fabricStarterClient));
-  }));
+    app.post('/channels/:channelId', asyncMiddleware(async (req, res, next) => {
+        res.json(await joinChannel(req.params.channelId, req.fabricStarterClient));
+    }));
 
-  app.get('/channels/:channelId/blocks/:number', asyncMiddleware(async (req, res, next) => {
-    res.json(await req.fabricStarterClient.queryBlock(req.params.channelId, parseInt(req.params.number)));
-  }));
+    app.get('/channels/:channelId/blocks/:number', asyncMiddleware(async (req, res, next) => {
+        res.json(await req.fabricStarterClient.queryBlock(req.params.channelId, parseInt(req.params.number)));
+    }));
 
-  app.get('/channels/:channelId/transactions/:id', asyncMiddleware(async (req, res, next) => {
-    res.json(await req.fabricStarterClient.queryTransaction(req.params.channelId, req.params.id));
-  }));
+    app.get('/channels/:channelId/transactions/:id', asyncMiddleware(async (req, res, next) => {
+        res.json(await req.fabricStarterClient.queryTransaction(req.params.channelId, req.params.id));
+    }));
 
-  app.get('/channels/:channelId/chaincodes', asyncMiddleware(async (req, res, next) => {
-    res.json(await req.fabricStarterClient.queryInstantiatedChaincodes(req.params.channelId));
-  }));
+    app.get('/channels/:channelId/chaincodes', asyncMiddleware(async (req, res, next) => {
+        res.json(await req.fabricStarterClient.queryInstantiatedChaincodes(req.params.channelId));
+    }));
 
-  app.post('/channels/:channelId/chaincodes', asyncMiddleware(async (req, res, next) => {
-    res.json(await req.fabricStarterClient.instantiateChaincode(req.params.channelId, req.body.chaincodeId,
-        req.body.chaincodeType, req.body.fcn, req.body.args,  req.body.chaincodeVersion,  req.body.targets));
-  }));
+    app.post('/channels/:channelId/chaincodes', asyncMiddleware(async (req, res, next) => {
+        res.json(await req.fabricStarterClient.instantiateChaincode(req.params.channelId, req.body.chaincodeId,
+            req.body.chaincodeType, req.body.fcn, req.body.args, req.body.chaincodeVersion, req.body.targets));
+    }));
 
-  app.get('/channels/:channelId/chaincodes/:chaincodeId', asyncMiddleware(async (req, res, next) => {
-    let ret = await req.fabricStarterClient.query(req.params.channelId, req.params.chaincodeId,
-    req.query.fcn, req.query.args, extractTargets(req, "query"));
+    app.get('/channels/:channelId/chaincodes/:chaincodeId', asyncMiddleware(async (req, res, next) => {
+        let ret = await req.fabricStarterClient.query(req.params.channelId, req.params.chaincodeId,
+            req.query.fcn, req.query.args, extractTargets(req, "query"));
 
-    if(ret[0].startsWith('Error')) {
-      throw new Error(ret[0]);
-    }
+        if (req.query.unescape) {
+            ret = ret.map(o => {
+                let u = o;
 
-    if(req.query.unescape) {
-        ret = ret.map(o => {
-            let u = o;
+                try {
+                    u = JSON.parse(o);
+                } catch (e) {
+                    logger.debug('cannot JSON.parse', e);
+                }
 
-            try {
-                u = JSON.parse(o);
-            } catch(e) {
-                logger.debug('cannot JSON.parse', e);
-            }
+                return u;
+            });
+        }
+        res.json(ret);
+    }));
 
-            return u;
-        });
-    }
+    app.post('/channels/:channelId/chaincodes/:chaincodeId', asyncMiddleware(async (req, res, next) => {
+        let result = await req.fabricStarterClient.invoke(req.params.channelId, req.params.chaincodeId,
+            req.body.fcn, req.body.args, extractTargets(req, "body"), req.body.waitForTransactionEvent);
+        res.json(result);
+    }));
 
-    res.json(ret);
-  }));
-
-  app.post('/channels/:channelId/chaincodes/:chaincodeId', asyncMiddleware(async (req, res, next) => {
-      let result = await req.fabricStarterClient.invoke(req.params.channelId, req.params.chaincodeId,
-          req.body.fcn, req.body.args, extractTargets(req, "body"), req.body.waitForTransactionEvent);
-      res.json(result);
-  }));
-
-  app.get('/consortium/members', asyncMiddleware(async (req, res, next) => {
-    res.json(await req.fabricStarterClient.getConsortiumMemberList());
-  }));
+    app.get('/consortium/members', asyncMiddleware(async (req, res, next) => {
+        res.json(await req.fabricStarterClient.getConsortiumMemberList());
+    }));
 
 
 };

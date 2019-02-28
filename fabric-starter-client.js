@@ -62,8 +62,8 @@ class FabricStarterClient {
                 .catch((err) => {
                     return this.register(username, password, affiliation)
                 })
-                    .then(() => this.login(username, password)).then(()=>this.registerQueue[username]=null).then(resolve)
-                .catch(err=>{
+                .then(() => this.login(username, password)).then(() => this.registerQueue[username] = null).then(resolve)
+                .catch(err => {
                     reject(err);
                 });
         });
@@ -357,7 +357,7 @@ class FabricStarterClient {
                     proposalResponse = await channel.sendTransactionProposal(proposal);
                     fsClient.errorCheck(proposalResponse);
 
-                }catch (e) {
+                } catch (e) {
                     return reject(e);
                 }
 
@@ -379,14 +379,12 @@ class FabricStarterClient {
         })
     }
 
-    errorCheck(results){
+    errorCheck(results) {
         logger.trace('proposalResponse', results);
         results.map(r => {
             const checkError = r.toString('utf8');
             if (_.startsWith(checkError, 'Error')) {
-                if (_.get(r, '[0].status'))
-                    throw new Error(checkError + ' Status:' + _.get(r, '[0].status'));
-                throw new Error(checkError);
+                throw ({message: checkError, status: _.get(r, '[0].status') || _.get(r, 'status')});
             }
         });
     }
@@ -464,9 +462,8 @@ class FabricStarterClient {
         logger.trace('query proposal', proposal);
 
         const responses = await channel.queryByChaincode(proposal);
+        this.errorCheck(responses);
         return responses.map(r => {
-            if (_.get(r, 'status'))
-                return r.toString('utf8') + ' Status:' + _.get(r, 'status');
             return r.toString('utf8');
         });
     }
