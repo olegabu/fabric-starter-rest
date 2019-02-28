@@ -62,9 +62,9 @@ class FabricStarterClient {
                 .catch((err) => {
                     return this.register(username, password, affiliation)
                 })
-                .then(() => this.login(username, password)).then(() => this.registerQueue[username] = null).then(resolve)
-                .catch(err => {
-                    reject(err)
+                    .then(() => this.login(username, password)).then(()=>this.registerQueue[username]=null).then(resolve)
+                .catch(err=>{
+                    reject(err);
                 });
         });
         return this.registerQueue[username];
@@ -449,7 +449,7 @@ class FabricStarterClient {
 
         logger.trace('query targets', targets);
 
-        if (targets.targets || targets.peers) {
+        if (targets && (targets.targets || targets.peers)) {
             const targetsList = this.createTargetsList(channel, targets);
             const foundPeers = targetsList.peers;
             const badPeers = targetsList.badPeers;

@@ -197,6 +197,20 @@ const appRouter = (app) => {
       throw new Error(ret[0]);
     }
 
+    if(req.query.unescape) {
+        ret = ret.map(o => {
+            let u = o;
+
+            try {
+                u = JSON.parse(o);
+            } catch(e) {
+                logger.debug('cannot JSON.parse', e);
+            }
+
+            return u;
+        });
+    }
+
     res.json(ret);
   }));
 
