@@ -92,6 +92,10 @@ const appRouter = (app) => {
     res.status(200).send('Welcome to fabric-starter REST server');
   });
 
+  app.post('/cert', (req, res) => {
+    res.json(fabricStarterClient.decodeCert(req.body.cert));
+  });
+
   app.get('/mspid', (req, res) => {
     res.json(fabricStarterClient.getMspid());
   });
