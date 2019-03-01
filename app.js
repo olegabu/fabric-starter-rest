@@ -98,7 +98,7 @@ const appRouter = (app) => {
   /**
    * Show MSPID of the organization to aid the web app
    * @route GET /mspid
-   * @group info - Queries for info and config
+   * @group config - Queries for config
    * @returns {string} 200 - MSPID
    * @returns {Error}  default - Unexpected error
    */
@@ -108,9 +108,9 @@ const appRouter = (app) => {
 
   //TODO use for development only as it may expose sensitive data
   /**
-   * Network config json to aid debugging; use for development only as it may expose sensitive data.
+   * Network config json to aid debugging; use for development only as it may expose sensitive data
    * @route GET /config
-   * @group info - Queries for info and config
+   * @group config - Queries for config
    * @returns {object} 200 - Network config
    * @returns {Error}  default - Unexpected error
    */
@@ -118,6 +118,14 @@ const appRouter = (app) => {
     res.json(fabricStarterClient.getNetworkConfig());
   });
 
+  /**
+   * Query chaincodes installed on the first peer of my organization
+   * @route GET /chaincodes
+   * @group chaincodes - Queries and operations on chaincode
+   * @returns {object} 200 - Array of chaincode names
+   * @returns {Error}  default - Unexpected error
+   * @security JWT
+   */
   app.get('/chaincodes', asyncMiddleware(async(req, res, next) => {
     res.json(await req.fabricStarterClient.queryInstalledChaincodes());
   }));
@@ -129,12 +137,17 @@ const appRouter = (app) => {
   }));
 
   /**
+   * @typedef User
+   * @property {string} username.required - username - eg: oleg
+   * @property {string} password.required - password - eg: pass
+   */
+
+  /**
    * Login or register user.
    * @route POST /users
    * @group users - Authentication and operations about users
-   * @param {string} username.required
-   * @param {string} password.required
-   * @returns {object} 200 - JWT
+   * @param {User.model} user.body.required
+   * @returns {object} 200 - User logged in and his JWT returned
    * @returns {Error}  default - Unexpected error
    */
   app.post('/users', asyncMiddleware(async(req, res, next) => {
@@ -150,6 +163,14 @@ const appRouter = (app) => {
     res.json(token);
   }));
 
+  /**
+   * Query channels joined by the first peer of my organization
+   * @route GET /channels
+   * @group channels - Queries and operations on channels
+   * @returns {object} 200 - Array of channel names
+   * @returns {Error}  default - Unexpected error
+   * @security JWT
+   */
   app.get('/channels', asyncMiddleware(async(req, res, next) => {
     res.json(await req.fabricStarterClient.queryChannels());
   }));
@@ -172,18 +193,54 @@ const appRouter = (app) => {
     }
   }
 
+  /**
+   * Query channel info
+   * @route GET /channels/{channelId}
+   * @group channels - Queries and operations on channels
+   * @param {string} channelId.path.required - channel - eg: common
+   * @returns {object} 200 - Channel info
+   * @returns {Error}  default - Unexpected error
+   * @security JWT
+   */
   app.get('/channels/:channelId', asyncMiddleware(async(req, res, next) => {
     res.json(await req.fabricStarterClient.queryInfo(req.params.channelId));
   }));
 
+  /**
+   * Query organizations in a channel
+   * @route GET /channels/{channelId}/orgs
+   * @group channels - Queries and operations on channels
+   * @param {string} channelId.path.required - channel - eg: common
+   * @returns {object} 200 - Array of MSPIDs
+   * @returns {Error}  default - Unexpected error
+   * @security JWT
+   */
   app.get('/channels/:channelId/orgs', asyncMiddleware(async(req, res, next) => {
     res.json(await req.fabricStarterClient.getOrganizations(req.params.channelId));
   }));
 
+  /**
+   * Query peers that joined a channel
+   * @route GET /channels/{channelId}/peers
+   * @group channels - Queries and operations on channels
+   * @param {string} channelId.path.required - channel - eg: common
+   * @returns {object} 200 - Array of peer names
+   * @returns {Error}  default - Unexpected error
+   * @security JWT
+   */
   app.get('/channels/:channelId/peers', asyncMiddleware(async(req, res, next) => {
     res.json(await req.fabricStarterClient.getPeersForOrgOnChannel(req.params.channelId));
   }));
 
+  /**
+   * Query peers of an organization
+   * @route GET /orgs/{org}/peers
+   * @group orgs - Queries for organizations
+   * @param {string} org.path.required - organization - eg: org1
+   * @returns {object} 200 - Array of peer names
+   * @returns {Error}  default - Unexpected error
+   * @security JWT
+   */
   app.get('/orgs/:org/peers', asyncMiddleware(async(req, res, next) => {
     res.json(await req.fabricStarterClient.getPeersForOrg(req.params.org));
   }));
@@ -196,14 +253,43 @@ const appRouter = (app) => {
     res.json(await joinChannel(req.params.channelId, req.fabricStarterClient));
   }));
 
+  /**
+   * Query a given block in a channel
+   * @route GET /channels/{channelId}/blocks/{number}
+   * @group channels - Queries and operations on channels
+   * @param {string} channelId.path.required - channel - eg: common
+   * @param {integer} number.path.required - block number - eg: 1
+   * @returns {object} 200 - Block
+   * @returns {Error}  default - Unexpected error
+   * @security JWT
+   */
   app.get('/channels/:channelId/blocks/:number', asyncMiddleware(async(req, res, next) => {
     res.json(await req.fabricStarterClient.queryBlock(req.params.channelId, parseInt(req.params.number)));
   }));
 
+  /**
+   * Query a given transaction in a channel
+   * @route GET /channels/{channelId}/transactions/{id}
+   * @group channels - Queries and operations on channels
+   * @param {string} channelId.path.required - channel - eg: common
+   * @param {string} id.path.required - transaction id - eg: 5e4c57948cf6fe4650c28999c389c897ee9039c078b0d20ed72d0126f0046540
+   * @returns {object} 200 - Transaction
+   * @returns {Error}  default - Unexpected error
+   * @security JWT
+   */
   app.get('/channels/:channelId/transactions/:id', asyncMiddleware(async(req, res, next) => {
     res.json(await req.fabricStarterClient.queryTransaction(req.params.channelId, req.params.id));
   }));
 
+  /**
+   * Query chaincodes instantiated on a channel
+   * @route GET /channels/{channelId}/chaincodes
+   * @group channels - Queries and operations on channels
+   * @param {string} channelId.path.required - channel - eg: common
+   * @returns {object} 200 - Array of chaincodes
+   * @returns {Error}  default - Unexpected error
+   * @security JWT
+   */
   app.get('/channels/:channelId/chaincodes', asyncMiddleware(async(req, res, next) => {
     res.json(await req.fabricStarterClient.queryInstantiatedChaincodes(req.params.channelId));
   }));
@@ -214,15 +300,18 @@ const appRouter = (app) => {
   }));
 
   /**
-   * MSPID of the organization
-   * @route GET /channels
+   * Query chaincode
+   * @route GET /channels/{channelId}/chaincodes/{chaincodeId}
    * @group chaincode - Invoke and query chaincode
-   * @param {string} fcn.query.required - chaincode function name - eg: move
-   * @param {array} args.query.required - string encoded arguments to chaincode function - eg: ["a","b","10"]
-   * @param {array} args.targets - list of peers to query - eg: ["peer0.org1.example.com:7051"]
-   * @param {boolean} unescape.query - when true return not string array but array of json objects
+   * @param {string} channelId.path.required - channel - eg: common
+   * @param {string} chaincodeId.path.required - channel - eg: reference
+   * @param {string} fcn.query.required - chaincode function name - eg: get
+   * @param {string} args.query.required - string encoded arguments to chaincode function - eg: ["a"]
+   * @param {string} targets.query - list of peers to query - eg: ["peer0.org1.example.com:7051"]
+   * @param {boolean} unescape.query - return not string array but array of json objects - eg. true
    * @returns {object} 200 - An array of query results
-   * @returns {Error}  default - Unexpected error
+   * @returns {Error}  default - Unexpected error names
+   * @security JWT
    */
   app.get('/channels/:channelId/chaincodes/:chaincodeId', asyncMiddleware(async(req, res, next) => {
     let ret = await req.fabricStarterClient.query(req.params.channelId, req.params.chaincodeId,
@@ -249,12 +338,38 @@ const appRouter = (app) => {
     res.json(ret);
   }));
 
+  /**
+   * @typedef Invoke
+   * @property {string} fcn.required - chaincode function name - eg: move
+   * @property {string} args.required - string encoded arguments to chaincode function - eg: ["a","b","10"]
+   * @property {boolean} waitForTransactionEvent - respond only when transaction commits - eg. true
+   */
+
+  /**
+   * Invoke chaincode
+   * @route POST /channels/{channelId}/chaincodes/{chaincodeId}
+   * @group chaincode - Invoke and query chaincode
+   * @param {string} channelId.path.required - channel - eg: common
+   * @param {string} chaincodeId.path.required - channel - eg: reference
+   * @param {Invoke.model} invoke.body.required - invoke request
+   * @returns {object} 200 - Transaction id
+   * @returns {Error}  default - Unexpected error
+   * @security JWT
+   */
   app.post('/channels/:channelId/chaincodes/:chaincodeId', asyncMiddleware(async(req, res, next) => {
     let result = await req.fabricStarterClient.invoke(req.params.channelId, req.params.chaincodeId,
       req.body.fcn, req.body.args, extractTargets(req, "body"), req.body.waitForTransactionEvent);
     res.json(result);
   }));
 
+  /**
+   * Query member organizations of current consortium
+   * @route GET /consortium/members
+   * @group orgs - Queries for organizations
+   * @returns {object} 200 - Array of MSPIDs
+   * @returns {Error}  default - Unexpected error
+   * @security JWT
+   */
   app.get('/consortium/members', asyncMiddleware(async(req, res, next) => {
     res.json(await req.fabricStarterClient.getConsortiumMemberList());
   }));
@@ -299,6 +414,7 @@ socket.startSocketServer(server).then(() => {
   logger.info('started socket server');
 });
 
+// see https://github.com/OAI/OpenAPI-Specification/blob/master/versions/2.0.md#swagger-object
 expressSwagger({
   swaggerDefinition: {
     info: {
@@ -306,7 +422,7 @@ expressSwagger({
       title: 'fabric-starter-rest',
       version: '1.0.0',
     },
-    host: 'localhost:3000',
+    host: 'localhost:4000',
     // basePath: '/v1',
     basePath: '/',
     produces: [
@@ -319,7 +435,7 @@ expressSwagger({
         type: 'apiKey',
         in: 'header',
         name: 'Authorization',
-        description: "",
+        description: "Paste the jwt you received from logging in by a post to /users ex.: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c",
       }
     }
   },
