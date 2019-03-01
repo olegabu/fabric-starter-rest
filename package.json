@@ -5,7 +5,7 @@
   "main": "fabric-starter-client.js",
   "scripts": {
     "test": "DISCOVER_AS_LOCALHOST=true mocha",
-    "dev": "DISCOVER_AS_LOCALHOST=true nodemon app.js",
+    "dev": "DISCOVER_AS_LOCALHOST=true DOMAIN=example.com MSP_DIR=/home/oleg/workspace/fabric-starter/crypto-config/peerOrganizations/org1.example.com/msp PORT=3000 CRYPTO_CONFIG_DIR=/home/oleg/workspace/fabric-starter/crypto-config CORE_PEER_LOCALMSPID=org1 CORE_PEER_MSPCONFIGPATH=/home/oleg/workspace/fabric-starter/crypto-config/peerOrganizations/org1.example.com/users/Admin@org1.example.com/msp CORE_PEER_ADDRESS=peer0.org1.example.com:7051 nodemon app.js",
     "start": "node app.js"
   },
   "repository": "https://github.com/olegabu/fabric-starter-rest",
