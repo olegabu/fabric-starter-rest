@@ -305,12 +305,12 @@ const appRouter = (app) => {
    * @group chaincode - Invoke and query chaincode
    * @param {string} channelId.path.required - channel - eg: common
    * @param {string} chaincodeId.path.required - channel - eg: reference
-   * @param {string} fcn.query.required - chaincode function name - eg: get
-   * @param {string} args.query.required - string encoded arguments to chaincode function - eg: ["a"]
+   * @param {string} fcn.query.required - chaincode function name - eg: list
+   * @param {string} args.query.required - string encoded arguments to chaincode function - eg: ["account"]
    * @param {string} targets.query - list of peers to query - eg: ["peer0.org1.example.com:7051"]
-   * @param {boolean} unescape.query - return not string array but array of json objects - eg. true
+   * @param {boolean} unescape.query - return not array of strings but array of json objects - eg. true
    * @returns {object} 200 - An array of query results
-   * @returns {Error}  default - Unexpected error names
+   * @returns {Error}  default - Unexpected error
    * @security JWT
    */
   app.get('/channels/:channelId/chaincodes/:chaincodeId', asyncMiddleware(async(req, res, next) => {
@@ -340,9 +340,9 @@ const appRouter = (app) => {
 
   /**
    * @typedef Invoke
-   * @property {string} fcn.required - chaincode function name - eg: move
-   * @property {string} args.required - string encoded arguments to chaincode function - eg: ["a","b","10"]
-   * @property {boolean} waitForTransactionEvent - respond only when transaction commits - eg. true
+   * @property {string} fcn.required - chaincode function name - eg: put
+   * @property {Array.<string>} args.required - string encoded arguments to chaincode function - eg: ["account","1","{name:\"one\"}"]
+   * @property {boolean} waitForTransactionEvent - respond only when transaction commits - eg: true
    */
 
   /**
@@ -435,7 +435,7 @@ expressSwagger({
         type: 'apiKey',
         in: 'header',
         name: 'Authorization',
-        description: "Paste the jwt you received from logging in by a post to /users ex.: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c",
+        description: "Paste the jwt you received from logging in by a post to /users ex.: Bearer eyJhbGci...",
       }
     }
   },
