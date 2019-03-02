@@ -1,7 +1,8 @@
 node_modules
 test
-.storage
+webapp
 hfc-cvs
 hfc-kvs
+.storage
 .idea
 .git

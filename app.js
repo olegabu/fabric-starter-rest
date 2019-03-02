@@ -1,3 +1,4 @@
+const fs = require("fs");
 const express = require("express");
 const bodyParser = require("body-parser");
 const app = express();
@@ -31,6 +32,7 @@ app.options('*', cors());
 
 // serve web app as static
 const webappDir = process.env.WEBAPP_DIR || './webapp';
+app.use('/webapp-welcome', express.static("./webapp-welcome"));
 app.use('/webapp', express.static(webappDir));
 logger.info('serving webapp at /webapp from ' + webappDir);
 
@@ -43,7 +45,9 @@ logger.info('serving certificates at /msp from ' + mspDir);
 
 // serve favicon
 const favicon = require('serve-favicon');
-app.use(favicon(path.join(webappDir, 'favicon.ico')));
+if (fs.existsSync(path.join(webappDir, 'favicon.ico'))) {
+    app.use(favicon(path.join(webappDir, 'favicon.ico')));
+}
 
 // catch promise rejections and return 500 errors
 const asyncMiddleware = fn =>
@@ -59,7 +63,7 @@ const asyncMiddleware = fn =>
 
 // require presence of JWT in Authorization Bearer header
 const jwtSecret = fabricStarterClient.getSecret();
-app.use(jwt({secret: jwtSecret}).unless({path: ['/', '/users', '/mspid', '/config', /\/consortium/]}));
+app.use(jwt({secret: jwtSecret}).unless({path: ['/', '/users', '/mspid', '/config', /\/consortium/, /\/webapp/, '/webapp-welcome/']}));
 
 // use fabricStarterClient for every logged in user
 const mapFabricStarterClient = {};
