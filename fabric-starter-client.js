@@ -494,7 +494,7 @@ class FabricStarterClient {
 
 
     chmodCryptoFolder() {
-        chmodPlus.directory(666, cfg.CRYPTO_CONFIG_DIR, {recursive: true});
+        //chmodPlus.directory(666, cfg.CRYPTO_CONFIG_DIR, {recursive: true});
         logger.debug(`Permissions for ${cfg.CRYPTO_CONFIG_DIR} folder are set to 666`);
     }
 
