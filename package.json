@@ -35,8 +35,10 @@
     "x509": "^0.3.4"
   },
   "devDependencies": {
+    "express-swagger-generator": "^1.1.13",
     "fs-extra": "^7.0.0",
     "mocha": "^5.2.0",
+    "nodemon": "^1.18.10",
     "randomstring": "^1.1.5"
   },
   "nodemonConfig": {
