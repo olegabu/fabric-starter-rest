@@ -96,7 +96,7 @@ const appRouter = (app) => {
   });
 
   /**
-   * Show MSPID of the organization to aid the web app
+   * Show name (MSPID) of my organization
    * @route GET /mspid
    * @group config - Queries for config
    * @returns {string} 200 - MSPID
@@ -129,7 +129,21 @@ const appRouter = (app) => {
   app.get('/chaincodes', asyncMiddleware(async(req, res, next) => {
     res.json(await req.fabricStarterClient.queryInstalledChaincodes());
   }));
-
+  
+  /**
+   * Install chaincode
+   * @route POST /chaincodes
+   * @group chaincodes - Queries and operations on chaincode
+   * @param {string} channelId.formData.required - channel - eg: common
+   * @param {file} file.formData.required - chaincode source code archived in zip - eg: example02.zip
+   * @param {string} version.formData.required - chaincode version - eg: 1.0
+   * @param {string} targets.formData.required - list of peers to install to - eg: ["peer0.org1.example.com:7051"]
+   * @param {string} language.formData - chaincode language - eg: golang
+   * @returns {object} 200 - Chaincode installed
+   * @returns {Error}  default - Unexpected error
+   * @security JWT
+   * @consumes multipart/form-data 
+   */
   app.post('/chaincodes', cpUpload, asyncMiddleware(async(req, res, next) => {
     res.json(await req.fabricStarterClient.installChaincode(req.body.channelId,
       req.files['file'][0].originalname.substring(0, req.files['file'][0].originalname.length - 4),
@@ -167,7 +181,7 @@ const appRouter = (app) => {
    * Query channels joined by the first peer of my organization
    * @route GET /channels
    * @group channels - Queries and operations on channels
-   * @returns {object} 200 - Array of channel names
+   * @returns {object} 200 - Array of channel objects
    * @returns {Error}  default - Unexpected error
    * @security JWT
    */
@@ -175,6 +189,20 @@ const appRouter = (app) => {
     res.json(await req.fabricStarterClient.queryChannels());
   }));
 
+  /**
+   * @typedef Channel
+   * @property {string} channelId.required - channel name - eg: common
+   */
+
+  /**
+   * Create channel and join it
+   * @route POST /channels
+   * @group channels - Queries and operations on channels
+   * @param {Channel.model} channel.body.required
+   * @returns {object} 200 - Channel created
+   * @returns {Error}  default - Unexpected error
+   * @security JWT
+   */
   app.post('/channels', asyncMiddleware(async(req, res, next) => {
     await req.fabricStarterClient.createChannel(req.body.channelId);
     res.json(await joinChannel(req.body.channelId, req.fabricStarterClient));
@@ -198,7 +226,7 @@ const appRouter = (app) => {
    * @route GET /channels/{channelId}
    * @group channels - Queries and operations on channels
    * @param {string} channelId.path.required - channel - eg: common
-   * @returns {object} 200 - Channel info
+   * @returns {object} 200 - Channel block info
    * @returns {Error}  default - Unexpected error
    * @security JWT
    */
@@ -211,7 +239,7 @@ const appRouter = (app) => {
    * @route GET /channels/{channelId}/orgs
    * @group channels - Queries and operations on channels
    * @param {string} channelId.path.required - channel - eg: common
-   * @returns {object} 200 - Array of MSPIDs
+   * @returns {object} 200 - Array of organization objects with names (MSPIDs)
    * @returns {Error}  default - Unexpected error
    * @security JWT
    */
@@ -237,7 +265,7 @@ const appRouter = (app) => {
    * @route GET /orgs/{org}/peers
    * @group orgs - Queries for organizations
    * @param {string} org.path.required - organization - eg: org1
-   * @returns {object} 200 - Array of peer names
+   * @returns {object} 200 - Array of peer objects
    * @returns {Error}  default - Unexpected error
    * @security JWT
    */
@@ -245,10 +273,34 @@ const appRouter = (app) => {
     res.json(await req.fabricStarterClient.getPeersForOrg(req.params.org));
   }));
 
+  /**
+   * @typedef Organization
+   * @property {string} orgId.required - organization name by convention same as MSPID- eg: org1
+   */
+
+  /**
+   * Add organization to a channel
+   * @route POST /channels/{channelId}/orgs
+   * @group channels - Queries and operations on channels
+   * @param {string} channelId.path.required - channel - eg: common
+   * @param {Organization.model} organization.body.required
+   * @returns {object} 200 - Organization added
+   * @returns {Error}  default - Unexpected error
+   * @security JWT
+   */
   app.post('/channels/:channelId/orgs', asyncMiddleware(async(req, res, next) => {
     res.json(req.fabricStarterClient.addOrgToChannel(req.params.channelId, req.body.orgId));
   }));
 
+  /**
+   * Join channel
+   * @route POST /channels/{channelId}
+   * @group channels - Queries and operations on channels
+   * @param {string} channelId.path.required - channel - eg: common
+   * @returns {object} 200 - Channel joined
+   * @returns {Error}  default - Unexpected error
+   * @security JWT
+   */
   app.post('/channels/:channelId', asyncMiddleware(async(req, res, next) => {
     res.json(await joinChannel(req.params.channelId, req.fabricStarterClient));
   }));
@@ -272,7 +324,7 @@ const appRouter = (app) => {
    * @route GET /channels/{channelId}/transactions/{id}
    * @group channels - Queries and operations on channels
    * @param {string} channelId.path.required - channel - eg: common
-   * @param {string} id.path.required - transaction id - eg: 5e4c57948cf6fe4650c28999c389c897ee9039c078b0d20ed72d0126f0046540
+   * @param {string} id.path.required - transaction id - eg: 5e4c57948cf6fe465...
    * @returns {object} 200 - Transaction
    * @returns {Error}  default - Unexpected error
    * @security JWT
@@ -286,7 +338,7 @@ const appRouter = (app) => {
    * @route GET /channels/{channelId}/chaincodes
    * @group channels - Queries and operations on channels
    * @param {string} channelId.path.required - channel - eg: common
-   * @returns {object} 200 - Array of chaincodes
+   * @returns {object} 200 - Object with an array of chaincodes
    * @returns {Error}  default - Unexpected error
    * @security JWT
    */
@@ -294,6 +346,26 @@ const appRouter = (app) => {
     res.json(await req.fabricStarterClient.queryInstantiatedChaincodes(req.params.channelId));
   }));
 
+  /**
+   * @typedef Instantiate
+   * @property {string} fcn.required - chaincode function name - eg: put
+   * @property {Array.<string>} args.required - string encoded arguments to chaincode function - eg: ["account","1","{name:\"one\"}"]
+   * @property {string} chaincodeVersion - chaincode version - eg: 1.0 (default 1.0)
+   * @property {string} chaincodeType - chaincode language - eg: golang (default node)
+   * @property {Array.<string>} targets - list of peers to send for endorsement - eg: ["peer0.org1.example.com:7051"]
+   * @property {boolean} waitForTransactionEvent - respond only when transaction commits - eg: true
+   */
+
+  /**
+   * Instantiate chaincode
+   * @route POST /channels/{channelId}/chaincodes/{chaincodeId}
+   * @group channels - Queries and operations on channels
+   * @param {string} channelId.path.required - channel - eg: common
+   * @param {Instantiate.model} instantiate.body.required - instantiate request
+   * @returns {object} 200 - Transaction id
+   * @returns {Error}  default - Unexpected error
+   * @security JWT
+   */
   app.post('/channels/:channelId/chaincodes', asyncMiddleware(async(req, res, next) => {
     res.json(await req.fabricStarterClient.instantiateChaincode(req.params.channelId, req.body.chaincodeId,
       req.body.chaincodeType, req.body.fcn, req.body.args, req.body.chaincodeVersion, req.body.targets));
@@ -342,6 +414,7 @@ const appRouter = (app) => {
    * @typedef Invoke
    * @property {string} fcn.required - chaincode function name - eg: put
    * @property {Array.<string>} args.required - string encoded arguments to chaincode function - eg: ["account","1","{name:\"one\"}"]
+   * @property {Array.<string>} targets - list of peers to send for endorsement - eg: ["peer0.org1.example.com:7051"]
    * @property {boolean} waitForTransactionEvent - respond only when transaction commits - eg: true
    */
 
