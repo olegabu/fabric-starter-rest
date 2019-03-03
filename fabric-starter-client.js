@@ -9,6 +9,7 @@ const path = require('path');
 const urlParseLax = require('url-parse-lax');
 const chmodPlus = require('chmod-plus');
 const fabricCLI = require('./fabric-cli');
+const x509 = require('x509');
 
 //const networkConfigFile = '../crypto-config/network.json'; // or .yaml
 //const networkConfig = require('../crypto-config/network.json');
@@ -61,8 +62,8 @@ class FabricStarterClient {
                 .catch((err) => {
                     return this.register(username, password, affiliation)
                 })
-                    .then(() => this.login(username, password)).then(()=>this.registerQueue[username]=null).then(resolve)
-                .catch(err=>{
+                .then(() => this.login(username, password)).then(() => this.registerQueue[username] = null).then(resolve)
+                .catch(err => {
                     reject(err);
                 });
         });
@@ -250,7 +251,7 @@ class FabricStarterClient {
                     fs.unlink(chaincodePath);
                     let chaincode_path = path.resolve(__dirname, `${storage}/${chaincodeId}`);
                     const proposal = {
-                        targets: peer[0]._peer,
+                        targets: peer.peers._peer,
                         channelNames: channelId,
                         chaincodeId: chaincodeId,
                         chaincodePath: chaincode_path,
@@ -287,8 +288,9 @@ class FabricStarterClient {
 
         if (targets) {
             const targetsList = this.createTargetsList(channel, targets);
-            const foundPeers = targetsList[0];
-            badPeers = targetsList[1];
+            const foundPeers = targetsList.peers;
+            badPeers = targetsList.badPeers;
+            logger.trace('badPeers', badPeers);
 
             proposal.targets = foundPeers;
         }
@@ -317,7 +319,9 @@ class FabricStarterClient {
             resolve(response);
         } catch (err) {
             logger.trace(`Error: `, err, `\nRe-trying invocation: ${nTimes}.`);
-            setTimeout(() => {this.retryInvoke(--nTimes, resolve, reject, fn)}, 3000);
+            setTimeout(() => {
+                this.retryInvoke(--nTimes, resolve, reject, fn)
+            }, 3000);
         }
     }
 
@@ -333,8 +337,9 @@ class FabricStarterClient {
 
         if (targets.targets || targets.peers) {
             const targetsList = this.createTargetsList(channel, targets);
-            const foundPeers = targetsList[0];
-            badPeers = targetsList[1];
+            const foundPeers = targetsList.peers;
+            badPeers = targetsList.badPeers;
+            logger.trace('badPeers', badPeers);
 
             proposal.targets = foundPeers;
         }
@@ -352,7 +357,7 @@ class FabricStarterClient {
                     proposalResponse = await channel.sendTransactionProposal(proposal);
                     fsClient.errorCheck(proposalResponse);
 
-                }catch (e) {
+                } catch (e) {
                     return reject(e);
                 }
 
@@ -374,12 +379,14 @@ class FabricStarterClient {
         })
     }
 
-    errorCheck(results){
-        // logger.trace('proposalResponse', proposalResponse);
-        let errorCheck = _.get(results, [0][0]).toString();
-        if (_.startsWith(errorCheck, 'Error')) {
-            throw new Error(errorCheck);
-        }
+    errorCheck(results) {
+        logger.trace('proposalResponse', results);
+        results.map(r => {
+            const checkError = r.toString('utf8');
+            if (_.startsWith(checkError, 'Error')) {
+                throw ({message: checkError, status: _.get(r, '[0].status') || _.get(r, 'status')});
+            }
+        });
     }
 
     async waitForTransactionEvent(tx_id, channel) {
@@ -442,8 +449,8 @@ class FabricStarterClient {
 
         if (targets && (targets.targets || targets.peers)) {
             const targetsList = this.createTargetsList(channel, targets);
-            const foundPeers = targetsList[0];
-            const badPeers = targetsList[1];
+            const foundPeers = targetsList.peers;
+            const badPeers = targetsList.badPeers;
             logger.trace('badPeers', badPeers);
 
             proposal.targets = foundPeers;
@@ -455,7 +462,7 @@ class FabricStarterClient {
         logger.trace('query proposal', proposal);
 
         const responses = await channel.queryByChaincode(proposal);
-
+        this.errorCheck(responses);
         return responses.map(r => {
             return r.toString('utf8');
         });
@@ -479,7 +486,10 @@ class FabricStarterClient {
             peers.push(this.peer);
         } else
             logger.trace("Using specified peer(s)");
-        return [peers, badPeers];
+        return {
+            peers,
+            badPeers
+        };
     }
 
 
@@ -573,6 +583,10 @@ class FabricStarterClient {
             pem: this.loadPemFromFile(`${cfg.PEER_CRYPTO_DIR}/peers/${mspSubPath}/msp/tlscacerts/tlsca.${org || cfg.org}.${domain || cfg.domain}-cert.pem`)
         };
         return connectionOptions;
+    }
+
+    decodeCert(cert) {
+        return x509.parseCert(cert);
     }
 
 }
