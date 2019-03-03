@@ -130,7 +130,7 @@ const appRouter = (app) => {
    * Query chaincodes installed on the first peer of my organization
    * @route GET /chaincodes
    * @group chaincodes - Queries and operations on chaincode
-   * @returns {object} 200 - Array of chaincode names
+   * @returns {object} 200 - Array of chaincode objects
    * @returns {Error}  default - Unexpected error
    * @security JWT
    */
@@ -356,17 +356,18 @@ const appRouter = (app) => {
 
   /**
    * @typedef Instantiate
-   * @property {string} fcn.required - chaincode function name - eg: put
+   * @property {string} chaincodeId.required - chaincode name - eg: reference
+   * @property {string} fcn.required - chaincode function name - eg: init
    * @property {Array.<string>} args.required - string encoded arguments to chaincode function - eg: ["account","1","{name:\"one\"}"]
-   * @property {string} chaincodeVersion - chaincode version - eg: 1.0 (default 1.0)
-   * @property {string} chaincodeType - chaincode language - eg: golang (default node)
+   * @property {string} chaincodeVersion - chaincode version (default 1.0) - eg: 1.0
+   * @property {string} chaincodeType - chaincode language (default node) - eg: golang
    * @property {Array.<string>} targets - list of peers to send for endorsement - eg: ["peer0.org1.example.com:7051"]
    * @property {boolean} waitForTransactionEvent - respond only when transaction commits - eg: true
    */
 
   /**
    * Instantiate chaincode
-   * @route POST /channels/{channelId}/chaincodes/{chaincodeId}
+   * @route POST /channels/{channelId}/chaincodes
    * @group channels - Queries and operations on channels
    * @param {string} channelId.path.required - channel - eg: common
    * @param {Instantiate.model} instantiate.body.required - instantiate request
@@ -498,7 +499,7 @@ expressSwagger({
       title: 'fabric-starter-rest',
       version: '1.0.0',
     },
-    host: 'localhost:4000',
+    // host: 'localhost:4000',
     // basePath: '/v1',
     basePath: '/',
     produces: [
