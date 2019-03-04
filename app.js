@@ -15,8 +15,8 @@ const expressSwagger = require('express-swagger-generator')(app);
 const storage = os.tmpdir() || './upload';
 const upload = multer({dest: storage});
 let cpUpload = upload.fields([{name: 'file', maxCount: 1}, {
-    name: 'channelId',
-    maxCount: 1
+  name: 'channelId',
+  maxCount: 1
 }, {name: 'targets'}, {name: 'version', maxCount: 1}, {name: 'language', maxCount: 1}]);
 const FabricStarterClient = require('./fabric-starter-client');
 let fabricStarterClient = new FabricStarterClient();
@@ -45,25 +45,25 @@ logger.info('serving certificates at /msp from ' + mspDir);
 
 // serve favicon
 const favicon = require('serve-favicon');
-if (fs.existsSync(path.join(webappDir, 'favicon.ico'))) {
-    app.use(favicon(path.join(webappDir, 'favicon.ico')));
+if(fs.existsSync(path.join(webappDir, 'favicon.ico'))) {
+  app.use(favicon(path.join(webappDir, 'favicon.ico')));
 }
 
 // catch promise rejections and return 500 errors
 const asyncMiddleware = fn =>
-    (req, res, next) => {
-        // logger.debug('asyncMiddleware');
-        Promise.resolve(fn(req, res, next))
-            .catch(e => {
-                logger.error('asyncMiddleware', e);
-                res.status((e && e.status) || 500).json(e && e.message);
-                next();
-            });
-    };
+  (req, res, next) => {
+    // logger.debug('asyncMiddleware');
+    Promise.resolve(fn(req, res, next))
+      .catch(e => {
+        logger.error('asyncMiddleware', e);
+        res.status((e && e.status) || 500).json(e && e.message);
+        next();
+      });
+  };
 
 // require presence of JWT in Authorization Bearer header
 const jwtSecret = fabricStarterClient.getSecret();
-app.use(jwt({secret: jwtSecret}).unless({path: ['/', '/users', '/mspid', '/config', new RegExp('/api-docs'), '/api-docs.json', /\/consortium/, /\/webapp/, '/webapp-welcome/']}));
+app.use(jwt({secret: jwtSecret}).unless({path: ['/', '/users', '/domain', '/mspid', '/config', new RegExp('/api-docs'), '/api-docs.json', /\/consortium/, /\/webapp/, '/webapp-welcome/']}));
 
 // use fabricStarterClient for every logged in user
 const mapFabricStarterClient = {};
@@ -72,36 +72,47 @@ app.use(async(req, res, next) => {
   if(req.user) {
     const login = req.user.sub;
 
-        let client = mapFabricStarterClient[login];
-        if (client) {
-            logger.debug('cached client for', login);
-            req.fabricStarterClient = client;
-        } else {
-            logger.debug('new client for', login); //TODO: should not be reachable
-            req.fabricStarterClient = new FabricStarterClient();
-            await req.fabricStarterClient.init();
-            try {
-                await req.fabricStarterClient.loginOrRegister(login);
-            } catch (e) {
-                logger.error('loginOrRegister', e);
-                res.status(500).json(e && e.message);
-            }
+    let client = mapFabricStarterClient[login];
+    if(client) {
+      logger.debug('cached client for', login);
+      req.fabricStarterClient = client;
+    } else {
+      logger.debug('new client for', login); //TODO: should not be reachable
+      req.fabricStarterClient = new FabricStarterClient();
+      await req.fabricStarterClient.init();
+      try {
+        await req.fabricStarterClient.loginOrRegister(login);
+      } catch(e) {
+        logger.error('loginOrRegister', e);
+        res.status(500).json(e && e.message);
+      }
 
-            mapFabricStarterClient[login] = req.fabricStarterClient;
-        }
+      mapFabricStarterClient[login] = req.fabricStarterClient;
     }
-    next();
+  }
+  next();
 });
 
 const appRouter = (app) => {
 
-    app.get('/', (req, res) => {
-        res.status(200).send('Welcome to fabric-starter REST server');
-    });
+  app.get('/', (req, res) => {
+    res.status(200).send('Welcome to fabric-starter REST server');
+  });
 
-    app.post('/cert', (req, res) => {
-        res.json(fabricStarterClient.decodeCert(req.body.cert));
-    });
+  app.post('/cert', (req, res) => {
+    res.json(fabricStarterClient.decodeCert(req.body.cert));
+  });
+
+  /**
+   * Show network name (as defined by DOMAIN env variable at setup time)
+   * @route GET /domain
+   * @group config - Queries for config
+   * @returns {string} 200 - DOMAIN
+   * @returns {Error}  default - Unexpected error
+   */
+  app.get('/domain', (req, res) => {
+    res.json(cfg.domain);
+  });
 
   /**
    * Show name (MSPID) of my organization
@@ -110,11 +121,11 @@ const appRouter = (app) => {
    * @returns {string} 200 - MSPID
    * @returns {Error}  default - Unexpected error
    */
-    app.get('/mspid', (req, res) => {
-        res.json(fabricStarterClient.getMspid());
-    });
+  app.get('/mspid', (req, res) => {
+    res.json(fabricStarterClient.getMspid());
+  });
 
-    //TODO use for development only as it may expose sensitive data
+  //TODO use for development only as it may expose sensitive data
   /**
    * Network config json to aid debugging; use for development only as it may expose sensitive data
    * @route GET /config
@@ -122,9 +133,9 @@ const appRouter = (app) => {
    * @returns {object} 200 - Network config
    * @returns {Error}  default - Unexpected error
    */
-    app.get('/config', (req, res) => {
-        res.json(fabricStarterClient.getNetworkConfig());
-    });
+  app.get('/config', (req, res) => {
+    res.json(fabricStarterClient.getNetworkConfig());
+  });
 
   /**
    * Query chaincodes installed on the first peer of my organization
@@ -180,10 +191,10 @@ const appRouter = (app) => {
     await req.fabricStarterClient.init();
     await req.fabricStarterClient.loginOrRegister(req.body.username, req.body.password || req.body.username);
 
-        const token = jsonwebtoken.sign({sub: req.fabricStarterClient.user.getName()}, jwtSecret);
-        logger.debug('token', token);
-        res.json(token);
-    }));
+    const token = jsonwebtoken.sign({sub: req.fabricStarterClient.user.getName()}, jwtSecret);
+    logger.debug('token', token);
+    res.json(token);
+  }));
 
   /**
    * Query channels joined by the first peer of my organization
@@ -411,8 +422,8 @@ const appRouter = (app) => {
         return u;
       });
     }
-        res.json(ret);
-    }));
+    res.json(ret);
+  }));
 
   /**
    * @typedef Invoke
@@ -497,7 +508,7 @@ expressSwagger({
     info: {
       description: 'API server for Hyperledger Fabric',
       title: 'fabric-starter-rest',
-      version: '1.0.0',
+      version: `FABRIC_STARTER_REST_VERSION=${process.env.FABRIC_STARTER_REST_VERSION || 'latest'}`,
     },
     // host: 'localhost:4000',
     // basePath: '/v1',
