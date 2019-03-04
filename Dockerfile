@@ -19,8 +19,8 @@ RUN git clone https://github.com/LeonidLe/fabric-sdk-node/ -b release-1.4
 RUN cp -r fabric-sdk-node/fabric-client node_modules
 RUN rm -rf fabric-sdk-node
 
-RUN git clone https://github.com/olegabu/fabric-starter-admin-web.git --branch stable --depth 1 webapp && npm install aurelia-cli -g && cd webapp && npm install
-RUN cd webapp && au build --env prod
+RUN git clone https://github.com/olegabu/fabric-starter-admin-web.git --branch stable --depth 1 admin && npm install aurelia-cli -g && cd admin && npm install
+RUN cd admin && au build --env prod
 
 # add project files (see .dockerignore for a list of excluded files)
 COPY . .
