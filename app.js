@@ -32,8 +32,8 @@ app.options('*', cors());
 
 // serve web app as static
 const webappDir = process.env.WEBAPP_DIR || './webapp';
-app.use('/webapp-welcome', express.static("./webapp-welcome"));
 app.use('/webapp', express.static(webappDir));
+app.use('/admin', express.static("./admin"));
 logger.info('serving webapp at /webapp from ' + webappDir);
 
 // serve msp directory with certificates as static
@@ -63,7 +63,7 @@ const asyncMiddleware = fn =>
 
 // require presence of JWT in Authorization Bearer header
 const jwtSecret = fabricStarterClient.getSecret();
-app.use(jwt({secret: jwtSecret}).unless({path: ['/', '/users', '/domain', '/mspid', '/config', new RegExp('/api-docs'), '/api-docs.json', /\/consortium/, /\/webapp/, '/webapp-welcome/']}));
+app.use(jwt({secret: jwtSecret}).unless({path: ['/', '/users', '/domain', '/mspid', '/config', new RegExp('/api-docs'), '/api-docs.json', /\/consortium/, /\/webapp/, '/admin/', '/msp/']}));
 
 // use fabricStarterClient for every logged in user
 const mapFabricStarterClient = {};
