@@ -154,10 +154,10 @@ const appRouter = (app) => {
    * @route POST /chaincodes
    * @group chaincodes - Queries and operations on chaincode
    * @param {string} channelId.formData.required - channel - eg: common
-   * @param {file} file.formData.required - chaincode source code archived in zip - eg: example02.zip
-   * @param {string} version.formData.required - chaincode version - eg: 1.0
+   * @param {file} file.formData.required - chaincode source code archived in zip - eg: chaincode_example02.zip
    * @param {string} targets.formData.required - list of peers to install to - eg: ["peer0.org1.example.com:7051"]
-   * @param {string} language.formData - chaincode language - eg: golang
+   * @param {string} version.formData (default 1.0) - chaincode version - eg: 1.0
+   * @param {string} language.formData (default node) - chaincode language - eg: golang
    * @returns {object} 200 - Chaincode installed
    * @returns {Error}  default - Unexpected error
    * @security JWT
@@ -368,8 +368,8 @@ const appRouter = (app) => {
   /**
    * @typedef Instantiate
    * @property {string} chaincodeId.required - chaincode name - eg: reference
-   * @property {string} fcn.required - chaincode function name - eg: init
-   * @property {Array.<string>} args.required - string encoded arguments to chaincode function - eg: ["account","1","{name:\"one\"}"]
+   * @property {string} fcn (default fcn) - chaincode function name - eg: init
+   * @property {Array.<string>} args (default []) - string encoded arguments to chaincode function - eg: ["account","1","{name:\"one\"}"]
    * @property {string} chaincodeVersion - chaincode version (default 1.0) - eg: 1.0
    * @property {string} chaincodeType - chaincode language (default node) - eg: golang
    * @property {Array.<string>} targets - list of peers to send for endorsement - eg: ["peer0.org1.example.com:7051"]
