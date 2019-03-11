@@ -50,9 +50,9 @@ module.exports = {
 
     systemChannelId: systemChannelId,
 
-
     isOrderer: ordererName == myorg,
 
+    USE_SERVICE_DISCOVERY: process.env.USE_SERVICE_DISCOVERY || true,
     INVOKE_RETRY_COUNT: process.env.INVOKE_RETRY_COUNT || 3,
     JOIN_RETRY_COUNT: process.env.JOIN_RETRY_COUNT || 10,
     INVOKE_TIMEOUT: process.env.INVOKE_TIMEOUT || 60000,

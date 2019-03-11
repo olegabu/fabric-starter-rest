@@ -218,7 +218,7 @@ class FabricStarterClient {
                 try {
                     logger.debug(`Initialise channel: ${channelId}`);
                     const channel = this.client.getChannel(channelId, false) || await this.constructChannel(channelId);
-                    await channel.initialize({discover: true, asLocalhost: asLocalhost, target: this.peer}); //TODO: is target needed
+                    await channel.initialize({discover: cfg.USE_SERVICE_DISCOVERY, asLocalhost: asLocalhost, target: this.peer}); //TODO: is target needed
                     await channel.queryInfo(this.peer, true);
                     resolve(channel);
                 } catch (e) {
