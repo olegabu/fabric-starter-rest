@@ -43,9 +43,9 @@ module.exports = function(app, server) {
   const express = require("express");
   const webappDir = process.env.WEBAPP_DIR || './webapp';
   app.use('/webapp', express.static(webappDir));
-  logger.info('serving webapp at /webapp from ' + webappDir);
-  app.use('/admin', express.static('./admin'));
-  logger.info('serving admin at /admin from ./admin');
+  logger.info(`serving webapp at /webapp from ${webappDir}`);
+  app.use('/admin', express.static(cfg.WEBADMIN_DIR));
+  logger.info(`serving admin at /admin from ${cfg.WEBADMIN_DIR}`);
 
 // serve msp directory with certificates as static
   const mspDir = process.env.MSP_DIR || './msp';
