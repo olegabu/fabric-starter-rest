@@ -5,7 +5,7 @@
   "main": "fabric-starter-client.js",
   "scripts": {
     "test": "DISCOVER_AS_LOCALHOST=true mocha",
-    "dev": "DISCOVER_AS_LOCALHOST=true nodemon app.js",
+    "dev": "./start-dev.sh",
     "start": "node app.js"
   },
   "repository": "https://github.com/olegabu/fabric-starter-rest",
