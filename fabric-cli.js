@@ -63,7 +63,7 @@ class FabricCLI {
     }
 
     async generateChannelConfigTx(channelId) {
-        await this.envSubst("templates/configtx-template.yaml", `${cfg.CRYPTO_CONFIG_DIR}/configtx.yaml`);
+        await this.envSubst(`${cfg.TEMPLATES_DIR}/configtx-template.yaml`, `${cfg.CRYPTO_CONFIG_DIR}/configtx.yaml`);
         let outputTxFile = `${cfg.CRYPTO_CONFIG_DIR}/configtx/channel_${channelId}.tx`;
         this.generateConfigTxForChannel(channelId, cfg.CRYPTO_CONFIG_DIR, "CHANNEL", outputTxFile);
         return outputTxFile;
@@ -153,7 +153,7 @@ class FabricCLI {
         });
 
         const outputFile = `crypto-config/${newOrg}_NewOrg.json`;
-        let newOrgSubstitution = await this.envSubst("templates/NewOrg.json", outputFile, env);
+        let newOrgSubstitution = await this.envSubst(`${cfg.TEMPLATES_DIR}//NewOrg.json`, outputFile, env);
 
         return {outputFile, outputJson: JSON.parse(newOrgSubstitution.outputContents)};
     }
