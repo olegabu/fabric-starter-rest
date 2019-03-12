@@ -159,10 +159,10 @@ describe('FabricStarterClient.', function () {
 
         describe('#getConsortiumMembers', () => {
             it('get Consortium members', async () => {
-                let result = await fabricStarterClient.getConsortiumMemberList(cfg.systemChannelId);
-                await setTimeout(function () {}, 1000);
-                const channel = await fabricStarterClient.getChannel(cfg.systemChannelId, true);
-                assert.equal(channel.getName(), cfg.systemChannelId);
+                let orgs = await fabricStarterClient.getConsortiumMemberList();
+                logger.warn(orgs);
+                let result = orgs[0]
+                assert.equal(result, 'org1')
             })
         })
 
