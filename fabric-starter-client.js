@@ -94,17 +94,15 @@ class FabricStarterClient {
         return chaincodeQueryResponse.getChaincodes();
     }
 
-    async getConsortiumMemberList(systemChannelId) {
-        if (cfg.isOrderer) {
-            let channel = await this.getChannel(systemChannelId || cfg.systemChannelId);
-            let sysChannelConfig = await channel.getChannelConfigFromOrderer();
-            logger.debug(sysChannelConfig);
-            let consortium = _.get(sysChannelConfig, "config.channel_group.groups.map.Consortiums");
-            logger.debug("Consortium", consortium);
-        } else {
-            let result = await axios.get(`http://${cfg.ORDERER_API_ADDR}/consortium/members`, {params: {systemChannelId}});
-            return result;
-        }
+    async getConsortiumMemberList() {
+
+        let channel = await (this.client.getChannel(cfg.systemChannelId, false) || this.constructChannel(cfg.systemChannelId));
+        let sysChannelConfig = await channel.getChannelConfigFromOrderer();
+        logger.debug(sysChannelConfig);
+        let consortium = _.get(sysChannelConfig, "config.channel_group.groups.map.Consortiums");
+        let participants = _.get(consortium, 'value.groups.map.SampleConsortium.value.groups.map')
+        participants = _.filter(_.keys(participants), name => { return name != "Orderer" })
+        return participants
     }
 
     async createChannel(channelId) {

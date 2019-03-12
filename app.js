@@ -63,15 +63,16 @@ const asyncMiddleware = fn =>
 
 // require presence of JWT in Authorization Bearer header
 const jwtSecret = fabricStarterClient.getSecret();
-app.use(jwt({secret: jwtSecret}).unless({path: ['/', '/users', '/domain', '/mspid', '/config', new RegExp('/api-docs'), '/api-docs.json', /\/consortium/, /\/webapp/, '/admin/', '/msp/']}));
+app.use(jwt({secret: jwtSecret}).unless({path: ['/', '/users', '/domain', '/mspid', '/config', new RegExp('/api-docs'), '/api-docs.json', /\/webapp/, '/admin/', '/msp/']}));
 
 // use fabricStarterClient for every logged in user
 const mapFabricStarterClient = {};
 
 app.use(async(req, res, next) => {
+  // console.log(`middleware fired with ${JSON.stringify(req.user)}`);
   if(req.user) {
     const login = req.user.sub;
-
+    
     let client = mapFabricStarterClient[login];
     if(client) {
       logger.debug('cached client for', login);
@@ -309,6 +310,21 @@ const appRouter = (app) => {
    */
   app.post('/channels/:channelId/orgs', asyncMiddleware(async(req, res, next) => {
     res.json(req.fabricStarterClient.addOrgToChannel(req.params.channelId, req.body.orgId));
+  }));
+
+  /**
+   * Add organization to the consortium
+   * @route POST /consortium/orgs
+   * @group channels - Queries and operations on channels
+   * @param {Organization.model} organization.body.required
+   * @returns {object} 200 - Organization added
+   * @returns {Error}  default - Unexpected error
+   * @security JWT
+   */
+
+  app.post('/consortium/orgs', asyncMiddleware(async(req, res, next) => {
+    console.log(req.fabricStarterClient);
+    res.json(req.fabricStarterClient.addOrgToConsortium(req.body.orgId));
   }));
 
   /**
