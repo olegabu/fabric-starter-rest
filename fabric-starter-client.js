@@ -243,7 +243,7 @@ class FabricStarterClient {
 
     async installChaincode(channelId, chaincodeId, chaincodePath, version, language, targets, storage) {
         const channel = await this.getChannel(channelId);
-        const peer = this.createTargetsList(channel, targets);
+        const foundPeers = this.createTargetsList(channel, targets);
         const client = this.client;
         return new Promise((resolve, reject) => {
             fs.createReadStream(chaincodePath).pipe(unzip.Extract({path: storage}))
@@ -251,7 +251,7 @@ class FabricStarterClient {
                     fs.unlink(chaincodePath);
                     let chaincode_path = path.resolve(__dirname, `${storage}/${chaincodeId}`);
                     const proposal = {
-                        targets: peer.peers._peer,
+                        targets: _.get(foundPeers, "peers[0]"),
                         channelNames: channelId,
                         chaincodeId: chaincodeId,
                         chaincodePath: chaincode_path,
@@ -473,11 +473,11 @@ class FabricStarterClient {
         let badPeers = [];
         _.each(_.compact(_.concat([], targets.targets, targets.peers)), function (value) {
             let peer = _.find(channel.getChannelPeers(), p => p._name === value);
-            if (_.isNil(peer)) {
+            if (peer) {
+                peers.push(peer);
+            } else {
                 logger.error(`Peer ${value} not found`);
                 badPeers.push(value);
-            } else {
-                peers.push(peer);
             }
         });
 
