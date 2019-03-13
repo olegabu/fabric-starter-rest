@@ -158,6 +158,23 @@ class FabricCLI {
         return {outputFile, outputJson: JSON.parse(newOrgSubstitution.outputContents)};
     }
 
+    async prepareNewConsortiumConfig(newOrg) {
+        this.downloadOrgMSP(newOrg);
+
+        let env = {NEWORG: newOrg, DOMAIN:cfg.domain, CONSORTIUM_NAME: 'SampleConsortium'};
+        _.forEach(_.keys(CERT_FOLDERS_PREFIXES), certFolder => {
+            let certPrefix=CERT_FOLDERS_PREFIXES[certFolder];
+            let certFilePath = path.join(this.getCertFileDir(certFolder, cfg.orgCryptoConfigPath(newOrg)), this.getCertFileName(certPrefix, newOrg));
+            let certContent = this.loadFileContentSync(certFilePath);
+            env[certPrefix.envVar]=Buffer.from(certContent).toString('base64');
+        });
+
+        const outputFile = `crypto-config/${newOrg}_Consortium.json`;
+        let newOrgSubstitution = await this.envSubst("templates/Consortium.json", outputFile, env);
+
+        return {outputFile, outputJson: JSON.parse(newOrgSubstitution.outputContents)};
+    }
+
     getCertFileDir(certFolder, domaiCertPath) {
         return `${domaiCertPath}/msp/${certFolder}`;
     }

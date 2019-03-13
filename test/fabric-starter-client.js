@@ -157,16 +157,16 @@ describe('FabricStarterClient.', function () {
             await fabricStarterClient.loginOrRegister(username, password);
         });
 
-        describe('#getConsortiumMembers', () => {
-            it('get Consortium members', async () => {
-                let result = await fabricStarterClient.getConsortiumMemberList(cfg.systemChannelId);
-                await setTimeout(function () {}, 1000);
-                const channel = await fabricStarterClient.getChannel(cfg.systemChannelId, true);
-                assert.equal(channel.getName(), cfg.systemChannelId);
-            })
-        })
+      describe('#getConsortiumMembers', () => {
+          it('get Consortium members', async () => {
+              let orgs = await fabricStarterClient.getConsortiumMemberList();
+              let result = orgs[0]
+              logger.warn('result ', result)
+              assert.equal(result, 'org1')
+          })
+      })
 
-    });
+  });
 
 
   describe('Query peer.', () => {
