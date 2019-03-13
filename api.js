@@ -74,7 +74,7 @@ module.exports = function(app, server) {
 
 // require presence of JWT in Authorization Bearer header
   const jwtSecret = fabricStarterClient.getSecret();
-  app.use(jwt({secret: jwtSecret}).unless({path: ['/', '/users', '/domain', '/mspid', '/config', new RegExp('/api-docs'), '/api-docs.json', /\/consortium/, /\/webapp/, '/admin/', '/msp/']}));
+  app.use(jwt({secret: jwtSecret}).unless({path: ['/', '/users', '/domain', '/mspid', '/config', new RegExp('/api-docs'), '/api-docs.json', /\/webapp/, '/admin/', '/msp/']}));
 
 // use fabricStarterClient for every logged in user
   const mapFabricStarterClient = {};
@@ -462,7 +462,7 @@ module.exports = function(app, server) {
   /**
    * Query member organizations of current consortium
    * @route GET /consortium/members
-   * @group orgs - Queries for organizations
+   * @group consortium - view and control participants
    * @returns {object} 200 - Array of MSPIDs
    * @returns {Error}  default - Unexpected error
    * @security JWT
@@ -471,6 +471,19 @@ module.exports = function(app, server) {
     res.json(await req.fabricStarterClient.getConsortiumMemberList());
   }));
 
+  /**
+   * Add organization to the consortium
+   * @route POST /consortium/members
+   * @group consortium - view and control participants
+   * @param {Organization.model} organization.body.required
+   * @returns {object} 200 - Organization added
+   * @returns {Error}  default - Unexpected error
+   * @security JWT
+   */
+  app.post('/consortium/members', asyncMiddleware(async(req, res, next) => {
+    console.log(req.fabricStarterClient);
+    res.json(req.fabricStarterClient.addOrgToConsortium(req.body.orgId));
+  }));
 
   function extractTargets(req, prop) {
     const result = {};

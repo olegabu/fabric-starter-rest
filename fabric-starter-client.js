@@ -94,17 +94,58 @@ class FabricStarterClient {
         return chaincodeQueryResponse.getChaincodes();
     }
 
-    async getConsortiumMemberList(systemChannelId) {
-        if (cfg.isOrderer) {
-            let channel = await this.getChannel(systemChannelId || cfg.systemChannelId);
-            let sysChannelConfig = await channel.getChannelConfigFromOrderer();
-            logger.debug(sysChannelConfig);
-            let consortium = _.get(sysChannelConfig, "config.channel_group.groups.map.Consortiums");
-            logger.debug("Consortium", consortium);
-        } else {
-            let result = await axios.get(`http://${cfg.ORDERER_API_ADDR}/consortium/members`, {params: {systemChannelId}});
-            return result;
+    async getConsortiumMemberList() {
+
+        let channel = await (this.client.getChannel(cfg.systemChannelId, false) || this.constructChannel(cfg.systemChannelId));
+        let sysChannelConfig = await channel.getChannelConfigFromOrderer();
+        logger.debug(sysChannelConfig);
+        let consortium = _.get(sysChannelConfig, "config.channel_group.groups.map.Consortiums");
+        let participants = _.get(consortium, 'value.groups.map.SampleConsortium.value.groups.map')
+        participants = _.filter(_.keys(participants), name => { return name != "Orderer" })
+        return participants
+    }
+
+    async addOrgToConsortium(newOrg) {
+        const channelId = cfg.systemChannelId
+
+        let channelConfigFile = fabricCLI.fetchChannelConfig(channelId);
+        let channelConfigBlock = await fabricCLI.translateChannelConfig(channelConfigFile);
+        logger.debug(`Got channel config ${channelId}:`, channelConfigBlock);
+
+        let channelConfigEnvelope = JSON.parse(channelConfigBlock.toString());
+        let origChannelGroupConfig = _.get(channelConfigEnvelope, "data.data[0].payload.data.config");
+
+        let newOrgConfigResp = await fabricCLI.prepareNewConsortiumConfig(newOrg);
+
+        let updatedConfig = _.merge({}, origChannelGroupConfig);
+        if (_.get(updatedConfig, "channel_group.groups")) {
+            _.merge(updatedConfig.channel_group.groups, newOrgConfigResp.outputJson);
         }
+
+        logger.debug(`Channel updated config ${channelId}:`, JSON.stringify(updatedConfig));
+
+        try {
+            let configUpdate = fabricCLI.computeChannelConfigUpdate(channelId, origChannelGroupConfig, updatedConfig);
+            logger.debug(`Got updated envelope ${channelId}:`, _.toString(configUpdate));
+            const txId = this.client.newTransactionID();
+
+            try {
+                let update = await this.client.updateChannel({
+                    txId, name: channelId, config: configUpdate, orderer: this.createOrderer(),
+                    signatures: [this.client.signChannelConfig(configUpdate)]
+                });
+                logger.info(`Update channel result ${channelId}:`, update);
+                this.invalidateChannelsCache(channelId);
+            } catch (e) {
+                logger.error(e);
+            }
+        } catch (e) {
+            logger.error(`Couldn't fetch/translate config for channel ${channelId}`, e);
+        } finally {
+            this.chmodCryptoFolder();
+        }
+        // participants = _.filter(_.keys(participants), name => { return name != "Orderer" })
+        return 'ok'
     }
 
     async createChannel(channelId) {
