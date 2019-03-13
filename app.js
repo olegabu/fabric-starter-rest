@@ -314,15 +314,15 @@ const appRouter = (app) => {
 
   /**
    * Add organization to the consortium
-   * @route POST /consortium/orgs
-   * @group channels - Queries and operations on channels
+   * @route POST /consortium/members
+   * @group channels - submits a proposal to add provided organization to consortium 
    * @param {Organization.model} organization.body.required
    * @returns {object} 200 - Organization added
    * @returns {Error}  default - Unexpected error
    * @security JWT
    */
 
-  app.post('/consortium/orgs', asyncMiddleware(async(req, res, next) => {
+  app.post('/consortium/members', asyncMiddleware(async(req, res, next) => {
     console.log(req.fabricStarterClient);
     res.json(req.fabricStarterClient.addOrgToConsortium(req.body.orgId));
   }));
