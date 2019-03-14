@@ -136,6 +136,7 @@ class FabricStarterClient {
                 });
                 logger.info(`Update channel result ${channelId}:`, update);
                 this.invalidateChannelsCache(channelId);
+                return update
             } catch (e) {
                 logger.error(e);
             }
@@ -145,7 +146,7 @@ class FabricStarterClient {
             this.chmodCryptoFolder();
         }
         // participants = _.filter(_.keys(participants), name => { return name != "Orderer" })
-        return 'ok'
+        // return 'ok'
     }
 
     async createChannel(channelId) {
