@@ -4,7 +4,7 @@ const express = require('express');
 const app = express();
 
 const server = app.listen(process.env.PORT || 3000, () => {
-  logger.info('started fabric-starter rest server on port', server.address().port);
+    logger.info('started fabric-starter rest server on port', server.address().port);
 });
 
 const api = require('./api');
@@ -14,7 +14,14 @@ api(app, server);
 const glob = require('glob');
 const path = require('path');
 glob.sync('./routes/**/*.js').forEach(file => {
-  const route = require(path.resolve(file));
-  route(app);
-  logger.info('started route', file);
+    const route = require(path.resolve(file));
+    route(app);
+    logger.info('started route', file);
+});
+
+glob.sync('./webapps/*').forEach(dir => {
+    const appFolder = path.resolve(dir);
+    const context = path.basename(dir);
+    app.use(`/${context}`, express.static(appFolder));
+    logger.info('static webapp', dir);
 });

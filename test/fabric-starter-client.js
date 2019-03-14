@@ -142,12 +142,19 @@ describe('FabricStarterClient.', function () {
         describe('#joinChannelCommon', () => {
             it('join channel "Common"', async () => {
                 try {
-                    //await fabricStarterClient.joinChannel(testChannelName);
+                    await fabricStarterClient.joinChannel(testChannelName);
                     assert.fail('should fail joining second time');
                 } catch (e) {
                     console.log(e);
                     assert.ok(e.actual == "should fail joining second time");
                 }
+            })
+        });
+
+        describe('#updateChannelConfig', () => {
+            it('add org to channel', async () => {
+                await fabricStarterClient.addOrgToChannel(testChannelName, "org2");
+                assert.ok(false);
             })
         })
     });

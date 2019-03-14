@@ -634,7 +634,6 @@ class FabricStarterClient {
     decodeCert(cert) {
         return x509.parseCert(cert);
     }
-
 }
 
 module.exports = FabricStarterClient;

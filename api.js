@@ -10,17 +10,16 @@ module.exports = function(app, server) {
   const cfg = require('./config.js');
 
   // upload for chaincode and app installation
-  const storage = os.tmpdir() || './upload';
+  const uploadDir = os.tmpdir() || './upload';
   const multer = require('multer');
-  const upload = multer({dest: storage});
-  const cpUpload = upload.fields([{name: 'file', maxCount: 1}, {
-    name: 'channelId',
-    maxCount: 1
-  }, {name: 'targets'}, {name: 'version', maxCount: 1}, {name: 'language', maxCount: 1}]);
+  const upload = multer({dest: uploadDir});
+  const fileUpload = upload.fields([ {name: 'file', maxCount: 1}, { name: 'channelId', maxCount: 1},
+    {name: 'targets'}, {name: 'version', maxCount: 1}, {name: 'language', maxCount: 1}]);
 
   // fabric client
   const FabricStarterClient = require('./fabric-starter-client');
   const fabricStarterClient = new FabricStarterClient();
+  const webAppManager = require('./web-app-manager');
 
   // socket.io server to pass blocks to webapps
   const Socket = require('./rest-socket-server');
@@ -172,10 +171,10 @@ module.exports = function(app, server) {
    * @security JWT
    * @consumes multipart/form-data
    */
-  app.post('/chaincodes', cpUpload, asyncMiddleware(async(req, res, next) => {
+  app.post('/chaincodes', fileUpload, asyncMiddleware(async(req, res, next) => {
     res.json(await req.fabricStarterClient.installChaincode(
       req.files['file'][0].originalname.substring(0, req.files['file'][0].originalname.length - 4),
-      req.files['file'][0].path, req.body.version, req.body.language, storage));
+      req.files['file'][0].path, req.body.version, req.body.language, uploadDir));
   }));
 
   /**
@@ -484,6 +483,70 @@ module.exports = function(app, server) {
     console.log(req.fabricStarterClient);
     res.json(await req.fabricStarterClient.addOrgToConsortium(req.body.orgId));
   }));
+
+  /**
+   * Get list of deployed custom web applications
+   * @route GET /applications
+   * @group applications - Web applications
+   * @returns {Error}  default - Unexpected error
+   * @security JWT
+   */
+  app.get('/applications', fileUpload, asyncMiddleware(async(req, res, next) => {
+    res.json(await webAppManager.getWebAppsList());
+  }));
+
+  /**
+   * Deploy new web application
+   * @route POST /applications
+   * @group applications - Web applications
+   * @param {file} file.formData.required - application compiled folder archived in zip - eg: coolwebapp.zip
+   * @returns {Error}  default - Unexpected error
+   * @security JWT
+   */
+  app.post('/applications', fileUpload, asyncMiddleware(async (req, res, next) => {
+      let fileUploadObj = _.get(req, "files.file[0]");
+      const fileBaseName = path.basename(fileUploadObj.originalname, path.extname(fileUploadObj.originalname));
+      res.json(await webAppManager.provisionWebAppFromPackage(fileUploadObj)
+          .then(extractParentPath => {
+              let appFolder=path.resolve(extractParentPath, fileBaseName);
+              app.use(`/${fileBaseName}`, express.static(appFolder));
+              return webAppManager.getWebAppsList();
+      }));
+  }));
+
+
+  /**
+   * Get list of deployed custom middlewares
+   * @route GET /middlewares
+   * @group middlewares - Middlewares
+   * @returns {Error}  default - Unexpected error
+   * @security JWT
+   */
+  app.get('/middlewares', fileUpload, asyncMiddleware(async(req, res, next) => {
+      const list = await webAppManager.getMiddlewareList();
+      res.json(list);
+  }));
+
+  /**
+   * Deploy new middleware
+   * @route POST /middlewares
+   * @group middlewares - Web applications
+   * @param {file} file.formData.required - middlewares's js file
+   * @returns {Error}  default - Unexpected error
+   * @security JWT
+   */
+  app.post('/middlewares', fileUpload, asyncMiddleware(async (req, res, next) => {
+      let fileUploadObj = _.get(req, "files.file[0]");
+      res.json(await webAppManager.provisionMiddleware(fileUploadObj)
+          .then(extractParentPath => {
+              const route = require(extractParentPath);
+              route(app, asyncMiddleware);
+              return webAppManager.getMiddlewareList();
+      }));
+  }));
+
+
+
 
   function extractTargets(req, prop) {
     const result = {};
