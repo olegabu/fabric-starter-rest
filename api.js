@@ -482,7 +482,7 @@ module.exports = function(app, server) {
    */
   app.post('/consortium/members', asyncMiddleware(async(req, res, next) => {
     console.log(req.fabricStarterClient);
-    res.json(req.fabricStarterClient.addOrgToConsortium(req.body.orgId));
+    res.json(await req.fabricStarterClient.addOrgToConsortium(req.body.orgId));
   }));
 
   function extractTargets(req, prop) {
