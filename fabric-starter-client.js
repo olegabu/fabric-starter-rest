@@ -101,7 +101,9 @@ class FabricStarterClient {
         logger.debug(sysChannelConfig);
         let consortium = _.get(sysChannelConfig, "config.channel_group.groups.map.Consortiums");
         let participants = _.get(consortium, 'value.groups.map.SampleConsortium.value.groups.map')
-        participants = _.filter(_.keys(participants), name => { return name != "Orderer" })
+        participants = _.filter(_.keys(participants), name => {
+            return name != "Orderer"
+        })
         return participants
     }
 
@@ -260,7 +262,11 @@ class FabricStarterClient {
                 try {
                     logger.debug(`Initialise channel: ${channelId}`);
                     const channel = this.client.getChannel(channelId, false) || await this.constructChannel(channelId);
-                    await channel.initialize({discover: cfg.USE_SERVICE_DISCOVERY, asLocalhost: asLocalhost, target: this.peer}); //TODO: is target needed
+                    await channel.initialize({
+                        discover: cfg.USE_SERVICE_DISCOVERY,
+                        asLocalhost: asLocalhost,
+                        target: this.peer
+                    }); //TODO: is target needed
                     await channel.queryInfo(this.peer, true);
                     resolve(channel);
                 } catch (e) {
@@ -283,9 +289,8 @@ class FabricStarterClient {
         return channelEventHub;
     }
 
-    async installChaincode(channelId, chaincodeId, chaincodePath, version, language, targets, storage) {
-        const channel = await this.getChannel(channelId);
-        const foundPeers = this.createTargetsList(channel, targets);
+    async installChaincode(chaincodeId, chaincodePath, version, language, storage) {
+        const peer = this.peer;
         const client = this.client;
         return new Promise((resolve, reject) => {
             fs.createReadStream(chaincodePath).pipe(unzip.Extract({path: storage}))
@@ -293,8 +298,7 @@ class FabricStarterClient {
                     fs.unlink(chaincodePath);
                     let chaincode_path = path.resolve(__dirname, `${storage}/${chaincodeId}`);
                     const proposal = {
-                        targets: _.get(foundPeers, "peers[0]"),
-                        channelNames: channelId,
+                        targets: peer,
                         chaincodeId: chaincodeId,
                         chaincodePath: chaincode_path,
                         chaincodeVersion: version || '1.0',
