@@ -173,9 +173,9 @@ module.exports = function(app, server) {
    * @consumes multipart/form-data
    */
   app.post('/chaincodes', cpUpload, asyncMiddleware(async(req, res, next) => {
-    res.json(await req.fabricStarterClient.installChaincode(req.body.channelId,
+    res.json(await req.fabricStarterClient.installChaincode(
       req.files['file'][0].originalname.substring(0, req.files['file'][0].originalname.length - 4),
-      req.files['file'][0].path, req.body.version, req.body.language, req.body.targets.split(','), storage));
+      req.files['file'][0].path, req.body.version, req.body.language, storage));
   }));
 
   /**
