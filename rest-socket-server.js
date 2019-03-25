@@ -1,5 +1,6 @@
 const SocketServer = require('socket.io');
 const logger = require('log4js').getLogger('RestSocketServer');
+const _ = require('lodash');
 
 class RestSocketServer {
 
@@ -26,7 +27,8 @@ class RestSocketServer {
   async updateServer(channel) {
 
     await this.fabricStarterClient.registerBlockEvent(channel, block => {
-      logger.debug(`block ${block.number} on ${block.channel_id}`);
+      let blockNumber = block.number || _.get(block, "header.number");
+      logger.debug(`block ${blockNumber} on ${block.channel_id}`);
       this.io.emit('chainblock', block);
     }, e => {
       logger.error('registerBlockEvent', e);
