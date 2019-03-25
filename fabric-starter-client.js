@@ -103,12 +103,12 @@ class FabricStarterClient {
         let participants = _.get(consortium, 'value.groups.map.SampleConsortium.value.groups.map')
         participants = _.filter(_.keys(participants), name => {
             return name != "Orderer"
-        })
+        });
         return participants
     }
 
     async addOrgToConsortium(newOrg) {
-        const channelId = cfg.systemChannelId
+        const channelId = cfg.systemChannelId;
 
         let channelConfigFile = fabricCLI.fetchChannelConfig(channelId);
         let channelConfigBlock = await fabricCLI.translateChannelConfig(channelConfigFile);
@@ -153,10 +153,10 @@ class FabricStarterClient {
 
     async createChannel(channelId) {
         try {
-            logger.info(channelId);
-            const tx_id = this.client.newTransactionID(true);
-
+            logger.info(`Creating channel ${channelId}`);
             fabricCLI.downloadOrdererMSP();
+
+            const tx_id = this.client.newTransactionID(true);
             let orderer = this.createOrderer();
 
             let channelReq = {
@@ -180,6 +180,9 @@ class FabricStarterClient {
     }
 
     async joinChannel(channelId) {
+        logger.info(`Joining channel ${channelId}`);
+        fabricCLI.downloadOrdererMSP();
+
         const tx2_id = this.client.newTransactionID(true);
         let peers = await this.queryPeers();
         let channel = await this.constructChannel(channelId, peers);
@@ -196,6 +199,8 @@ class FabricStarterClient {
     }
 
     async addOrgToChannel(channelId, orgId) {
+
+        fabricCLI.downloadOrdererMSP();
         let channelConfigFile = fabricCLI.fetchChannelConfig(channelId);
         let channelConfigBlock = await fabricCLI.translateChannelConfig(channelConfigFile);
         logger.debug(`Got channel config ${channelId}:`, channelConfigBlock);
@@ -281,11 +286,11 @@ class FabricStarterClient {
         return inProcessPromise;
     }
 
-    getChannelEventHub(channel) {
+    getChannelEventHub(channel, options) {
         //const channelEventHub = channel.getChannelEventHub(this.peer.getName());
         const channelEventHub = channel.newChannelEventHub(this.peer.getName());
         // const channelEventHub = channel.getChannelEventHubsForOrg()[0];
-        channelEventHub.connect();
+        channelEventHub.connect(options);
         return channelEventHub;
     }
 
@@ -594,9 +599,9 @@ class FabricStarterClient {
         return peers;
     }
 
-    async registerBlockEvent(channelId, onEvent, onError) {
+    async registerBlockEvent(channelId, onEvent, onError, eventHubConnectOptions) {
         const channel = await this.getChannel(channelId);
-        const channelEventHub = this.getChannelEventHub(channel);
+        const channelEventHub = this.getChannelEventHub(channel, eventHubConnectOptions);
         return channelEventHub.registerBlockEvent(onEvent, onError);
     }
 

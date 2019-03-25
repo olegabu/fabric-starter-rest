@@ -10,7 +10,7 @@ module.exports = async app => {
 
   channels.forEach(async o => {
     await fabricStarterClient.registerBlockEvent(o.channel_id, block => {
-      logger.debug(`block ${block.number} on ${block.channel_id}`);
+      logger.debug(`block ${block.number || (block.header && block.header.number)} on ${block.channel_id}`);
     }, e => {
       logger.error('registerBlockEvent', e);
     });

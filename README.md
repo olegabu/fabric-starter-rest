@@ -51,6 +51,13 @@ GRPC_MIN_TIME_BETWEEN_PINGS_MS| 300000 (5 minutes)|_Fabric-starter-rest_ resets 
 
 # Versioning
 
+`snapshot-0.4-1.4`:
+- Consortium operations
+- Layout\features update of admin app 
+- Upload custom webapps 
+- Register new org IP in dns 
+
+
 `snapshot-0.2-1.4`:
 - Support multiple users login
 - Fix parallel simultaneous logons of same user 
