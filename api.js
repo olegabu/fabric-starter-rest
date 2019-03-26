@@ -24,7 +24,7 @@ module.exports = function(app, server) {
   // socket.io server to pass blocks to webapps
   const Socket = require('./rest-socket-server');
   const socket = new Socket(fabricStarterClient);
-  socket.startSocketServer(server).then(() => {
+  socket.startSocketServer(server, cfg.UI_LISTEN_BLOCK_OPTS).then(() => {
     logger.info('started socket server');
   });
 
