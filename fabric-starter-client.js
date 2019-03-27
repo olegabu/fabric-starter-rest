@@ -362,6 +362,46 @@ class FabricStarterClient {
         });
     }
 
+    async upgradeChaincode(channelId, chaincodeId, type, fnc, args, version, targets, waitForTransactionEvent) {
+        const channel = await this.getChannel(channelId);
+
+        const tx_id = this.client.newTransactionID(true);
+        const proposal = {
+            chaincodeId: chaincodeId,
+            chaincodeType: type || 'node',
+            fcn: fnc || 'init',
+            args: args || [],
+            chaincodeVersion: version || '1.0',
+            txId: tx_id,
+        };
+
+        let badPeers;
+
+        if (targets) {
+            const targetsList = this.createTargetsList(channel, targets);
+            const foundPeers = targetsList.peers;
+            badPeers = targetsList.badPeers;
+            logger.trace('badPeers', badPeers);
+
+            proposal.targets = foundPeers;
+        }
+        logger.info('Sent upgrade proposal');
+        const results = await channel.sendUpgradeProposal(proposal, cfg.INVOKE_TIMEOUT);
+        this.errorCheck(results);
+        const transactionRequest = {
+            txId: tx_id,
+            proposalResponses: results[0],
+            proposal: results[1],
+        };
+        const promise = waitForTransactionEvent ? this.waitForTransactionEvent(tx_id, channel) : Promise.resolve(tx_id);
+        const broadcastResponse = await channel.sendTransaction(transactionRequest);
+        logger.trace('broadcastResponse', broadcastResponse);
+        return promise.then(function (res) {
+            res.badPeers = badPeers;
+            return res;
+        });
+    }
+
     async retryInvoke(nTimes, resolve, reject, fn) {
 
         if (nTimes <= 0) return reject(`Invocation unsuccessful for ${cfg.INVOKE_RETRY_COUNT} retries.`);

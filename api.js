@@ -396,7 +396,23 @@ module.exports = function(app, server) {
    */
   app.post('/channels/:channelId/chaincodes', asyncMiddleware(async(req, res, next) => {
     res.json(await req.fabricStarterClient.instantiateChaincode(req.params.channelId, req.body.chaincodeId,
-      req.body.chaincodeType, req.body.fcn, req.body.args, req.body.chaincodeVersion, req.body.targets));
+      req.body.chaincodeType, req.body.fcn, req.body.args, req.body.chaincodeVersion, req.body.targets, req.body.waitForTransactionEvent));
+  }));
+
+    /**
+     * Upgrade chaincode
+     * @route POST /channels/{channelId}/chaincodes/upgrade
+     * @group channels - Queries and operations on channels
+     * @param {string} channelId.path.required - channel - eg: common
+     * @param {upgrade.model} upgrade.body.required - upgrade request
+     * @returns {object} 200 - Transaction id
+     * @returns {Error}  default - Unexpected error
+     * @security JWT
+     */
+
+  app.post('/channels/:channelId/chaincodes/upgrade', asyncMiddleware(async(req, res, next) => {
+    res.json(await req.fabricStarterClient.upgradeChaincode(req.params.channelId, req.body.chaincodeId,
+      req.body.chaincodeType, req.body.fcn, req.body.args, req.body.chaincodeVersion, req.body.targets, req.body.waitForTransactionEvent));
   }));
 
   /**
