@@ -14,7 +14,9 @@ module.exports = function(app, server) {
   const multer = require('multer');
   const upload = multer({dest: uploadDir});
   const fileUpload = upload.fields([ {name: 'file', maxCount: 1}, { name: 'channelId', maxCount: 1},
-    {name: 'targets'}, {name: 'version', maxCount: 1}, {name: 'language', maxCount: 1}]);
+    {name: 'targets'}, {name: 'version', maxCount: 1}, {name: 'language', maxCount: 1},{name: 'fcn', maxCount: 1},
+    {name: 'args', maxCount: 1},{name: 'chaincodeType', maxCount: 1},{name: 'chaincodeId', maxCount: 1},
+    {name: 'chaincodeVersion', maxCount: 1},{name: 'waitForTransactionEvent', maxCount: 1},{name: 'policy', maxCount: 1}]);
 
   // fabric client
   const FabricStarterClient = require('./fabric-starter-client');
@@ -394,9 +396,13 @@ module.exports = function(app, server) {
    * @returns {Error}  default - Unexpected error
    * @security JWT
    */
-  app.post('/channels/:channelId/chaincodes', asyncMiddleware(async(req, res, next) => {
-    res.json(await req.fabricStarterClient.instantiateChaincode(req.params.channelId, req.body.chaincodeId,
-      req.body.chaincodeType, req.body.fcn, req.body.args, req.body.chaincodeVersion, req.body.targets, req.body.waitForTransactionEvent));
+  app.post('/channels/:channelId/chaincodes', fileUpload, asyncMiddleware(async(req, res, next) => {
+    if(req.files['file'])
+      res.json(await req.fabricStarterClient.instantiateChaincode(req.params.channelId, req.body.chaincodeId,
+        req.body.chaincodeType, req.body.fcn, req.body.args, req.body.chaincodeVersion, req.body.targets, req.body.waitForTransactionEvent, req.body.policy, req.files['file'][0].path));
+    else
+        res.json(await req.fabricStarterClient.instantiateChaincode(req.params.channelId, req.body.chaincodeId,
+            req.body.chaincodeType, req.body.fcn, req.body.args, req.body.chaincodeVersion, req.body.targets, req.body.waitForTransactionEvent, req.body.policy));
   }));
 
     /**
@@ -410,9 +416,13 @@ module.exports = function(app, server) {
      * @security JWT
      */
 
-  app.post('/channels/:channelId/chaincodes/upgrade', asyncMiddleware(async(req, res, next) => {
-    res.json(await req.fabricStarterClient.upgradeChaincode(req.params.channelId, req.body.chaincodeId,
-      req.body.chaincodeType, req.body.fcn, req.body.args, req.body.chaincodeVersion, req.body.targets, req.body.waitForTransactionEvent));
+  app.post('/channels/:channelId/chaincodes/upgrade', fileUpload, asyncMiddleware(async(req, res, next) => {
+    if(req.files['file'])
+       res.json(await req.fabricStarterClient.upgradeChaincode(req.params.channelId, req.body.chaincodeId,
+          req.body.chaincodeType, req.body.fcn, req.body.args, req.body.chaincodeVersion, req.body.targets, req.body.waitForTransactionEvent, req.body.policy, req.files['file'][0].path));
+    else
+        res.json(await req.fabricStarterClient.upgradeChaincode(req.params.channelId, req.body.chaincodeId,
+            req.body.chaincodeType, req.body.fcn, req.body.args, req.body.chaincodeVersion, req.body.targets, req.body.waitForTransactionEvent, req.body.policy));
   }));
 
   /**

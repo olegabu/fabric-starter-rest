@@ -322,17 +322,25 @@ class FabricStarterClient {
         });
     }
 
-    async instantiateChaincode(channelId, chaincodeId, type, fnc, args, version, targets, waitForTransactionEvent) {
+    async instantiateChaincode(channelId, chaincodeId, type, fnc, args, version, targets, waitForTransactionEvent, policy, collections) {
         const channel = await this.getChannel(channelId);
 
         const tx_id = this.client.newTransactionID(true);
+        let collectionsConfigPath;
+        if (collections)
+            collectionsConfigPath = path.resolve(__dirname, collections);
+        let endorsmentPolicy;
+        if (policy)
+            endorsmentPolicy = JSON.parse(policy);
         const proposal = {
             chaincodeId: chaincodeId,
             chaincodeType: type || 'node',
             fcn: fnc || 'init',
             args: args || [],
             chaincodeVersion: version || '1.0',
-            txId: tx_id
+            txId: tx_id,
+            'endorsement-policy': endorsmentPolicy,
+            'collections-config': collectionsConfigPath
         };
 
         let badPeers;
@@ -346,6 +354,7 @@ class FabricStarterClient {
             proposal.targets = foundPeers;
         }
         logger.info('Sent instantiate proposal');
+        logger.trace(proposal);
         const results = await channel.sendInstantiateProposal(proposal, cfg.INVOKE_TIMEOUT);
         this.errorCheck(results);
         const transactionRequest = {
@@ -362,10 +371,16 @@ class FabricStarterClient {
         });
     }
 
-    async upgradeChaincode(channelId, chaincodeId, type, fnc, args, version, targets, waitForTransactionEvent) {
+    async upgradeChaincode(channelId, chaincodeId, type, fnc, args, version, targets, waitForTransactionEvent, policy, collections) {
         const channel = await this.getChannel(channelId);
 
         const tx_id = this.client.newTransactionID(true);
+        let collectionsConfigPath;
+        if (collections)
+            collectionsConfigPath = path.resolve(__dirname, collections);
+        let endorsmentPolicy;
+        if (policy)
+            endorsmentPolicy = JSON.parse(policy);
         const proposal = {
             chaincodeId: chaincodeId,
             chaincodeType: type || 'node',
@@ -373,6 +388,8 @@ class FabricStarterClient {
             args: args || [],
             chaincodeVersion: version || '1.0',
             txId: tx_id,
+            'endorsement-policy': endorsmentPolicy,
+            'collections-config': collectionsConfigPath
         };
 
         let badPeers;
@@ -386,6 +403,7 @@ class FabricStarterClient {
             proposal.targets = foundPeers;
         }
         logger.info('Sent upgrade proposal');
+        logger.trace(proposal);
         const results = await channel.sendUpgradeProposal(proposal, cfg.INVOKE_TIMEOUT);
         this.errorCheck(results);
         const transactionRequest = {
