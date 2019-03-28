@@ -341,8 +341,10 @@ class FabricStarterClient {
             'endorsement-policy': endorsmentPolicy,
             'collections-config': collectionsConfigPath
         };
-        if (args)
+        if (args && !_.isArray(args))
             proposal.args = args.trim().split(" ");
+        else if (args)
+            proposal.args = args;
         let badPeers;
 
         if (targets) {
@@ -390,8 +392,10 @@ class FabricStarterClient {
             'endorsement-policy': endorsmentPolicy,
             'collections-config': collectionsConfigPath
         };
-        if (args)
+        if (args && !_.isArray(args))
             proposal.args = args.trim().split(" ");
+        else if (args)
+            proposal.args = args;
         let badPeers;
 
         if (targets) {
