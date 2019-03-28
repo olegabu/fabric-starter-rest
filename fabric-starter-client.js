@@ -298,14 +298,14 @@ class FabricStarterClient {
         const peer = this.peer;
         const client = this.client;
         return new Promise((resolve, reject) => {
-            fs.createReadStream(chaincodePath).pipe(unzip.Extract({path: storage}))
+            fs.createReadStream(chaincodePath).pipe(unzip.Extract({path: language === 'golang' ? '/opt/gopath/src' : storage}))
                 .on('close', async function () {
                     fs.unlink(chaincodePath);
                     let chaincode_path = path.resolve(__dirname, `${storage}/${chaincodeId}`);
                     const proposal = {
                         targets: peer,
                         chaincodeId: chaincodeId,
-                        chaincodePath: chaincode_path,
+                        chaincodePath: language === 'golang' ? chaincodeId : chaincode_path,
                         chaincodeVersion: version || '1.0',
                         chaincodeType: language || 'node',
                     };
