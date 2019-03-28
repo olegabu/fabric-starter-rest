@@ -336,13 +336,13 @@ class FabricStarterClient {
             chaincodeId: chaincodeId,
             chaincodeType: type || 'node',
             fcn: fnc || 'init',
-            args: args || [],
             chaincodeVersion: version || '1.0',
             txId: tx_id,
             'endorsement-policy': endorsmentPolicy,
             'collections-config': collectionsConfigPath
         };
-
+        if (args)
+            proposal.args = args.trim().split(" ");
         let badPeers;
 
         if (targets) {
@@ -385,13 +385,13 @@ class FabricStarterClient {
             chaincodeId: chaincodeId,
             chaincodeType: type || 'node',
             fcn: fnc || 'init',
-            args: args || [],
             chaincodeVersion: version || '1.0',
             txId: tx_id,
             'endorsement-policy': endorsmentPolicy,
             'collections-config': collectionsConfigPath
         };
-
+        if (args)
+            proposal.args = args.trim().split(" ");
         let badPeers;
 
         if (targets) {
