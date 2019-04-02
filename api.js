@@ -399,10 +399,10 @@ module.exports = function(app, server) {
   app.post('/channels/:channelId/chaincodes', fileUpload, asyncMiddleware(async(req, res, next) => {
     if(req.files['file'])
       res.json(await req.fabricStarterClient.instantiateChaincode(req.params.channelId, req.body.chaincodeId,
-        req.body.chaincodeType, req.body.fcn, checkArgs(req, req.body.args), req.body.chaincodeVersion, req.body.targets, req.body.waitForTransactionEvent, req.body.policy, req.files['file'][0].path));
+        req.body.chaincodeType, req.body.fcn, extractArgs(req.body.args), req.body.chaincodeVersion, req.body.targets, req.body.waitForTransactionEvent, req.body.policy, req.files['file'][0].path));
     else
         res.json(await req.fabricStarterClient.instantiateChaincode(req.params.channelId, req.body.chaincodeId,
-            req.body.chaincodeType, req.body.fcn, checkArgs(req, req.body.args), req.body.chaincodeVersion, req.body.targets, req.body.waitForTransactionEvent, req.body.policy));
+            req.body.chaincodeType, req.body.fcn, extractArgs(req.body.args), req.body.chaincodeVersion, req.body.targets, req.body.waitForTransactionEvent, req.body.policy));
   }));
 
     /**
@@ -419,10 +419,10 @@ module.exports = function(app, server) {
   app.post('/channels/:channelId/chaincodes/upgrade', fileUpload, asyncMiddleware(async(req, res, next) => {
     if(req.files['file'])
        res.json(await req.fabricStarterClient.upgradeChaincode(req.params.channelId, req.body.chaincodeId,
-          req.body.chaincodeType, req.body.fcn, checkArgs(req, req.body.args), req.body.chaincodeVersion, req.body.targets, req.body.waitForTransactionEvent, req.body.policy, req.files['file'][0].path));
+          req.body.chaincodeType, req.body.fcn, extractArgs(req.body.args), req.body.chaincodeVersion, req.body.targets, req.body.waitForTransactionEvent, req.body.policy, req.files['file'][0].path));
     else
         res.json(await req.fabricStarterClient.upgradeChaincode(req.params.channelId, req.body.chaincodeId,
-            req.body.chaincodeType, req.body.fcn, checkArgs(req, req.body.args), req.body.chaincodeVersion, req.body.targets, req.body.waitForTransactionEvent, req.body.policy));
+            req.body.chaincodeType, req.body.fcn, extractArgs(req.body.args), req.body.chaincodeVersion, req.body.targets, req.body.waitForTransactionEvent, req.body.policy));
   }));
 
   /**
@@ -571,14 +571,14 @@ module.exports = function(app, server) {
       }));
   }));
 
-  function checkArgs(req, args){
+  function extractArgs(args){
     let checkedArgs;
     if (args && _.isString(args))
        checkedArgs = args.trim().split(" ");
     else if (args && _.isArray(args))
        checkedArgs = args;
     return checkedArgs;
-    }
+  }
 
 
   function extractTargets(req, prop) {
