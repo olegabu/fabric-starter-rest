@@ -301,11 +301,11 @@ class FabricStarterClient {
             fs.createReadStream(chaincodePath).pipe(unzip.Extract({path: language === 'golang' ? '/opt/gopath/src' : storage}))
                 .on('close', async function () {
                     fs.unlink(chaincodePath);
-                    let chaincode_path = path.resolve(__dirname, `${storage}/${chaincodeId}`);
+                    let fullChaincodePath = path.resolve(__dirname, `${storage}/${chaincodeId}`);
                     const proposal = {
                         targets: peer,
                         chaincodeId: chaincodeId,
-                        chaincodePath: language === 'golang' ? chaincodeId : chaincode_path,
+                        chaincodePath: language === 'golang' ? chaincodeId : fullChaincodePath,
                         chaincodeVersion: version || '1.0',
                         chaincodeType: language || 'node',
                     };
@@ -322,7 +322,7 @@ class FabricStarterClient {
         });
     }
 
-    async instantiateChaincode(channelId, chaincodeId, type, fnc, args, version, targets, waitForTransactionEvent, policy, collections) {
+    async instantiateChaincode(channelId, chaincodeId, type, fcn, args, version, targets, waitForTransactionEvent, policy, collections) {
         const channel = await this.getChannel(channelId);
 
         const tx_id = this.client.newTransactionID(true);
@@ -335,16 +335,13 @@ class FabricStarterClient {
         const proposal = {
             chaincodeId: chaincodeId,
             chaincodeType: type || 'node',
-            fcn: fnc || 'init',
+            fcn: fcn || 'init',
+            args: args || [],
             chaincodeVersion: version || '1.0',
             txId: tx_id,
             'endorsement-policy': endorsmentPolicy,
             'collections-config': collectionsConfigPath
         };
-        if (args && !_.isArray(args))
-            proposal.args = args.trim().split(" ");
-        else if (args)
-            proposal.args = args;
         let badPeers;
 
         if (targets) {
@@ -373,7 +370,7 @@ class FabricStarterClient {
         });
     }
 
-    async upgradeChaincode(channelId, chaincodeId, type, fnc, args, version, targets, waitForTransactionEvent, policy, collections) {
+    async upgradeChaincode(channelId, chaincodeId, type, fcn, args, version, targets, waitForTransactionEvent, policy, collections) {
         const channel = await this.getChannel(channelId);
 
         const tx_id = this.client.newTransactionID(true);
@@ -386,16 +383,13 @@ class FabricStarterClient {
         const proposal = {
             chaincodeId: chaincodeId,
             chaincodeType: type || 'node',
-            fcn: fnc || 'init',
+            fcn: fcn || 'init',
+            args: args || [],
             chaincodeVersion: version || '1.0',
             txId: tx_id,
             'endorsement-policy': endorsmentPolicy,
             'collections-config': collectionsConfigPath
         };
-        if (args && !_.isArray(args))
-            proposal.args = args.trim().split(" ");
-        else if (args)
-            proposal.args = args;
         let badPeers;
 
         if (targets) {
