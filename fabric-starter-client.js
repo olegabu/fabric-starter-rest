@@ -317,7 +317,7 @@ class FabricStarterClient {
                             return reject({message: checkError, status: _.get(r, '[0].status') || _.get(r, 'status')});
                         }
                         else {
-                            let msg = `Chaincode ${chaincodeId} successfully installed`;
+                            let msg = `Chaincode ${chaincodeId}:${version} successfully installed`;
                             logger.info(msg);
                             resolve(msg);
                         }
