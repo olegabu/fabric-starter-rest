@@ -310,14 +310,18 @@ class FabricStarterClient {
                         chaincodeType: language || 'node',
                     };
                     const result = await client.installChaincode(proposal);
-                    if (result[0].toString().startsWith('Error')) {
-                        logger.error(result[0].toString());
-                        reject(result[0].toString());
-                    } else {
-                        let msg = `Chaincode ${chaincodeId} successfully installed`;
-                        logger.info(msg);
-                        resolve(msg);
-                    }
+                    logger.trace('proposalResponse', result);
+                    result.map(r => {
+                        const checkError = r[0].toString('utf8');
+                        if (_.startsWith(checkError, 'Error')) {
+                            return reject({message: checkError, status: _.get(r, '[0].status') || _.get(r, 'status')});
+                        }
+                        else {
+                            let msg = `Chaincode ${chaincodeId} successfully installed`;
+                            logger.info(msg);
+                            resolve(msg);
+                        }
+                    });
                 });
         });
     }
