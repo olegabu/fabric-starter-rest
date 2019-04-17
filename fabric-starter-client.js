@@ -233,6 +233,7 @@ class FabricStarterClient {
             }
         } catch (e) {
             logger.error(`Couldn't fetch/translate config for channel ${channelId}`, e);
+            throw  e;
         } finally {
             this.chmodCryptoFolder();
         }
