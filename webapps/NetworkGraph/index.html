@@ -94,31 +94,6 @@
 
         var vis = d3.select("body").append("svg:svg").attr("width", w).attr("height", h);
 
-
-        // var nodes = res.nodes;
-        // var labelAnchorLinks = res.labelAnchorLinks; // [];
-        // var links = res.links; //[];
-        //
-        // for(var i = 0; i < res.nodes.length; i++) {
-        //     var node = res.nodes[i];
-        //     nodes.push(node);
-            // labelAnchors.push({
-            //     node : node
-            // });
-            // labelAnchors.push({
-            //     node : node
-            // });
-        // };
-
-
-        // links.push({source:0, target:1, weight:0.5});
-
-        // labelAnchorLinks.push({source:0, target:1, weight:1});
-        // labelAnchorLinks.push({source:2, target:3, weight:1});
-
-
-
-
         var force = d3.layout.force().size([w, h]).nodes(nodes).links(links).gravity(1).linkDistance(150).charge(-16000).linkStrength(function (x) {
             return x.weight * 10
         });
@@ -155,7 +130,7 @@
                 return d.target.y;
             });
 
-        }
+        };
 
         var updateNode = function () {
             this.attr("transform", function (d) {
