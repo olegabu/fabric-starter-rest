@@ -1,11 +1,11 @@
 module.exports = function(app, server) {
 
-  const logger = require('log4js').getLogger('api');
   const fs = require("fs");
-  const jsonwebtoken = require('jsonwebtoken');
-  const jwt = require('express-jwt');
   const path = require('path');
   const os = require('os');
+  const logger = require('log4js').getLogger('api');
+  const jsonwebtoken = require('jsonwebtoken');
+  const jwt = require('express-jwt');
   const _ = require('lodash');
   const cfg = require('./config.js');
 
@@ -314,7 +314,11 @@ module.exports = function(app, server) {
    * @security JWT
    */
   app.get('/orgs/:org/peers', asyncMiddleware(async(req, res, next) => {
-    res.json(await req.fabricStarterClient.getPeersForOrg(req.params.org));
+    res.json(await req.fabricStarterClient.getPeersForOrg(req.params.org || cfg.org));
+  }));
+
+  app.get('/orgs/peers', asyncMiddleware(async(req, res, next) => {
+    res.json(await req.fabricStarterClient.getPeersForOrg(cfg.org));
   }));
 
   /**
@@ -537,7 +541,7 @@ module.exports = function(app, server) {
       res.json(await webAppManager.provisionWebAppFromPackage(fileUploadObj)
           .then(extractParentPath => {
               let appFolder=path.resolve(extractParentPath, fileBaseName);
-              app.use(`/${fileBaseName}`, express.static(appFolder));
+              webAppManager.redeployWebapp(app, fileBaseName, appFolder);
               return webAppManager.getWebAppsList();
       }));
   }));

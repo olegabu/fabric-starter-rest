@@ -1,6 +1,8 @@
 const logger = require('log4js').getLogger('app');
 
 const express = require('express');
+const webAppManager = require('./web-app-manager');
+
 const app = express();
 
 const server = app.listen(process.env.PORT || 3000, () => {
@@ -22,6 +24,6 @@ glob.sync('./routes/**/*.js').forEach(file => {
 glob.sync('./webapps/*').forEach(dir => {
     const appFolder = path.resolve(dir);
     const context = path.basename(dir);
-    app.use(`/${context}`, express.static(appFolder));
+    webAppManager.redeployWebapp(app, context, appFolder);
     logger.info('static webapp', dir);
 });

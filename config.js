@@ -62,7 +62,7 @@ module.exports = {
     USE_SERVICE_DISCOVERY: process.env.USE_SERVICE_DISCOVERY || true,
     WEBADMIN_DIR: process.env.WEBADMIN_DIR || "./admin",
 
-    WEBAPPS_DIR: process.env.WEBAPPS_DIR || "./webapps",
+    WEBAPPS_DIR: process.env.WEBAPPS_DIR || "webapps",
     MIDDLWARE_DIR: process.env.MIDDLWARE_DIR || "./routes",
 
     UI_LISTEN_BLOCK_OPTS: process.env.UI_LISTEN_BLOCK_OPTS === "true" || process.env.UI_LISTEN_BLOCK_OPTS

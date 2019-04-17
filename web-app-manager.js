@@ -1,5 +1,6 @@
 const fs = require('fs');
 const path = require('path');
+const express = require('express');
 const unzip = require('unzip');
 const _ = require('lodash');
 const cfg = require('./config.js');
@@ -58,6 +59,11 @@ class WebAppManager {
             })
         })
     }
+
+    redeployWebapp(app, appContext, appFolder) {
+        app.use(`/${cfg.WEBAPPS_DIR}/${appContext}`, express.static(appFolder));
+    }
+
 
 }
 
