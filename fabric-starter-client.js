@@ -492,7 +492,7 @@ class FabricStarterClient {
         results.map(r => {
             const checkError = _.toString(r);
             if (_.startsWith(checkError, 'Error')) {
-                throw ({message: checkError, status: _.get(results, '[0][0].status') || _.get(results, 'status')});
+                throw ({message: checkError, status: _.get(r, '[0].status') || _.get(r, 'status')});
             }
         });
     }
