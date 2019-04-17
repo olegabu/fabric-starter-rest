@@ -223,6 +223,21 @@ module.exports = function(app, server) {
    * @property {string} channelId.required - channel name - eg: common
    */
 
+
+  /**
+   * Join channel
+   * @route POST /channels/{channelId}
+   * @group channels - Queries and operations on channels
+   * @param {string} channelId.path.required - channel - eg: common
+   * @returns {object} 200 - Channel joined
+   * @returns {Error}  default - Unexpected error
+   * @security JWT
+   */
+  app.post('/channels/:channelId', asyncMiddleware(async(req, res, next) => {
+    res.json(await joinChannel(req.params.channelId, req.fabricStarterClient));
+  }));
+
+
   /**
    * Create channel and join it
    * @route POST /channels
@@ -319,19 +334,6 @@ module.exports = function(app, server) {
    */
   app.post('/channels/:channelId/orgs', asyncMiddleware(async(req, res, next) => {
     res.json(await req.fabricStarterClient.addOrgToChannel(req.params.channelId, req.body.orgId));
-  }));
-
-  /**
-   * Join channel
-   * @route POST /channels/{channelId}
-   * @group channels - Queries and operations on channels
-   * @param {string} channelId.path.required - channel - eg: common
-   * @returns {object} 200 - Channel joined
-   * @returns {Error}  default - Unexpected error
-   * @security JWT
-   */
-  app.post('/channels/:channelId', asyncMiddleware(async(req, res, next) => {
-    res.json(await joinChannel(req.params.channelId, req.fabricStarterClient));
   }));
 
   /**
