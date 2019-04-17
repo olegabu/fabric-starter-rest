@@ -233,6 +233,7 @@ class FabricStarterClient {
             }
         } catch (e) {
             logger.error(`Couldn't fetch/translate config for channel ${channelId}`, e);
+            throw  e;
         } finally {
             this.chmodCryptoFolder();
         }
@@ -297,6 +298,7 @@ class FabricStarterClient {
     async installChaincode(chaincodeId, chaincodePath, version, language, storage) {
         const peer = this.peer;
         const client = this.client;
+        let fsClient = this;
         return new Promise((resolve, reject) => {
             fs.createReadStream(chaincodePath).pipe(unzip.Extract({path: language === 'golang' ? '/opt/gopath/src' : storage}))
                 .on('close', async function () {
@@ -309,14 +311,14 @@ class FabricStarterClient {
                         chaincodeVersion: version || '1.0',
                         chaincodeType: language || 'node',
                     };
-                    const result = await client.installChaincode(proposal);
-                    if (result[0].toString().startsWith('Error')) {
-                        logger.error(result[0].toString());
-                        reject(result[0].toString());
-                    } else {
-                        let msg = `Chaincode ${chaincodeId} successfully installed`;
+                    try {
+                        const result = await client.installChaincode(proposal);
+                        fsClient.errorCheck(result);
+                        let msg = `Chaincode ${chaincodeId}:${version} successfully installed`;
                         logger.info(msg);
                         resolve(msg);
+                    } catch (e) {
+                        return reject(e);
                     }
                 });
         });
@@ -489,7 +491,7 @@ class FabricStarterClient {
     errorCheck(results) {
         logger.trace('proposalResponse', results);
         results.map(r => {
-            const checkError = r.toString('utf8');
+            const checkError = _.toString(r);
             if (_.startsWith(checkError, 'Error')) {
                 throw ({message: checkError, status: _.get(r, '[0].status') || _.get(r, 'status')});
             }
