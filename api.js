@@ -317,10 +317,6 @@ module.exports = function(app, server) {
     res.json(await req.fabricStarterClient.getPeersForOrg(req.params.org || cfg.org));
   }));
 
-  app.get('/orgs/peers', asyncMiddleware(async(req, res, next) => {
-    res.json(await req.fabricStarterClient.getPeersForOrg(cfg.org));
-  }));
-
   /**
    * @typedef Organization
    * @property {string} orgId.required - organization name by convention same as MSPID- eg: org1
