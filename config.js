@@ -41,7 +41,7 @@ module.exports = {
     cas: cas,
 
     ordererName: ordererName,
-    CRYPTO_CONFIG_DIR: CRYPTO_CONFIG_DIR,
+    CRYPTO_CONFIG_DIR: cryptoConfigPath,
     TEMPLATES_DIR: TEMPLATES_DIR,
     ORDERER_CRYPTO_DIR: ORDERER_CRYPTO_DIR,
     ORDERER_TLS_CERT: `${ORDERER_CRYPTO_DIR}/msp/tlscacerts/tlsca.${DOMAIN}-cert.pem`,

@@ -172,7 +172,7 @@ class FabricStarterClient {
             let res = await this.client.createChannel(channelReq);
             if (!res || res.status != "SUCCESS") {
                 logger.error(res);
-                return res;
+                throw new Error(res.info);
             }
         } finally {
             this.chmodCryptoFolder();
