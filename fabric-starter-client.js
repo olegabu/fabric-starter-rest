@@ -302,7 +302,11 @@ class FabricStarterClient {
         return new Promise((resolve, reject) => {
             fs.createReadStream(chaincodePath).pipe(unzip.Extract({path: language === 'golang' ? '/opt/gopath/src' : storage}))
                 .on('close', async function () {
-                    fs.unlink(chaincodePath);
+                    try {
+                        fs.unlinkSync(chaincodePath);
+                    } catch (e) {
+                        logger.warn("Deleting temp file failed: ", e)
+                    }
                     let fullChaincodePath = path.resolve(__dirname, `${storage}/${chaincodeId}`);
                     const proposal = {
                         targets: peer,
