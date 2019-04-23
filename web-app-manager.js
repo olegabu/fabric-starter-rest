@@ -4,7 +4,16 @@ const express = require('express');
 const unzip = require('unzip');
 const _ = require('lodash');
 const cfg = require('./config.js');
+const logger = cfg.log4js.getLogger('FabricStarterClient');
 
+
+function unlinkFile(path) {
+    try {
+        fs.unlinkSync(path);
+    } catch (e) {
+        logger.warn(`Error deleting file ${fileObj.path}`, e);
+    }
+}
 
 class WebAppManager {
 
@@ -18,11 +27,11 @@ class WebAppManager {
         return new Promise((resolve, reject)=>{
             const pipe = readStream.pipe(unzip.Extract({path: extractPath})); //TODO: check if folder inside zip have different name
             pipe.on('close', async function () {
-                fs.unlink(fileObj.path);
+                unlinkFile(fileObj.path);
                 resolve(extractPath);
             });
             pipe.on('error', async function () {
-                fs.unlink(fileObj.path);
+                unlinkFile(fileObj.path);
                 reject();
             })
         })
@@ -63,8 +72,6 @@ class WebAppManager {
     redeployWebapp(app, appContext, appFolder) {
         app.use(`/${cfg.WEBAPPS_DIR}/${appContext}`, express.static(appFolder));
     }
-
-
 }
 
 module.exports = new WebAppManager();
