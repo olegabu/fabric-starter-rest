@@ -576,7 +576,7 @@ module.exports = function(app, server) {
   function extractArgs(args){
     let checkedArgs;
     if (args && _.isString(args))
-       checkedArgs = args.trim().split(" ");
+       checkedArgs = JSON.parse(args);
     else if (args && _.isArray(args))
        checkedArgs = args;
     return checkedArgs;
