@@ -14,10 +14,10 @@ RUN apt-get update && apt-get install python make  \
 && apt-get remove -y python make && apt-get purge
 
 #install fixed fabric-sdk until pull-requests are merged into their release
-RUN mkdir -p node_modules
-RUN git clone https://github.com/LeonidLe/fabric-sdk-node/ -b release-1.4
-RUN cp -r fabric-sdk-node/fabric-client node_modules
-RUN rm -rf fabric-sdk-node
+#RUN mkdir -p node_modules
+#RUN git clone https://github.com/LeonidLe/fabric-sdk-node/ -b release-1.4
+#RUN cp -r fabric-sdk-node/fabric-client node_modules
+#RUN rm -rf fabric-sdk-node
 
 RUN git clone https://github.com/olegabu/fabric-starter-admin-web.git --branch stable --depth 1 admin && npm install aurelia-cli -g && cd admin && npm install
 RUN cd admin && au build --env prod
