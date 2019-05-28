@@ -256,7 +256,7 @@ module.exports = function(app, server) {
     try {
       const ret = await fabricStarterClient.joinChannel(channelId);
       socket.retryJoin(cfg.JOIN_RETRY_COUNT, async function() {
-        await socket.updateServer(channelId);
+        await socket.updateServer(channelId, cfg.UI_LISTEN_BLOCK_OPTS);
       });
       return ret;
     } catch(error) {
