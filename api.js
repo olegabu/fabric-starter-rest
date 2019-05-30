@@ -333,7 +333,7 @@ module.exports = function(app, server) {
    * @security JWT
    */
   app.post('/channels/:channelId/orgs', asyncMiddleware(async(req, res, next) => {
-    res.json(await req.fabricStarterClient.addOrgToChannel(req.params.channelId, req.body.orgId));
+    res.json(await req.fabricStarterClient.addOrgToChannel(req.params.channelId, req.body.orgId, req.body.orgIp));
   }));
 
   /**

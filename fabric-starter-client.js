@@ -198,8 +198,12 @@ class FabricStarterClient {
         return result;
     }
 
-    async addOrgToChannel(channelId, orgId) {
-
+    async addOrgToChannel(channelId, orgId, orgIp) {
+        try {
+            await this.checkDnsOrg(orgId, orgIp);
+        } catch (e) {
+            throw new Error(e);
+        }
         fabricCLI.downloadOrdererMSP();
         let channelConfigFile = fabricCLI.fetchChannelConfig(channelId);
         let channelConfigBlock = await fabricCLI.translateChannelConfig(channelConfigFile);
@@ -236,6 +240,23 @@ class FabricStarterClient {
             throw  e;
         } finally {
             this.chmodCryptoFolder();
+        }
+    }
+
+    async checkDnsOrg(orgId, orgIp) {
+        const dns = await this.query(cfg.DNS_CHANNEL, "dns", "range", null, {targets: []});
+        const orgInLedger = _.some(dns, _.unary(_.partialRight(_.includes, `www.${orgId}.${cfg.domain}`)));
+        if (orgInLedger && orgIp)
+            await this.invoke(cfg.DNS_CHANNEL, "dns", "registerOrg", [`${orgId}.${cfg.domain}`, orgIp], {targets: []}, true);
+        else if (orgInLedger && !orgIp)
+            logger.trace(`Dns include ${orgId}.${cfg.domain}`);
+        else {
+            if (!orgIp) {
+                const msg = `Need Organization's Ip for add to dns list`;
+                logger.error(msg);
+                throw new Error(msg);
+            }
+            await this.invoke(cfg.DNS_CHANNEL, "dns", "registerOrg", [`${orgId}.${cfg.domain}`, orgIp], {targets: []}, true);
         }
     }
 
