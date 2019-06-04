@@ -199,64 +199,71 @@ class FabricStarterClient {
     }
 
     async addOrgToChannel(channelId, orgId, orgIp) {
-        try {
-            await this.checkDnsOrg(orgId, orgIp);
-        } catch (e) {
-            throw new Error(e);
-        }
-        fabricCLI.downloadOrdererMSP();
-        let channelConfigFile = fabricCLI.fetchChannelConfig(channelId);
-        let channelConfigBlock = await fabricCLI.translateChannelConfig(channelConfigFile);
-        logger.debug(`Got channel config ${channelId}:`, channelConfigBlock);
-
-        try {
-            let channelConfigEnvelope = JSON.parse(channelConfigBlock.toString());
-            let origChannelGroupConfig = _.get(channelConfigEnvelope, "data.data[0].payload.data.config");
-
-            let newOrgConfigResp = await fabricCLI.prepareNewOrgConfig(orgId);
-
-            let updatedConfig = _.merge({}, origChannelGroupConfig);
-            if (_.get(updatedConfig, "channel_group.groups")) {
-                _.merge(updatedConfig.channel_group.groups, newOrgConfigResp.outputJson);
-            }
-
-            logger.debug(`Channel updated config ${channelId}:`, _.toString(updatedConfig));
-            let configUpdate = fabricCLI.computeChannelConfigUpdate(channelId, origChannelGroupConfig, updatedConfig);
-            logger.debug(`Got updated envelope ${channelId}:`, _.toString(configUpdate));
-            const txId = this.client.newTransactionID();
+        await this.checkDnsOrg(orgId, orgIp);
+        let self=this;
+        setTimeout(async function() {
+            fabricCLI.downloadOrdererMSP();
+            let channelConfigFile = fabricCLI.fetchChannelConfig(channelId);
+            let channelConfigBlock = await fabricCLI.translateChannelConfig(channelConfigFile);
+            logger.debug(`Got channel config ${channelId}:`, channelConfigBlock);
 
             try {
-                let update = await this.client.updateChannel({
-                    txId, name: channelId, config: configUpdate, orderer: this.createOrderer(),
-                    signatures: [this.client.signChannelConfig(configUpdate)]
-                });
-                logger.info(`Update channel result ${channelId}:`, update);
-                this.invalidateChannelsCache(channelId);
+                let channelConfigEnvelope = JSON.parse(channelConfigBlock.toString());
+                let origChannelGroupConfig = _.get(channelConfigEnvelope, "data.data[0].payload.data.config");
+
+                let newOrgConfigResp = await fabricCLI.prepareNewOrgConfig(orgId);
+
+                let updatedConfig = _.merge({}, origChannelGroupConfig);
+                if (_.get(updatedConfig, "channel_group.groups")) {
+                    _.merge(updatedConfig.channel_group.groups, newOrgConfigResp.outputJson);
+                }
+
+                logger.debug(`Channel updated config ${channelId}:`, _.toString(updatedConfig));
+                let configUpdate = fabricCLI.computeChannelConfigUpdate(channelId, origChannelGroupConfig, updatedConfig);
+                logger.debug(`Got updated envelope ${channelId}:`, _.toString(configUpdate));
+                const txId = self.client.newTransactionID();
+
+                try {
+                    let update = await self.client.updateChannel({
+                        txId, name: channelId, config: configUpdate, orderer: self.createOrderer(),
+                        signatures: [self.client.signChannelConfig(configUpdate)]
+                    });
+                    logger.info(`Update channel result ${channelId}:`, update);
+                    self.invalidateChannelsCache(channelId);
+                } catch (e) {
+                    logger.error(e);
+                }
             } catch (e) {
-                logger.error(e);
+                logger.error(`Couldn't fetch/translate config for channel ${channelId}`, e);
+                throw  e;
+            } finally {
+                self.chmodCryptoFolder();
             }
-        } catch (e) {
-            logger.error(`Couldn't fetch/translate config for channel ${channelId}`, e);
-            throw  e;
-        } finally {
-            this.chmodCryptoFolder();
-        }
+        }, 4000)
+
     }
 
     async checkDnsOrg(orgId, orgIp) {
         const dns = await this.query(cfg.DNS_CHANNEL, "dns", "range", null, {targets: []});
-        const orgInLedger = _.some(dns, _.unary(_.partialRight(_.includes, `www.${orgId}.${cfg.domain}`)));
-        if (orgInLedger && orgIp)
+        let dnsRecordsList = dns && dns.length && JSON.parse(dns[0]);
+
+        let dnsRecordForIp = _.find(dnsRecordsList, dnsRecord => _.get(dnsRecord.ip === orgIp));
+        if (dnsRecordForIp && !_.includes(dnsRecordForIp.value, `${orgId}.${cfg.domain}`)) {
+            throw new Error(`Specified Ip linked to another org: ${dnsRecordForIp.value}`);
+        }
+
+        let dnsRecordForOrg = _.find(dnsRecordsList, dnsRecord => _.includes(_.get(dnsRecord, "value"), `${orgId}.${cfg.domain}`));
+
+        if (!dnsRecordForOrg && ! orgIp) {
+            const msg = `Need Organization's Ip for add to dns list`;
+            logger.error(msg);
+            throw new Error(msg);
+        }
+
+        if (orgIp) {
             await this.invoke(cfg.DNS_CHANNEL, "dns", "registerOrg", [`${orgId}.${cfg.domain}`, orgIp], {targets: []}, true);
-        else if (orgInLedger && !orgIp)
-            logger.trace(`Dns include ${orgId}.${cfg.domain}`);
-        else {
-            if (!orgIp) {
-                const msg = `Need Organization's Ip for add to dns list`;
-                logger.error(msg);
-                throw new Error(msg);
-            }
-            await this.invoke(cfg.DNS_CHANNEL, "dns", "registerOrg", [`${orgId}.${cfg.domain}`, orgIp], {targets: []}, true);
+        } else {
+            logger.debug(`Dns includes`, dnsRecordForOrg);
         }
     }
 

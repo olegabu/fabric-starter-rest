@@ -16,15 +16,16 @@ class RestSocketServer {
   async startSocketServer(server, opts) {
     this.io = new SocketServer(server, {origins: '*:*'});
     const channels = await this.fabricStarterClient.queryChannels();
+    this.opts = opts;
 
     channels.map(c => {
       return c.channel_id;
     }).forEach(async channelId => {
-      await this.updateServer(channelId, opts);
+      await this.updateServer(channelId);
     });
   }
 
-  async updateServer(channel, opts) {
+  async updateServer(channel) {
 
     await this.fabricStarterClient.registerBlockEvent(channel, block => {
       let blockNumber = block.number || _.get(block, "header.number");
@@ -32,7 +33,7 @@ class RestSocketServer {
       this.io.emit('chainblock', block);
     }, e => {
       logger.error('registerBlockEvent', e);
-    }, opts);
+    }, this.opts);
     logger.debug(`registered for block event on ${channel}`);
   }
 
