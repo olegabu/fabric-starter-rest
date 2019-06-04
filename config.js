@@ -67,5 +67,6 @@ module.exports = {
 
     UI_LISTEN_BLOCK_OPTS: process.env.UI_LISTEN_BLOCK_OPTS === "true" || process.env.UI_LISTEN_BLOCK_OPTS,
 
-    DNS_CHANNEL: process.env.DNS_CHANNEL || "common"
+    DNS_CHANNEL: process.env.DNS_CHANNEL || "common",
+    DNS_UPDATE_TIMEOUT: process.env.DNS_UPDATE_TIMEOUT ||4000
 };

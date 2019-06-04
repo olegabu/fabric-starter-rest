@@ -239,7 +239,7 @@ class FabricStarterClient {
             } finally {
                 self.chmodCryptoFolder();
             }
-        }, 4000)
+        }, cfg.DNS_UPDATE_TIMEOUT)
 
     }
 
