@@ -236,6 +236,7 @@ module.exports = function(app, server) {
   app.post('/channels/:channelId', asyncMiddleware(async(req, res, next) => {
     let ret = await joinChannel(req.params.channelId, req.fabricStarterClient);
     socket.retryJoin(cfg.JOIN_RETRY_COUNT, async function(){
+      //TODO: Check default permissions for getChannels
         await req.fabricStarterClient.invoke(req.params.channelId,'cscc','GetChannels', [], [])
   });
     res.json(ret);
