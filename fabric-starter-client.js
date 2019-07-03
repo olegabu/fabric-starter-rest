@@ -484,6 +484,8 @@ class FabricStarterClient {
 
             proposal.targets = foundPeers;
         }
+        else
+            proposal.targets = [this.peer];
 
         return new Promise((resolve, reject) => {
 

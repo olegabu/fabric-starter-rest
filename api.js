@@ -234,7 +234,11 @@ module.exports = function(app, server) {
    * @security JWT
    */
   app.post('/channels/:channelId', asyncMiddleware(async(req, res, next) => {
-    res.json(await joinChannel(req.params.channelId, req.fabricStarterClient));
+    let ret = await joinChannel(req.params.channelId, req.fabricStarterClient);
+    socket.retryJoin(cfg.JOIN_RETRY_COUNT, async function(){
+        await req.fabricStarterClient.invoke(req.params.channelId,'cscc','GetChannels', [], [])
+  });
+    res.json(ret);
   }));
 
 
