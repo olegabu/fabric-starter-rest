@@ -466,7 +466,7 @@ class FabricStarterClient {
         }
     }
 
-    async invoke(channelId, chaincodeId, fcn, args, targets, waitForTransactionEvent) {
+    async invoke(channelId, chaincodeId, fcn, args, targets, waitForTransactionEvent, transientMap) {
         const channel = await this.getChannel(channelId, false);//await this.getChannel(channelId);
         let fsClient = this;
 
