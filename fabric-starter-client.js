@@ -471,7 +471,15 @@ class FabricStarterClient {
         let fsClient = this;
 
         const proposal = {
-            chaincodeId: chaincodeId, fcn: fcn, args: args
+            chaincodeId: chaincodeId,
+            fcn: fcn,
+            args: args,
+            transientMap:
+                Object.assign(...
+                    Object.keys(transientMap).map((key) => {
+                        return {[key]: Buffer.from(JSON.stringify(transientMap[key]))}
+                    }))
+
         };
 
         let badPeers;

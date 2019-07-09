@@ -482,7 +482,7 @@ module.exports = function(app, server) {
    */
   app.post('/channels/:channelId/chaincodes/:chaincodeId', asyncMiddleware(async(req, res, next) => {
     let result = await req.fabricStarterClient.invoke(req.params.channelId, req.params.chaincodeId,
-      req.body.fcn, req.body.args, extractTargets(req, "body"), req.body.waitForTransactionEvent);
+      req.body.fcn, req.body.args, extractTargets(req, "body"), req.body.waitForTransactionEvent, req.body.transientMap);
     res.json(result);
   }));
 
