@@ -466,13 +466,23 @@ class FabricStarterClient {
         }
     }
 
-    async invoke(channelId, chaincodeId, fcn, args, targets, waitForTransactionEvent) {
+    async invoke(channelId, chaincodeId, fcn, args, targets, waitForTransactionEvent, transientMap) {
         const channel = await this.getChannel(channelId, false);//await this.getChannel(channelId);
         let fsClient = this;
 
         const proposal = {
-            chaincodeId: chaincodeId, fcn: fcn, args: args
+            chaincodeId: chaincodeId,
+            fcn: fcn,
+            args: args
         };
+
+        if (transientMap) {
+            proposal.transientMap =
+                Object.assign(...
+                    Object.keys(transientMap).map((key) => {
+                        return {[key]: Buffer.from(JSON.stringify(transientMap[key]))}
+                    }))
+        }
 
         let badPeers;
 
