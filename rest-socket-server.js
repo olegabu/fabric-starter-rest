@@ -41,6 +41,7 @@ class RestSocketServer {
   async retryJoin(nTimes, fn) {
     if(nTimes <= 0) {
       logger.error(`Invocation unsuccessful for 10 retries.`);
+      return;
     }
     try {
       return await fn();
