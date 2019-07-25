@@ -10,13 +10,14 @@ const urlParseLax = require('url-parse-lax');
 const chmodPlus = require('chmod-plus');
 const fabricCLI = require('./fabric-cli');
 const x509 = require('x509');
+const UtilityService = require('./utility-service');
 
 //const networkConfigFile = '../crypto-config/network.json'; // or .yaml
 //const networkConfig = require('../crypto-config/network.json');
 
 const asLocalhost = (process.env.DISCOVER_AS_LOCALHOST === 'true');
 
-logger.debug(`invokeTimeout=${cfg.INVOKE_TIMEOUT} asLocalhost=${asLocalhost}`);
+logger.debug(`invokeTimeout=${cfg.CHAINCODE_PROCESSING_TIMEOUT} asLocalhost=${asLocalhost}`);
 
 class FabricStarterClient {
     constructor(networkConfig) {
@@ -200,8 +201,8 @@ class FabricStarterClient {
 
     async addOrgToChannel(channelId, orgId, orgIp) {
         await this.checkDnsOrg(orgId, orgIp);
-        let self=this;
-        setTimeout(async function() {
+        let self = this;
+        setTimeout(async function () {
             fabricCLI.downloadOrdererMSP();
             let channelConfigFile = fabricCLI.fetchChannelConfig(channelId);
             let channelConfigBlock = await fabricCLI.translateChannelConfig(channelConfigFile);
@@ -254,7 +255,7 @@ class FabricStarterClient {
 
         let dnsRecordForOrg = _.find(dnsRecordsList, dnsRecord => _.includes(_.get(dnsRecord, "value"), `${orgId}.${cfg.domain}`));
 
-        if (!dnsRecordForOrg && ! orgIp) {
+        if (!dnsRecordForOrg && !orgIp) {
             const msg = `Need Organization's Ip for add to dns list`;
             logger.error(msg);
             throw new Error(msg);
@@ -388,7 +389,7 @@ class FabricStarterClient {
         }
         logger.info('Sent instantiate proposal');
         logger.trace(proposal);
-        const results = await channel.sendInstantiateProposal(proposal, cfg.INVOKE_TIMEOUT);
+        const results = await channel.sendInstantiateProposal(proposal, cfg.CHAINCODE_PROCESSING_TIMEOUT);
         this.errorCheck(results);
         const transactionRequest = {
             txId: tx_id,
@@ -436,7 +437,7 @@ class FabricStarterClient {
         }
         logger.info('Sent upgrade proposal');
         logger.trace(proposal);
-        const results = await channel.sendUpgradeProposal(proposal, cfg.INVOKE_TIMEOUT);
+        const results = await channel.sendUpgradeProposal(proposal, cfg.CHAINCODE_PROCESSING_TIMEOUT);
         this.errorCheck(results);
         const transactionRequest = {
             txId: tx_id,
@@ -450,20 +451,6 @@ class FabricStarterClient {
             res.badPeers = badPeers;
             return res;
         });
-    }
-
-    async retryInvoke(nTimes, resolve, reject, fn) {
-
-        if (nTimes <= 0) return reject(`Invocation unsuccessful for ${cfg.INVOKE_RETRY_COUNT} retries.`);
-        try {
-            let response = await fn();
-            resolve(response);
-        } catch (err) {
-            logger.trace(`Error: `, err, `\nRe-trying invocation: ${nTimes}.`);
-            setTimeout(() => {
-                this.retryInvoke(--nTimes, resolve, reject, fn)
-            }, 3000);
-        }
     }
 
     async invoke(channelId, chaincodeId, fcn, args, targets, waitForTransactionEvent, transientMap) {
@@ -494,42 +481,40 @@ class FabricStarterClient {
 
             proposal.targets = foundPeers;
         }
-        else
+        else {
             proposal.targets = [this.peer];
+        }
 
-        return new Promise((resolve, reject) => {
+        return UtilityService.retryOperation(cfg.INVOKE_RETRY_COUNT, async function () {
+            const txId = fsClient.client.newTransactionID(/*true*/);
 
-            return fsClient.retryInvoke(cfg.INVOKE_RETRY_COUNT, resolve, reject, async function () {
-                const txId = fsClient.client.newTransactionID(/*true*/);
+            proposal.txId = txId;
 
-                proposal.txId = txId;
+            logger.trace('invoke proposal', proposal);
+            let proposalResponse;
+            try {
+                proposalResponse = await channel.sendTransactionProposal(proposal);
+                fsClient.errorCheck(proposalResponse);
 
-                logger.trace('invoke proposal', proposal);
-                let proposalResponse;
-                try {
-                    proposalResponse = await channel.sendTransactionProposal(proposal);
-                    fsClient.errorCheck(proposalResponse);
+            } catch (e) {
+                throw new Error(e);
+            }
 
-                } catch (e) {
-                    return reject(e);
-                }
+            const transactionRequest = {
+                // tx_id: tx_id,
+                proposalResponses: proposalResponse[0],
+                proposal: proposalResponse[1],
+            };
 
-                const transactionRequest = {
-                    // tx_id: tx_id,
-                    proposalResponses: proposalResponse[0],
-                    proposal: proposalResponse[1],
-                };
+            const promise = waitForTransactionEvent ? fsClient.waitForTransactionEvent(txId, channel) : Promise.resolve(txId);
 
-                const promise = waitForTransactionEvent ? fsClient.waitForTransactionEvent(txId, channel) : Promise.resolve(txId);
-
-                const broadcastResponse = await channel.sendTransaction(transactionRequest);
-                logger.trace('broadcastResponse', broadcastResponse);
-                return promise.then(function (res) {
-                    res.badPeers = badPeers;
-                    return res;
-                });
+            const broadcastResponse = await channel.sendTransaction(transactionRequest);
+            logger.trace('broadcastResponse', broadcastResponse);
+            return promise.then(function (res) {
+                res.badPeers = badPeers;
+                return res;
             });
-        })
+        });
     }
 
     errorCheck(results) {
@@ -543,7 +528,7 @@ class FabricStarterClient {
     }
 
     async waitForTransactionEvent(tx_id, channel) {
-        const timeout = cfg.INVOKE_TIMEOUT;
+        const timeout = cfg.CHAINCODE_PROCESSING_TIMEOUT;
         const id = tx_id.getTransactionID();
         let timeoutHandle;
 

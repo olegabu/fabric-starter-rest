@@ -8,6 +8,7 @@ module.exports = function(app, server) {
   const jwt = require('express-jwt');
   const _ = require('lodash');
   const cfg = require('./config.js');
+  const UtilityService = require('./utility-service');
 
   // upload for chaincode and app installation
   const uploadDir = os.tmpdir() || './upload';
@@ -235,10 +236,6 @@ module.exports = function(app, server) {
    */
   app.post('/channels/:channelId', asyncMiddleware(async(req, res, next) => {
     let ret = await joinChannel(req.params.channelId, req.fabricStarterClient);
-    socket.retryJoin(cfg.JOIN_RETRY_COUNT, async function(){
-      //TODO: Check default permissions for getChannels
-        await req.fabricStarterClient.invoke(req.params.channelId,'cscc','GetChannels', [], [])
-  });
     res.json(ret);
   }));
 
@@ -260,8 +257,8 @@ module.exports = function(app, server) {
   async function joinChannel(channelId, fabricStarterClient) {
     try {
       const ret = await fabricStarterClient.joinChannel(channelId);
-      socket.retryJoin(cfg.JOIN_RETRY_COUNT, async function() {
-        await socket.updateServer(channelId);
+        UtilityService.retryOperation(cfg.LISTENER_RETRY_COUNT, async function() {
+        await socket.registerChannelChainblockListener(channelId);
       });
       return ret;
     } catch(error) {
@@ -404,7 +401,7 @@ module.exports = function(app, server) {
    * @security JWT
    */
   app.post('/channels/:channelId/chaincodes', fileUpload, asyncMiddleware(async(req, res, next) => {
-    if(req.files['file'])
+    if(req.files && req.files['file'])
       res.json(await req.fabricStarterClient.instantiateChaincode(req.params.channelId, req.body.chaincodeId,
         req.body.chaincodeType, req.body.fcn, extractArgs(req.body.args), req.body.chaincodeVersion, req.body.targets, req.body.waitForTransactionEvent, req.body.policy, req.files['file'][0].path));
     else
