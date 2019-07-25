@@ -13,7 +13,7 @@ class UtilityService {
             } catch (err) {
                 logger.trace(`Error: `, err, `\nRe-trying invocation: ${nTimes}.`);
                 setTimeout(() => {
-                    this.retryOperation(--nTimes, resolve, reject, fn)
+                    UtilityService.retryOperation(--nTimes, resolve, reject, fn)
                 }, cfg.CHANNEL_LISTENER_UPDATE_TIMEOUT);
             }
         });
