@@ -245,6 +245,9 @@ class FabricStarterClient {
     }
 
     async checkDnsOrg(orgId, orgIp) {
+        let chaincodeList = await this.queryInstantiatedChaincodes(cfg.DNS_CHANNEL);
+        if(!chaincodeList.chaincodes.find(i => i.name === "dns"))
+            return;
         const dns = await this.query(cfg.DNS_CHANNEL, "dns", "range", null, {targets: []});
         let dnsRecordsList = dns && dns.length && JSON.parse(dns[0]);
 
@@ -655,9 +658,9 @@ class FabricStarterClient {
         return await channel.queryInfo(this.peer, true);
     }
 
-    async queryBlock(channelId, number) {
+    async queryBlock(channelId, number, admin=false) {
         const channel = await this.getChannel(channelId);
-        return await channel.queryBlock(number, this.peer, /*, true*/);
+        return await channel.queryBlock(number, this.peer, admin);
     }
 
     async queryTransaction(channelId, id) {

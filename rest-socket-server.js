@@ -20,13 +20,12 @@ class RestSocketServer {
     const channels = await this.fabricStarterClient.queryChannels();
     this.opts = opts;
 
-    channels.map(c => {
-      return c.channel_id;
-    }).forEach(async channelId => {
-        self.listOfChannels.push(channelId);
+    for (const channelId of channels.map(c => {
+        return c.channel_id;
+    })) {
       await this.registerChannelChainblockListener(channelId);
-    });
-    this.startSocketServerTimer();
+    }
+      this.startSocketServerTimer();
   }
 
   startSocketServerTimer() {
@@ -35,7 +34,7 @@ class RestSocketServer {
       let channelList = {};
       setInterval(async function () {
           const channels = await fabricStarter.queryChannels();
-          channels.map(c => c.channel_id).forEach(async channelId => {
+          for (const channelId of channels.map(c => c.channel_id)) {
               let peers = await fabricStarter.getPeersForOrgOnChannel(channelId);
               let newPeersFound = false;
               _.forEach(peers, peerName => {
@@ -45,14 +44,12 @@ class RestSocketServer {
                   }
               });
               if (newPeersFound && self.listOfChannels.find(i => i === channelId)) {
-                  self.sendRepeatableBlock(channelId);
+                  await self.sendRepeatableBlock(channelId);
               }
               if (!self.listOfChannels.find(i => i === channelId)) {
-                  if (await self.registerChannelChainblockListener(channelId)) {
-                      self.listOfChannels.push(channelId);
-                  }
+                  await self.registerChannelChainblockListener(channelId);
               }
-          });
+          }
       }, cfg.CHANNEL_LISTENER_UPDATE_TIMEOUT);
   }
 
@@ -69,13 +66,15 @@ class RestSocketServer {
       return false;
     }, this.opts);
     logger.debug(`registered for block event on ${channel}`);
+      this.listOfChannels.push(channel);
     return true;
   }
 
   async sendRepeatableBlock(channel) {
       let info = await this.fabricStarterClient.queryInfo(channel);
       let number = info.height.low-1;
-      this.io.emit('chainblock', {channel_id: channel, number: number.toString()})
+      let block = await this.fabricStarterClient.queryBlock(channel, number, true);
+      this.io.emit('chainblock', block)
   }
 }
 
