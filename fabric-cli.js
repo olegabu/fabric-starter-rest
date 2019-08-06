@@ -35,7 +35,7 @@ class FabricCLI {
     }
 
     downloadOrdererMSP() {
-        this.downloadCerts(cfg.domain);
+        this.downloadCerts(cfg.ORDERER_DOMAIN);
     }
 
     downloadOrgMSP(org) {
@@ -50,6 +50,8 @@ class FabricCLI {
 
     async envSubst(templateFile, outputFile, env) {
         let envs = _.map(_.keys(env), k => new Object({name: k, value: env[k]}));
+        logger.debug(`Envsubst: ${templateFile} to ${outputFile}`);
+        logger.debug(envs);
         return envsub({templateFile, outputFile, options: Object.assign({diff: false}, {envs: envs})});
     }
 
@@ -63,7 +65,7 @@ class FabricCLI {
     }
 
     async generateChannelConfigTx(channelId) {
-        await this.envSubst(`${cfg.TEMPLATES_DIR}/configtx-template.yaml`, `${cfg.CRYPTO_CONFIG_DIR}/configtx.yaml`);
+        await this.envSubst(`${cfg.TEMPLATES_DIR}/configtx-template.yaml`, `${cfg.CRYPTO_CONFIG_DIR}/configtx.yaml`, {DOMAIN: cfg.ORDERER_DOMAIN});
         let outputTxFile = `${cfg.CRYPTO_CONFIG_DIR}/configtx/channel_${channelId}.tx`;
         this.generateConfigTxForChannel(channelId, cfg.CRYPTO_CONFIG_DIR, "CHANNEL", outputTxFile);
         return outputTxFile;
@@ -175,8 +177,8 @@ class FabricCLI {
         return {outputFile, outputJson: JSON.parse(newOrgSubstitution.outputContents)};
     }
 
-    getCertFileDir(certFolder, domaiCertPath) {
-        return `${domaiCertPath}/msp/${certFolder}`;
+    getCertFileDir(certFolder, domainCertPath) {
+        return `${domainCertPath}/msp/${certFolder}`;
     }
 
     getCertFileName(certPrefix, org) {

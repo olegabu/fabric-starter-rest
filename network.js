@@ -14,13 +14,12 @@ function addOrg(t, org) {
     // mspid: `${org}MSP`,
     mspid: `${org}`,
     peers: [
-      `peer0.${org}.${cfg.domain}:7051`
+      `peer0.${org}.${cfg.domain}:${cfg.peer0Port}`
     ]
   };
 
     if (org === cfg.org) {
-        const certDomain = `${(cfg.isOrderer ? "" : org + ".") + cfg.domain}`;
-        const mspPath = `${cfg.isOrderer ? cfg.ORDERER_CRYPTO_DIR : cfg.PEER_CRYPTO_DIR}/users/Admin@${certDomain}/msp`;
+        const mspPath = `${cfg.isOrderer ? cfg.ORDERER_CRYPTO_DIR : cfg.PEER_CRYPTO_DIR}/users/Admin@${cfg.certificationDomain}/msp`;
         const keystorePath = `${mspPath}/keystore`;
         const keystoreFiles = fs.readdirSync(keystorePath);
         const keyPath = `${keystorePath}/${keystoreFiles[0]}`;
@@ -30,7 +29,7 @@ function addOrg(t, org) {
             path: keyPath
         };
         t.organizations[org].signedCert = {
-            path: `${mspPath}/signcerts/Admin@${certDomain}-cert.pem`
+            path: `${mspPath}/signcerts/Admin@${cfg.certificationDomain}-cert.pem`
         };
     }
 }
@@ -39,7 +38,7 @@ function addPeer(t, org, i, peerAddress) {
   if(!t.peers) {
     t.peers = {};
   }
-    const peerName = `peer${i}.${org}.${cfg.domain}:7051`;
+    const peerName = `peer${i}.${org}.${cfg.domain}:${cfg.peer0Port}`;
     t.peers[peerName] = {
     url: `grpcs://${peerAddress}`,
     grpcOptions: {

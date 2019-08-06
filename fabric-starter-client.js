@@ -457,7 +457,7 @@ class FabricStarterClient {
     }
 
     async invoke(channelId, chaincodeId, fcn, args, targets, waitForTransactionEvent, transientMap) {
-        const channel = await this.getChannel(channelId, false);//await this.getChannel(channelId);
+        const channel = await this.getChannel(channelId);
         let fsClient = this;
 
         const proposal = {
@@ -509,12 +509,13 @@ class FabricStarterClient {
                 proposal: proposalResponse[1],
             };
 
-            const promise = waitForTransactionEvent ? fsClient.waitForTransactionEvent(txId, channel) : Promise.resolve(txId);
+            const promise = waitForTransactionEvent ? fsClient.waitForTransactionEvent(txId, channel) : Promise.resolve({txId:txId});
 
             const broadcastResponse = await channel.sendTransaction(transactionRequest);
             logger.trace('broadcastResponse', broadcastResponse);
             return promise.then(function (res) {
                 res.badPeers = badPeers;
+                res.chaincodeResult = _.get(proposalResponse, "[0].response.payload");
                 return res;
             });
         });
