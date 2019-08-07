@@ -285,12 +285,14 @@ module.exports = function(app, server) {
    * @route GET /channels/{channelId}/orgs
    * @group channels - Queries and operations on channels
    * @param {string} channelId.path.required - channel - eg: common
+   * @param {string} filter.path.required - reject orderer name flag
    * @returns {object} 200 - Array of organization objects with names (MSPIDs)
    * @returns {Error}  default - Unexpected error
    * @security JWT
    */
   app.get('/channels/:channelId/orgs', asyncMiddleware(async(req, res, next) => {
-    res.json(await req.fabricStarterClient.getOrganizations(req.params.channelId));
+    logger.error(req.query.filter);
+    res.json(await req.fabricStarterClient.getOrganizations(req.params.channelId, req.query.filter));
   }));
 
   /**
