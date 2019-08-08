@@ -646,7 +646,10 @@ class FabricStarterClient {
 
     async getOrganizations(channelId, filter=false) {
         const channel = await this.getChannel(channelId);
-        return filter?_.reject(channel.getOrganizations(),{id:'orderer.' + cfg.ORDERER_DOMAIN},{id:cfg.ordererName+'.'+cfg.ORDERER_DOMAIN}): channel.getOrganizations();
+        let rejectOrgs = ['orderer', 'orderer.' + cfg.ORDERER_DOMAIN, cfg.ordererName+'.'+cfg.ORDERER_DOMAIN];
+        return filter?_.reject(await channel.getOrganizations(), function (org) {
+            return _.includes(rejectOrgs, org.id);
+        }): channel.getOrganizations();
     }
 
     async queryInstantiatedChaincodes(channelId) {

@@ -34,8 +34,8 @@ class RestSocketServer {
       let channelList = {};
       setInterval(async function () {
           const channels = await fabricStarter.queryChannels();
-         channels.map( async channel =>  {
-             let channelId = channel.channelId;
+          _.forEach(channels, async function(channel){
+              let channelId = channel.channel_id;
               let peers = await fabricStarter.getPeersForOrgOnChannel(channelId);
               let newPeersFound = false;
               _.forEach(peers, peerName => {

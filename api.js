@@ -291,7 +291,6 @@ module.exports = function(app, server) {
    * @security JWT
    */
   app.get('/channels/:channelId/orgs', asyncMiddleware(async(req, res, next) => {
-    logger.error(req.query.filter);
     res.json(await req.fabricStarterClient.getOrganizations(req.params.channelId, req.query.filter));
   }));
 
