@@ -644,12 +644,12 @@ class FabricStarterClient {
         this.client._channels = new Map(); //TODO: workaround until sdk supports cache invalidating
     }
 
-    async getOrganizations(channelId, filter=false) {
+    async getOrganizations(channelId, filter = false) {
         const channel = await this.getChannel(channelId);
-        let rejectOrgs = ['orderer', 'orderer.' + cfg.ORDERER_DOMAIN, cfg.ordererName+'.'+cfg.ORDERER_DOMAIN];
-        return filter?_.reject(await channel.getOrganizations(), function (org) {
-            return _.includes(rejectOrgs, org.id);
-        }): channel.getOrganizations();
+        let rejectOrgs = [cfg.HARDCODED_ORDERER_NAME, cfg.HARDCODED_ORDERER_NAME+'.' + cfg.ORDERER_DOMAIN, cfg.ordererName + '.' + cfg.ORDERER_DOMAIN];
+        return filter ?
+            _.differenceWith(channel.getOrganizations(), rejectOrgs, (org, rejectOrg) => org.id === rejectOrg)
+            : channel.getOrganizations();
     }
 
     async queryInstantiatedChaincodes(channelId) {

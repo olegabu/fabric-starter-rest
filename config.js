@@ -7,6 +7,7 @@ const DOMAIN = process.env.DOMAIN || 'example.com';
 const myorg = process.env.ORG || 'org1';
 const peer0Port = process.env.PEER0_PORT || '7051';
 const ordererName = process.env.ORDERER_NAME  || 'orderer';
+const HARDCODED_ORDERER_NAME = process.env.HARDCODED_ORDERER_NAME || 'orderer';
 const ordererDomain = process.env.ORDERER_DOMAIN || process.env.DOMAIN || 'example.com';
 const ordererPort = process.env.ORDERER_GENERAL_LISTENPORT || '7050';
 
@@ -81,5 +82,7 @@ module.exports = {
 
     INVOKE_RETRY_COUNT: process.env.INVOKE_RETRY_COUNT || 3,
     JOIN_RETRY_COUNT: process.env.JOIN_RETRY_COUNT || 10,
-    LISTENER_RETRY_COUNT: process.env.LISTENER_RETRY_COUNT || 20
+    LISTENER_RETRY_COUNT: process.env.LISTENER_RETRY_COUNT || 20,
+
+    HARDCODED_ORDERER_NAME: HARDCODED_ORDERER_NAME
 };
