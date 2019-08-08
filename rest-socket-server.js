@@ -32,14 +32,16 @@ class RestSocketServer {
       const fabricStarter = this.fabricStarterClient;
       const self = this;
       let channelList = {};
-      setInterval(async function () {
+      setInterval(async () => {
           const channels = await fabricStarter.queryChannels();
-          for (const channelId of channels.map(c => c.channel_id)) {
+          _.forEach(channels, async channel => {
+              let channelId = channel.channel_id;
               let peers = await fabricStarter.getPeersForOrgOnChannel(channelId);
               let newPeersFound = false;
               _.forEach(peers, peerName => {
                   if (!_.get(channelList, `${channelId}["${peerName}"]`)) {
                       _.set(channelList, `${channelId}["${peerName}"]`, true);
+                      logger.debug(`Found new peer ${peerName} on channel ${channelId}`);
                       newPeersFound = true;
                   }
               });
@@ -47,9 +49,10 @@ class RestSocketServer {
                   await self.sendRepeatableBlock(channelId);
               }
               if (!self.listOfChannels.find(i => i === channelId)) {
+                  logger.debug(`Found new channel ${channelId}`);
                   await self.registerChannelChainblockListener(channelId);
               }
-          }
+          });
       }, cfg.CHANNEL_LISTENER_UPDATE_TIMEOUT);
   }
 
