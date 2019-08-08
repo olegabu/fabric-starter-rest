@@ -285,7 +285,7 @@ module.exports = function(app, server) {
    * @route GET /channels/{channelId}/orgs
    * @group channels - Queries and operations on channels
    * @param {string} channelId.path.required - channel - eg: common
-   * @param {string} filter.path.required - reject orderer name flag
+   * @param {boolean} filter.path.required - reject orderer name flag
    * @returns {object} 200 - Array of organization objects with names (MSPIDs)
    * @returns {Error}  default - Unexpected error
    * @security JWT
