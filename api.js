@@ -81,26 +81,15 @@ module.exports = function(app, server) {
 // use fabricStarterClient for every logged in user
   const mapFabricStarterClient = {};
 
-  app.use(async(req, res, next) => {
-    if(req.user) {
+  app.use((req, res, next) => {
+    if (req.user) {
       const login = req.user.sub;
-
       let client = mapFabricStarterClient[login];
-      if(client) {
+      if (client) {
         logger.debug('cached client for', login);
         req.fabricStarterClient = client;
       } else {
-        logger.debug('new client for', login); //TODO: should not be reachable
-        req.fabricStarterClient = new FabricStarterClient();
-        await req.fabricStarterClient.init();
-        try {
-          await req.fabricStarterClient.loginOrRegister(login);
-        } catch(e) {
-          logger.error('loginOrRegister', e);
-          res.status(500).json(e && e.message);
-        }
-
-        mapFabricStarterClient[login] = req.fabricStarterClient;
+        throw (new jwt.UnauthorizedError("No client context", {message: 'User is not logged in.'}));
       }
     }
     next();
@@ -195,11 +184,14 @@ module.exports = function(app, server) {
    * @returns {Error}  default - Unexpected error
    */
   app.post('/users', asyncMiddleware(async(req, res, next) => {
-    if(!mapFabricStarterClient[req.body.username]) {
-      mapFabricStarterClient[req.body.username] = new FabricStarterClient();
-    }
+    // let namePasswordKey=`${req.body.username}.${req.body.password}`;
+    // if(!mapFabricStarterClient[namePasswordKey]) {
+    // }
+    mapFabricStarterClient[req.body.username] && mapFabricStarterClient[req.body.username].logoutUser(req.body.username);
+    mapFabricStarterClient[req.body.username]=new FabricStarterClient();
     req.fabricStarterClient = mapFabricStarterClient[req.body.username];
     await req.fabricStarterClient.init();
+
     await req.fabricStarterClient.loginOrRegister(req.body.username, req.body.password || req.body.username);
 
     const token = jsonwebtoken.sign({sub: req.fabricStarterClient.user.getName()}, jwtSecret);

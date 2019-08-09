@@ -37,7 +37,19 @@ class FabricStarterClient {
     }
 
     async login(username, password) {
-        this.user = await this.client.setUserContext({username: username, password: password});
+        this.user = await this.client.setUserContext({username: username, password: password}, true);
+    }
+
+    logoutUser(userName) {
+        const userCachePath = _.get(this,"networkConfig.client.credentialStore.path");
+        if (userCachePath) {
+            const userFile=path.join(userCachePath, userName);
+            try {
+                fs.unlinkSync(userFile);
+            } catch (err) {
+                logger.debug(`Cannot remove credential store: ${userFile}`, err.Error || err);
+            }
+        }
     }
 
     async register(username, password, affiliation) {
@@ -61,9 +73,12 @@ class FabricStarterClient {
         this.registerQueue[username] = new Promise((resolve, reject) => {
             return this.login(username, password).then(resolve)
                 .catch((err) => {
+                    logger.error("Login error:", err);
                     return this.register(username, password, affiliation)
+                        .then(() => this.login(username, password));
                 })
-                .then(() => this.login(username, password)).then(() => this.registerQueue[username] = null).then(resolve)
+                .then(() => this.registerQueue[username] = null)
+                .then(resolve)
                 .catch(err => {
                     reject(err);
                 });

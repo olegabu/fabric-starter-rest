@@ -38,6 +38,10 @@ class RestSocketServer {
               let channelId = channel.channel_id;
               let peers = await fabricStarter.getPeersForOrgOnChannel(channelId);
               let newPeersFound = false;
+              if (channelList[channelId] && !self.listOfChannels.find(chId=>chId===channelId)) {
+                  logger.debug("Renew event listener for channel ", channelId);
+                  delete channelList[channelId];
+              }
               _.forEach(peers, peerName => {
                   if (!_.get(channelList, `${channelId}["${peerName}"]`)) {
                       _.set(channelList, `${channelId}["${peerName}"]`, true);
@@ -57,19 +61,20 @@ class RestSocketServer {
   }
 
 
-  async registerChannelChainblockListener(channel) {
+  async registerChannelChainblockListener(channelId) {
+    const self = this;
 
-    await this.fabricStarterClient.registerBlockEvent(channel, block => {
+    await this.fabricStarterClient.registerBlockEvent(channelId, block => {
       let blockNumber = block.number || _.get(block, "header.number");
-      logger.debug(`fabricStarterClient hase recived block ${blockNumber} on ${block.channel_id}`);
+      logger.debug(`fabricStarterClient hase received block ${blockNumber} on ${block.channel_id}`);
       logger.debug(block);
       this.io.emit('chainblock', block);
     }, e => {
       logger.error('registerBlockEvent error:', e);
-      return false;
+      _.remove(self.listOfChannels, chId=>chId===channelId);
     }, this.opts);
-    logger.debug(`registered for block event on ${channel}`);
-      this.listOfChannels.push(channel);
+    logger.debug(`registered for block event on ${channelId}`);
+      this.listOfChannels.push(channelId);
     return true;
   }
 

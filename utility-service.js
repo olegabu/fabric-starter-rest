@@ -6,7 +6,7 @@ class UtilityService {
 
     static async retryOperation(nTimes, fn) {
         return new Promise((resolve, reject) => {
-            if (nTimes <= 0) return reject(`Retried invocation unsuccessful`);
+            if (nTimes <= 0) return reject('Retried invocation unsuccessful');
             try {
                 let response = fn();
                 resolve(response);

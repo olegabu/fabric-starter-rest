@@ -67,7 +67,7 @@ module.exports = {
 
 
 
-    USE_SERVICE_DISCOVERY: process.env.USE_SERVICE_DISCOVERY || true,
+    USE_SERVICE_DISCOVERY: typeof process.env.USE_SERVICE_DISCOVERY === "undefined" || process.env.USE_SERVICE_DISCOVERY === "true",
     WEBADMIN_DIR: process.env.WEBADMIN_DIR || "./admin",
 
     WEBAPPS_DIR: process.env.WEBAPPS_DIR || "webapps",
