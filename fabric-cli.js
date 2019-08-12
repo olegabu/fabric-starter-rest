@@ -65,7 +65,19 @@ class FabricCLI {
     }
 
     async generateChannelConfigTx(channelId) {
-        await this.envSubst(`${cfg.TEMPLATES_DIR}/configtx-template.yaml`, `${cfg.CRYPTO_CONFIG_DIR}/configtx.yaml`, {DOMAIN: cfg.ORDERER_DOMAIN, ORG: cfg.org});
+        await this.envSubst(`${cfg.TEMPLATES_DIR}/configtx-template.yaml`, `${cfg.CRYPTO_CONFIG_DIR}/configtx.yaml`,
+            {
+                DOMAIN: cfg.ORDERER_DOMAIN,
+                ORG: cfg.org,
+                ORDERER_NAME: cfg.ordererName,
+                ORDERER_DOMAIN: cfg.ORDERER_DOMAIN,
+                RAFT0_PORT: cfg.raft0Port,
+                RAFT1_PORT: cfg.raft1Port,
+                RAFT2_PORT: cfg.raft2Port,
+                ORDERER_NAME_PREFIX: cfg.ordererNamePrefix,
+                ORDERER_BATCH_TIMEOUT: cfg.ORDERER_BATCH_TIMEOUT
+            });
+
         let outputTxFile = `${cfg.CRYPTO_CONFIG_DIR}/configtx/channel_${channelId}.tx`;
         this.generateConfigTxForChannel(channelId, cfg.CRYPTO_CONFIG_DIR, "CHANNEL", outputTxFile);
         return outputTxFile;

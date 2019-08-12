@@ -10,6 +10,11 @@ const ordererName = process.env.ORDERER_NAME  || 'orderer';
 const HARDCODED_ORDERER_NAME = process.env.HARDCODED_ORDERER_NAME || 'orderer';
 const ordererDomain = process.env.ORDERER_DOMAIN || process.env.DOMAIN || 'example.com';
 const ordererPort = process.env.ORDERER_GENERAL_LISTENPORT || '7050';
+const raft0Port = process.env.RAFT0_PORT || ordererPort;
+const raft1Port = process.env.RAFT1_PORT || ordererPort;
+const raft2Port = process.env.RAFT2_PORT || ordererPort;
+const ordererNamePrefix = process.env.ORDERER_NAME_PREFIX || 'raft';
+const ordererBatchTimeout = process.env.ORDERER_BATCH_TIMEOUT || '2';
 
 
 const CRYPTO_CONFIG_DIR = "crypto-config";
@@ -84,5 +89,12 @@ module.exports = {
     JOIN_RETRY_COUNT: process.env.JOIN_RETRY_COUNT || 10,
     LISTENER_RETRY_COUNT: process.env.LISTENER_RETRY_COUNT || 20,
 
+    RAFT0_PORT: raft0Port,
+    RAFT1_PORT: raft1Port,
+    RAFT2_PORT: raft2Port,
+    ORDERER_NAME_PREFIX: ordererNamePrefix,
+    ORDERER_BATCH_TIMEOUT: ordererBatchTimeout,
+
     HARDCODED_ORDERER_NAME: HARDCODED_ORDERER_NAME
+
 };
