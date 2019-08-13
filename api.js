@@ -328,7 +328,7 @@ module.exports = function(app, server) {
    * @security JWT
    */
   app.post('/channels/:channelId/orgs', asyncMiddleware(async(req, res, next) => {
-    res.json(await req.fabricStarterClient.addOrgToChannel(req.params.channelId, req.body.orgId, req.body.orgIp));
+    res.json(await req.fabricStarterClient.addOrgToChannel(req.params.channelId, req.body.orgId, req.body.orgIp, req.body.peerPort));
   }));
 
   /**
@@ -596,7 +596,7 @@ module.exports = function(app, server) {
           const parts = _.split(p, "/"); //format: org/peer0
           const peerOrg = parts[0];
           const peerName = parts[1];
-          return `${peerName}.${peerOrg}.${cfg.domain}:7051`;
+          return `${peerName}.${peerOrg}.${cfg.domain}:${cfg.DEFAULT_PEER0PORT}`;
         })
       }
     }

@@ -202,7 +202,7 @@ class FabricStarterClient {
         const tx2_id = this.client.newTransactionID(true);
         let peers = await this.queryPeers();
         let channel = await this.constructChannel(channelId, peers);
-        let genesis_block = await channel.getGenesisBlock({txId: tx2_id});
+        let genesis_block = await channel.getGenesisBlock();//{txId: tx2_id});
         let gen_tx_id = this.client.newTransactionID(true);
         let j_request = {
             targets: peers,
@@ -214,7 +214,7 @@ class FabricStarterClient {
         return result;
     }
 
-    async addOrgToChannel(channelId, orgId, orgIp) {
+    async addOrgToChannel(channelId, orgId, orgIp, peer0Port) {
         await this.checkDnsOrg(orgId, orgIp);
         let self = this;
         setTimeout(async function () {
@@ -287,20 +287,22 @@ class FabricStarterClient {
     }
 
     async constructChannel(channelId, optionalPeer) {
-        let channel = this.client.newChannel(channelId);
-        channel.addOrderer(this.createOrderer());
-        try {
-            optionalPeer = optionalPeer || await this.queryPeers();
+        let channel = this.client.getChannel(channelId, false);
+        if (!channel) {
+            channel = this.client.newChannel(channelId);
+            channel.addOrderer(this.createOrderer());
+            try {
+                optionalPeer = optionalPeer || await this.queryPeers();
 
-            if (_.isArray(optionalPeer)) {
-                optionalPeer = _.find(optionalPeer, p => _.startsWith(p.getName(), "peer0")) || optionalPeer[0];
+                if (_.isArray(optionalPeer)) {
+                    optionalPeer = _.find(optionalPeer, p => _.startsWith(p.getName(), "peer0")) || optionalPeer[0];
+                }
+
+                channel.addPeer(optionalPeer);
+            } catch (e) {
+                logger.warn(`Error adding peer ${optionalPeer} to channel ${channelId}`);
             }
-
-            channel.addPeer(optionalPeer);
-        } catch (e) {
-            logger.warn(`Error adding peer ${optionalPeer} to channel ${channelId}`);
         }
-
         return channel;
     }
 

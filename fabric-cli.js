@@ -69,12 +69,13 @@ class FabricCLI {
             {
                 DOMAIN: cfg.ORDERER_DOMAIN,
                 ORG: cfg.org,
+                PEER0_PORT: cfg.PEER0_PORT,
                 ORDERER_NAME: cfg.ordererName,
                 ORDERER_DOMAIN: cfg.ORDERER_DOMAIN,
-                RAFT0_PORT: cfg.raft0Port,
-                RAFT1_PORT: cfg.raft1Port,
-                RAFT2_PORT: cfg.raft2Port,
-                ORDERER_NAME_PREFIX: cfg.ordererNamePrefix,
+                RAFT0_PORT: cfg.RAFT0_PORT,
+                RAFT1_PORT: cfg.RAFT0_PORT,
+                RAFT2_PORT: cfg.RAFT0_PORT,
+                ORDERER_NAME_PREFIX: cfg.ORDERER_NAME_PREFIX,
                 ORDERER_BATCH_TIMEOUT: cfg.ORDERER_BATCH_TIMEOUT
             });
 
@@ -155,10 +156,10 @@ class FabricCLI {
         return this.loadFileContentSync(updateEnvelopePbFile);
     }
 
-    async prepareNewOrgConfig(newOrg) {
+    async prepareNewOrgConfig(newOrg, anchorPeerPort) {
         this.downloadOrgMSP(newOrg);
 
-        let env = {NEWORG: newOrg, DOMAIN:cfg.domain};
+        let env = {NEWORG: newOrg, DOMAIN: cfg.domain, NEWORG_PEER0_PORT: anchorPeerPort || cfg.DEFAULT_PEER0PORT};
         _.forEach(_.keys(CERT_FOLDERS_PREFIXES), certFolder => {
             let certPrefix=CERT_FOLDERS_PREFIXES[certFolder];
             let certFilePath = path.join(this.getCertFileDir(certFolder, cfg.orgCryptoConfigPath(newOrg)), this.getCertFileName(certPrefix, newOrg));

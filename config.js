@@ -3,11 +3,14 @@ const log4js = require('log4js');
 log4js.configure({appenders: {stdout: {type: 'stdout'}}, categories: {default: {appenders: ['stdout'], level: 'ALL'}}});
 const logger = log4js.getLogger('config.js');
 
+const DEFAULT_PEER0PORT = '7051';
+const HARDCODED_ORDERER_NAME = process.env.HARDCODED_ORDERER_NAME || 'orderer';
+
+
 const DOMAIN = process.env.DOMAIN || 'example.com';
 const myorg = process.env.ORG || 'org1';
-const peer0Port = process.env.PEER0_PORT || '7051';
-const ordererName = process.env.ORDERER_NAME  || 'orderer';
-const HARDCODED_ORDERER_NAME = process.env.HARDCODED_ORDERER_NAME || 'orderer';
+const peer0Port = process.env.PEER0_PORT || DEFAULT_PEER0PORT;
+const ordererName = process.env.ORDERER_NAME || 'orderer';
 const ordererDomain = process.env.ORDERER_DOMAIN || process.env.DOMAIN || 'example.com';
 const ordererPort = process.env.ORDERER_GENERAL_LISTENPORT || '7050';
 const raft0Port = process.env.RAFT0_PORT || ordererPort;
@@ -15,7 +18,6 @@ const raft1Port = process.env.RAFT1_PORT || ordererPort;
 const raft2Port = process.env.RAFT2_PORT || ordererPort;
 const ordererNamePrefix = process.env.ORDERER_NAME_PREFIX || 'raft';
 const ordererBatchTimeout = process.env.ORDERER_BATCH_TIMEOUT || '2';
-
 
 const CRYPTO_CONFIG_DIR = "crypto-config";
 let cryptoConfigPath = fs.realpathSync(process.env.CRYPTO_CONFIG_DIR || '../fabric-starter/crypto-config');
@@ -95,6 +97,7 @@ module.exports = {
     ORDERER_NAME_PREFIX: ordererNamePrefix,
     ORDERER_BATCH_TIMEOUT: ordererBatchTimeout,
 
+    DEFAULT_PEER0PORT: DEFAULT_PEER0PORT,
     HARDCODED_ORDERER_NAME: HARDCODED_ORDERER_NAME
 
 };
