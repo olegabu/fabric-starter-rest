@@ -227,7 +227,7 @@ class FabricStarterClient {
                 let channelConfigEnvelope = JSON.parse(channelConfigBlock.toString());
                 let origChannelGroupConfig = _.get(channelConfigEnvelope, "data.data[0].payload.data.config");
 
-                let newOrgConfigResp = await fabricCLI.prepareNewOrgConfig(orgId);
+                let newOrgConfigResp = await fabricCLI.prepareNewOrgConfig(orgId, peer0Port);
 
                 let updatedConfig = _.merge({}, origChannelGroupConfig);
                 if (_.get(updatedConfig, "channel_group.groups")) {
