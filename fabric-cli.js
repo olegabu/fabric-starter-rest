@@ -72,11 +72,12 @@ class FabricCLI {
                 PEER0_PORT: cfg.PEER0_PORT,
                 ORDERER_NAME: cfg.ordererName,
                 ORDERER_DOMAIN: cfg.ORDERER_DOMAIN,
+                ORDERER_NAME_PREFIX: cfg.ORDERER_NAME_PREFIX,
+                ORDERER_BATCH_TIMEOUT: cfg.ORDERER_BATCH_TIMEOUT,
+                ORDERER_GENERAL_LISTENPORT: cfg.ordererPort,
                 RAFT0_PORT: cfg.RAFT0_PORT,
                 RAFT1_PORT: cfg.RAFT0_PORT,
-                RAFT2_PORT: cfg.RAFT0_PORT,
-                ORDERER_NAME_PREFIX: cfg.ORDERER_NAME_PREFIX,
-                ORDERER_BATCH_TIMEOUT: cfg.ORDERER_BATCH_TIMEOUT
+                RAFT2_PORT: cfg.RAFT0_PORT
             });
 
         let outputTxFile = `${cfg.CRYPTO_CONFIG_DIR}/configtx/channel_${channelId}.tx`;

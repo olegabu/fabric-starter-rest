@@ -13,13 +13,9 @@ const peer0Port = process.env.PEER0_PORT || DEFAULT_PEER0PORT;
 const ordererName = process.env.ORDERER_NAME || 'orderer';
 const ordererDomain = process.env.ORDERER_DOMAIN || process.env.DOMAIN || 'example.com';
 const ordererPort = process.env.ORDERER_GENERAL_LISTENPORT || '7050';
-const raft0Port = process.env.RAFT0_PORT || ordererPort;
-const raft1Port = process.env.RAFT1_PORT || ordererPort;
-const raft2Port = process.env.RAFT2_PORT || ordererPort;
 const ordererNamePrefix = process.env.ORDERER_NAME_PREFIX || 'raft';
 const ordererBatchTimeout = process.env.ORDERER_BATCH_TIMEOUT || '2';
 
-const CRYPTO_CONFIG_DIR = "crypto-config";
 let cryptoConfigPath = fs.realpathSync(process.env.CRYPTO_CONFIG_DIR || '../fabric-starter/crypto-config');
 
 logger.info(`Crypto-config path: ${cryptoConfigPath}`);
@@ -63,16 +59,16 @@ module.exports = {
     ORDERER_TLS_CERT: `${ORDERER_CRYPTO_DIR}/msp/tlscacerts/tlsca.${ordererDomain}-cert.pem`,
     ORDERER_ADDR: ordererAddr,
     ORDERER_API_ADDR: ordererApiAddr,
+    ordererPort: ordererPort,
+    isOrderer: ordererName == myorg,
 
     PEER_CRYPTO_DIR: PEER_CRYPTO_DIR,
+
     certificationDomain: certificationDomain,
+
     orgCryptoConfigPath: (org) => `${cryptoConfigPath}/peerOrganizations/${org}.${DOMAIN}`,
 
     systemChannelId: systemChannelId,
-
-    isOrderer: ordererName == myorg,
-
-
 
     USE_SERVICE_DISCOVERY: typeof process.env.USE_SERVICE_DISCOVERY === "undefined" || process.env.USE_SERVICE_DISCOVERY === "true",
     WEBADMIN_DIR: process.env.WEBADMIN_DIR || "./admin",
@@ -85,15 +81,15 @@ module.exports = {
     DNS_CHANNEL: process.env.DNS_CHANNEL || "common",
     DNS_UPDATE_TIMEOUT: process.env.DNS_UPDATE_TIMEOUT ||4000,
     CHANNEL_LISTENER_UPDATE_TIMEOUT: process.env.CHANNEL_LISTENER_UPDATE_TIMEOUT ||10000,
-    CHAINCODE_PROCESSING_TIMEOUT: process.env.CHAINCODE_PROCESSING_TIMEOUT || 60000,
+    CHAINCODE_PROCESSING_TIMEOUT: process.env.CHAINCODE_PROCESSING_TIMEOUT || 120000,
 
     INVOKE_RETRY_COUNT: process.env.INVOKE_RETRY_COUNT || 3,
     JOIN_RETRY_COUNT: process.env.JOIN_RETRY_COUNT || 10,
     LISTENER_RETRY_COUNT: process.env.LISTENER_RETRY_COUNT || 20,
 
-    RAFT0_PORT: raft0Port,
-    RAFT1_PORT: raft1Port,
-    RAFT2_PORT: raft2Port,
+    RAFT0_PORT: process.env.RAFT0_PORT || ordererPort,
+    RAFT1_PORT: process.env.RAFT1_PORT || ordererPort,
+    RAFT2_PORT: process.env.RAFT2_PORT || ordererPort,
     ORDERER_NAME_PREFIX: ordererNamePrefix,
     ORDERER_BATCH_TIMEOUT: ordererBatchTimeout,
 
