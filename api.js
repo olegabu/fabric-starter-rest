@@ -8,7 +8,7 @@ module.exports = function(app, server) {
   const jwt = require('express-jwt');
   const _ = require('lodash');
   const cfg = require('./config.js');
-  const UtilityService = require('./utility-service');
+  const util = require('./util');
 
   // upload for chaincode and app installation
   const uploadDir = os.tmpdir() || './upload';
@@ -249,7 +249,7 @@ module.exports = function(app, server) {
   async function joinChannel(channelId, fabricStarterClient) {
     try {
       const ret = await fabricStarterClient.joinChannel(channelId);
-        UtilityService.retryOperation(cfg.LISTENER_RETRY_COUNT, async function() {
+        await util.retryOperation(cfg.LISTENER_RETRY_COUNT, async function() {
         await socket.registerChannelChainblockListener(channelId);
       });
       return ret;
@@ -328,8 +328,12 @@ module.exports = function(app, server) {
    * @security JWT
    */
   app.post('/channels/:channelId/orgs', asyncMiddleware(async(req, res, next) => {
-    res.json(await req.fabricStarterClient.addOrgToChannel(req.params.channelId, req.body.orgId, req.body.orgIp, req.body.peerPort));
+    res.json(await req.fabricStarterClient.addOrgToChannel(req.params.channelId, orgFromHttpBody(req.body)));
   }));
+
+  function orgFromHttpBody(body){
+    return {orgId: body.orgId, orgIp: body.orgIp, peer0Port: body.peerPort, wwwPort: body.wwwPort}
+  }
 
   /**
    * Query a given block in a channel
@@ -503,8 +507,7 @@ module.exports = function(app, server) {
    * @security JWT
    */
   app.post('/consortium/members', asyncMiddleware(async(req, res, next) => {
-    console.log(req.fabricStarterClient);
-    res.json(await req.fabricStarterClient.addOrgToConsortium(req.body.orgId));
+    res.json(await req.fabricStarterClient.addOrgToConsortium(orgFromHttpBody(req.body)));
   }));
 
   /**

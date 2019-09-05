@@ -10,12 +10,14 @@ const urlParseLax = require('url-parse-lax');
 const chmodPlus = require('chmod-plus');
 const fabricCLI = require('./fabric-cli');
 const x509 = require('x509');
-const UtilityService = require('./utility-service');
-
+const util = require('./util');
+const certsManager = require('./certs-manager');
+const channelManager = require('./channel-manager');
 //const networkConfigFile = '../crypto-config/network.json'; // or .yaml
 //const networkConfig = require('../crypto-config/network.json');
 
 const asLocalhost = (process.env.DISCOVER_AS_LOCALHOST === 'true');
+const IS_ADMIN = true;
 
 logger.debug(`invokeTimeout=${cfg.CHAINCODE_PROCESSING_TIMEOUT} asLocalhost=${asLocalhost}`);
 
@@ -24,6 +26,7 @@ class FabricStarterClient {
         this.networkConfig = networkConfig || require('./network')();
         logger.info('constructing with network config', JSON.stringify(this.networkConfig));
         this.client = Client.loadFromConfig(this.networkConfig); // or networkConfigFile
+        this.ordererClient = Client.loadFromConfig(this.networkConfig); // or networkConfigFile
         this.peer = this.client.getPeersForOrg()[0];
         this.org = this.networkConfig.client.organization;
         this.affiliation = this.org;
@@ -34,6 +37,9 @@ class FabricStarterClient {
     async init() {
         await this.client.initCredentialStores();
         this.fabricCaClient = this.client.getCertificateAuthority();
+        await this.ordererClient.initCredentialStores();
+        this.ordererClient.setAdminSigningIdentity(util.loadPemFromFile(certsManager.getPrivateKeyFilePath()),
+            util.loadPemFromFile(certsManager.getSignCertPath()), cfg.ORDERER_MSPID);
     }
 
     async login(username, password) {
@@ -123,57 +129,13 @@ class FabricStarterClient {
         return participants
     }
 
-    async addOrgToConsortium(newOrg) {
-        const channelId = cfg.systemChannelId;
-
-        let channelConfigFile = fabricCLI.fetchChannelConfig(channelId);
-        let channelConfigBlock = await fabricCLI.translateChannelConfig(channelConfigFile);
-        logger.debug(`Got channel config ${channelId}:`, channelConfigBlock);
-
-        let channelConfigEnvelope = JSON.parse(channelConfigBlock.toString());
-        let origChannelGroupConfig = _.get(channelConfigEnvelope, "data.data[0].payload.data.config");
-
-        let newOrgConfigResp = await fabricCLI.prepareNewConsortiumConfig(newOrg);
-
-        let updatedConfig = _.merge({}, origChannelGroupConfig);
-        if (_.get(updatedConfig, "channel_group.groups")) {
-            _.merge(updatedConfig.channel_group.groups, newOrgConfigResp.outputJson);
-        }
-
-        logger.debug(`Channel updated config ${channelId}:`, JSON.stringify(updatedConfig));
-
-        try {
-            let configUpdate = fabricCLI.computeChannelConfigUpdate(channelId, origChannelGroupConfig, updatedConfig);
-            logger.debug(`Got updated envelope ${channelId}:`, _.toString(configUpdate));
-            const txId = this.client.newTransactionID();
-
-            try {
-                let update = await this.client.updateChannel({
-                    txId, name: channelId, config: configUpdate, orderer: this.createOrderer(),
-                    signatures: [this.client.signChannelConfig(configUpdate)]
-                });
-                logger.info(`Update channel result ${channelId}:`, update);
-                this.invalidateChannelsCache(channelId);
-                return update
-            } catch (e) {
-                logger.error(e);
-            }
-        } catch (e) {
-            logger.error(`Couldn't fetch/translate config for channel ${channelId}`, e);
-        } finally {
-            this.chmodCryptoFolder();
-        }
-        // participants = _.filter(_.keys(participants), name => { return name != "Orderer" })
-        // return 'ok'
-    }
-
     async createChannel(channelId) {
         try {
             logger.info(`Creating channel ${channelId}`);
             fabricCLI.downloadOrdererMSP();
 
             const tx_id = this.client.newTransactionID(true);
-            let orderer = this.createOrderer();
+            let orderer = this.client.getOrderer(cfg.ORDERER_ADDR); //this.createOrderer();
 
             let channelReq = {
                 txId: tx_id,
@@ -214,73 +176,54 @@ class FabricStarterClient {
         return result;
     }
 
-    async addOrgToChannel(channelId, orgId, orgIp, peer0Port) {
-        await this.checkDnsOrg(orgId, orgIp);
-        let self = this;
-        setTimeout(async function () {
-            fabricCLI.downloadOrdererMSP();
-            let channelConfigFile = fabricCLI.fetchChannelConfig(channelId);
-            let channelConfigBlock = await fabricCLI.translateChannelConfig(channelConfigFile);
-            logger.debug(`Got channel config ${channelId}:`, channelConfigBlock);
-
-            try {
-                let channelConfigEnvelope = JSON.parse(channelConfigBlock.toString());
-                let origChannelGroupConfig = _.get(channelConfigEnvelope, "data.data[0].payload.data.config");
-
-                let newOrgConfigResp = await fabricCLI.prepareNewOrgConfig(orgId, peer0Port);
-
-                let updatedConfig = _.merge({}, origChannelGroupConfig);
-                if (_.get(updatedConfig, "channel_group.groups")) {
-                    _.merge(updatedConfig.channel_group.groups, newOrgConfigResp.outputJson);
-                }
-
-                logger.debug(`Channel updated config ${channelId}:`, _.toString(updatedConfig));
-                let configUpdate = fabricCLI.computeChannelConfigUpdate(channelId, origChannelGroupConfig, updatedConfig);
-                logger.debug(`Got updated envelope ${channelId}:`, _.toString(configUpdate));
-                const txId = self.client.newTransactionID();
-
-                try {
-                    let update = await self.client.updateChannel({
-                        txId, name: channelId, config: configUpdate, orderer: self.createOrderer(),
-                        signatures: [self.client.signChannelConfig(configUpdate)]
-                    });
-                    logger.info(`Update channel result ${channelId}:`, update);
-                    self.invalidateChannelsCache(channelId);
-                } catch (e) {
-                    logger.error(e);
-                }
-            } catch (e) {
-                logger.error(`Couldn't fetch/translate config for channel ${channelId}`, e);
-                throw  e;
-            } finally {
-                self.chmodCryptoFolder();
-            }
-        }, cfg.DNS_UPDATE_TIMEOUT)
-
+    async addOrgToChannel(channelId, orgObj) {
+        await this.checkOrgDns(orgObj);
+        try {
+            let currentChannelConfigFile = fabricCLI.fetchChannelConfig(channelId);
+            let configUpdateRes = await fabricCLI.prepareNewOrgConfig(orgObj);
+            await channelManager.applyConfigToChannel(channelId, currentChannelConfigFile, configUpdateRes, this.client);
+            this.chmodCryptoFolder();
+        } finally {
+            this.invalidateChannelsCache(channelId);
+        }
     }
 
-    async checkDnsOrg(orgId, orgIp) {
+    async addOrgToConsortium(orgObj, consortiumName) {
+        await this.checkOrgDns(orgObj);
+        const extraEnv = {
+            CORE_PEER_LOCALMSPID: `${cfg.ordererName}.${cfg.ORDERER_DOMAIN}`,
+            CORE_PEER_MSPCONFIGPATH: certsManager.getMSPConfigDirectory(),
+            CORE_PEER_TLS_ROOTCERT_FILE: certsManager.getOrdererRootTLSFile()
+        };
+        let currentChannelConfigFile = fabricCLI.fetchChannelConfig(cfg.systemChannelId, extraEnv);
+        let configUpdateRes = await fabricCLI.prepareNewConsortiumConfig(orgObj, consortiumName);
+        return channelManager.applyConfigToChannel(cfg.systemChannelId, currentChannelConfigFile, configUpdateRes, this.ordererClient, IS_ADMIN);
+    }
+
+    async checkOrgDns(orgObj) {
         let chaincodeList = await this.queryInstantiatedChaincodes(cfg.DNS_CHANNEL);
-        if(!chaincodeList.chaincodes.find(i => i.name === "dns"))
+        if (!chaincodeList.chaincodes.find(i => i.name === "dns"))
             return;
         const dns = await this.query(cfg.DNS_CHANNEL, "dns", "range", null, {targets: []});
         let dnsRecordsList = dns && dns.length && JSON.parse(dns[0]);
 
-        let dnsRecordForIp = _.find(dnsRecordsList, dnsRecord => _.get(dnsRecord.ip === orgIp));
-        if (dnsRecordForIp && !_.includes(dnsRecordForIp.value, `${orgId}.${cfg.domain}`)) {
+        let dnsRecordForIp = _.find(dnsRecordsList, dnsRecord => _.get(dnsRecord.ip === orgObj.orgIp));
+        if (dnsRecordForIp && !_.includes(dnsRecordForIp.value, `${orgObj.orgId}.${cfg.domain}`)) {
             throw new Error(`Specified Ip linked to another org: ${dnsRecordForIp.value}`);
         }
-
+        const orgId = _.get(orgObj,"orgId");
+        const orgIp = _.get(orgObj,"orgIp");
         let dnsRecordForOrg = _.find(dnsRecordsList, dnsRecord => _.includes(_.get(dnsRecord, "value"), `${orgId}.${cfg.domain}`));
 
         if (!dnsRecordForOrg && !orgIp) {
-            const msg = `Need Organization's Ip for add to dns list`;
+            const msg = `Please provide Organization's Ip to register in DNS`;
             logger.error(msg);
             throw new Error(msg);
         }
 
         if (orgIp) {
-            await this.invoke(cfg.DNS_CHANNEL, "dns", "registerOrg", [`${orgId}.${cfg.domain}`, orgIp], {targets: []}, true);
+            await this.invoke(cfg.DNS_CHANNEL, "dns", "registerOrg", [`${orgId}.${cfg.domain}`, orgIp], {targets: []}, true)
+                .then(()=>util.sleep(cfg.DNS_UPDATE_TIMEOUT));
         } else {
             logger.debug(`Dns includes`, dnsRecordForOrg);
         }
@@ -290,7 +233,7 @@ class FabricStarterClient {
         let channel = this.client.getChannel(channelId, false);
         if (!channel) {
             channel = this.client.newChannel(channelId);
-            channel.addOrderer(this.createOrderer());
+            channel.addOrderer(this.client.getOrderer(cfg.ORDERER_ADDR)); //this.createOrderer());
             try {
                 optionalPeer = optionalPeer || await this.queryPeers();
 
@@ -505,7 +448,7 @@ class FabricStarterClient {
             proposal.targets = [this.peer];
         }
 
-        return UtilityService.retryOperation(cfg.INVOKE_RETRY_COUNT, async function () {
+        return util.retryOperation(cfg.INVOKE_RETRY_COUNT, async function () {
             const txId = fsClient.client.newTransactionID(/*true*/);
 
             proposal.txId = txId;
@@ -531,7 +474,7 @@ class FabricStarterClient {
             const broadcastResponse = await channel.sendTransaction(transactionRequest);
             logger.trace('broadcastResponse', broadcastResponse);
             return promise.then(function (res) {
-                res.badPeers = badPeers;
+                res.PeersNotFound = badPeers;
                 res.chaincodeResult = _.get(proposalResponse, "[0].response.payload");
                 return res;
             });
@@ -663,7 +606,7 @@ class FabricStarterClient {
 
     async getOrganizations(channelId, filter = false) {
         const channel = await this.getChannel(channelId);
-        let rejectOrgs = [cfg.HARDCODED_ORDERER_NAME, cfg.HARDCODED_ORDERER_NAME+'.' + cfg.ORDERER_DOMAIN, cfg.ordererName + '.' + cfg.ORDERER_DOMAIN];
+        let rejectOrgs = [cfg.HARDCODED_ORDERER_NAME, `${cfg.HARDCODED_ORDERER_NAME}.${cfg.ORDERER_DOMAIN}`, `${cfg.ordererName}.${cfg.ORDERER_DOMAIN}`];
         return filter ?
             _.differenceWith(channel.getOrganizations(), rejectOrgs, (org, rejectOrg) => org.id === rejectOrg)
             : channel.getOrganizations();
@@ -723,17 +666,12 @@ class FabricStarterClient {
     }
 
     createOrderer() {
-        return this.client.newOrderer(`grpcs://${cfg.ORDERER_ADDR}`, {pem: this.loadPemFromFile(cfg.ORDERER_TLS_CERT)});
+        return this.client.newOrderer(`grpcs://${cfg.ORDERER_ADDR}`, {pem: util.loadPemFromFile(cfg.ORDERER_TLS_CERT)});
     }
 
     createPeerFromUrl(peerEndpoint) {
         let connectionOptions = this.defaultConnectionOptions(peerEndpoint);
         return this.client.newPeer(`grpcs://${peerEndpoint}`, connectionOptions);
-    }
-
-    loadPemFromFile(pemFilePath) {
-        let certData = fs.readFileSync(pemFilePath);
-        return Buffer.from(certData).toString()
     }
 
     defaultConnectionOptions(peerUrl, org, domain) {
@@ -742,7 +680,7 @@ class FabricStarterClient {
         let connectionOptions = {
             'ssl-target-name-override': peerUrl,
             //'ssl-target-name-override': 'localhost',
-            pem: this.loadPemFromFile(`${cfg.PEER_CRYPTO_DIR}/peers/${mspSubPath}/msp/tlscacerts/tlsca.${org || cfg.org}.${domain || cfg.domain}-cert.pem`)
+            pem: util.loadPemFromFile(`${cfg.PEER_CRYPTO_DIR}/peers/${mspSubPath}/msp/tlscacerts/tlsca.${org || cfg.org}.${domain || cfg.domain}-cert.pem`)
         };
         return connectionOptions;
     }

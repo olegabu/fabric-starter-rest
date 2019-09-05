@@ -53,14 +53,17 @@ module.exports = {
     peer0Port: peer0Port,
     ordererName: ordererName,
     ORDERER_DOMAIN: ordererDomain,
+    ORDERER_MSPID: `${ordererName}.${ordererDomain}`,
     CRYPTO_CONFIG_DIR: cryptoConfigPath,
     TEMPLATES_DIR: TEMPLATES_DIR,
     ORDERER_CRYPTO_DIR: ORDERER_CRYPTO_DIR,
     ORDERER_TLS_CERT: `${ORDERER_CRYPTO_DIR}/msp/tlscacerts/tlsca.${ordererDomain}-cert.pem`,
     ORDERER_ADDR: ordererAddr,
+    ORDERER_WWW_PORT: process.env.ORDERER_WWW_PORT || 80,
     ORDERER_API_ADDR: ordererApiAddr,
     ordererPort: ordererPort,
     isOrderer: ordererName == myorg,
+    DEFAULT_CONSORTIUM: process.env.DEFAULT_CONSORTIUM || 'SampleConsortium',
 
     PEER_CRYPTO_DIR: PEER_CRYPTO_DIR,
 

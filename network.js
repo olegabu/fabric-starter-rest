@@ -1,5 +1,6 @@
 const fs = require('fs');
 const cfg = require('./config.js');
+const certsManager = require('./certs-manager');
 
 const t = {
   name: 'Network',
@@ -19,7 +20,8 @@ function addOrg(t, org) {
   };
 
     if (org === cfg.org) {
-        const mspPath = `${cfg.isOrderer ? cfg.ORDERER_CRYPTO_DIR : cfg.PEER_CRYPTO_DIR}/users/Admin@${cfg.certificationDomain}/msp`;
+        const mspPath = certsManager.getMSPConfigDirectory(org);
+            // `${cfg.isOrderer ? cfg.ORDERER_CRYPTO_DIR : cfg.PEER_CRYPTO_DIR}/users/Admin@${cfg.certificationDomain}/msp`;
         const keystorePath = `${mspPath}/keystore`;
         const keystoreFiles = fs.readdirSync(keystorePath);
         const keyPath = `${keystorePath}/${keystoreFiles[0]}`;
@@ -80,6 +82,15 @@ function envOptionToSetting(envVarName, optionName, normalizeFactor) {
 }
 
 module.exports = function () {
+  t.orderers= {
+    [`${cfg.ORDERER_ADDR}`]: {
+      url: `grpcs://${cfg.ORDERER_ADDR}`,
+          tlsCACerts: {
+        path: `${cfg.ORDERER_CRYPTO_DIR}/orderers/orderer.${cfg.ORDERER_DOMAIN}/tls/ca.crt`
+      }
+    }
+  };
+
   t.client = {
     organization: cfg.org,
     credentialStore: {
@@ -92,15 +103,15 @@ module.exports = function () {
       options: {
         // @formatter:off
         ...envOptionToSetting('GRPC_MAX_RECEIVE_MESSAGE_LENGTH', 'grpc.max_receive_message_length'),  //-1
-        ...envOptionToSetting('GRPC_MAX_SEND_MESSAGE_LENGTH','grpc.max_send_message_length'),         //-1
-        ...envOptionToSetting('GRPC_MAX_PINGS_WITHOUT_DATA','grpc.max_pings_without_data'), ...envOptionToSetting('GRPC_MAX_PINGS_WITHOUT_DATA','grpc.http2.max_pings_without_data'),  //0
-        ...envOptionToSetting('GRPC_KEEP_ALIVE_MS','grpc.keepalive_time_ms'), ...envOptionToSetting('GRPC_KEEP_ALIVE_MS','grpc.http2.keepalive_time', 1000),                   //120000
-        ...envOptionToSetting('GRPC_KEEP_ALIVE_TIMEOUT_MS','grpc.keepalive_timeout_ms'), ...envOptionToSetting('GRPC_KEEP_ALIVE_TIMEOUT_MS','grpc.http2.keepalive_timeout', 1000),        //120000
-        ...envOptionToSetting('GRPC_KEEP_ALIVE_PERMIT_WITHOUT_CALLS','grpc.keepalive_permit_without_calls'), ...envOptionToSetting('GRPC_KEEP_ALIVE_PERMIT_WITHOUT_CALLS','grpc.http2.keepalive_permit_without_calls'), //1
+        ...envOptionToSetting('GRPC_MAX_SEND_MESSAGE_LENGTH', 'grpc.max_send_message_length'),         //-1
+        ...envOptionToSetting('GRPC_MAX_PINGS_WITHOUT_DATA', 'grpc.max_pings_without_data'), ...envOptionToSetting('GRPC_MAX_PINGS_WITHOUT_DATA', 'grpc.http2.max_pings_without_data'),  //0
+        ...envOptionToSetting('GRPC_KEEP_ALIVE_MS', 'grpc.keepalive_time_ms'), ...envOptionToSetting('GRPC_KEEP_ALIVE_MS', 'grpc.http2.keepalive_time', 1000),                   //120000
+        ...envOptionToSetting('GRPC_KEEP_ALIVE_TIMEOUT_MS', 'grpc.keepalive_timeout_ms'), ...envOptionToSetting('GRPC_KEEP_ALIVE_TIMEOUT_MS', 'grpc.http2.keepalive_timeout', 1000),        //120000
+        ...envOptionToSetting('GRPC_KEEP_ALIVE_PERMIT_WITHOUT_CALLS', 'grpc.keepalive_permit_without_calls'), ...envOptionToSetting('GRPC_KEEP_ALIVE_PERMIT_WITHOUT_CALLS', 'grpc.http2.keepalive_permit_without_calls'), //1
 
         //set default for 'min_time_between_pings_ms' then set it to the keep alive time, and override if it's set itself (until defaults are updated in fabric-sdk):
-        ...envOptionToSetting('GRPC_KEEP_ALIVE_MS','grpc.min_time_between_pings_ms', 1.1), ...envOptionToSetting('GRPC_KEEP_ALIVE_MS','grpc.http2.min_time_between_pings_ms', 1.1),
-        ...envOptionToSetting('GRPC_MIN_TIME_BETWEEN_PINGS_MS','grpc.min_time_between_pings_ms'),  ...envOptionToSetting('GRPC_MIN_TIME_BETWEEN_PINGS_MS','grpc.http2.min_time_between_pings_ms')
+        ...envOptionToSetting('GRPC_KEEP_ALIVE_MS', 'grpc.min_time_between_pings_ms', 1.1), ...envOptionToSetting('GRPC_KEEP_ALIVE_MS', 'grpc.http2.min_time_between_pings_ms', 1.1),
+        ...envOptionToSetting('GRPC_MIN_TIME_BETWEEN_PINGS_MS', 'grpc.min_time_between_pings_ms'), ...envOptionToSetting('GRPC_MIN_TIME_BETWEEN_PINGS_MS', 'grpc.http2.min_time_between_pings_ms')
         // @formatter:on
       }
     }
@@ -108,26 +119,26 @@ module.exports = function () {
 
   try {
     orgs = JSON.parse(cfg.orgs);
-  } catch(e) {
+  } catch (e) {
     orgs = JSON.parse('{' + cfg.orgs + '}');
   }
 
   try {
     cas = JSON.parse(cfg.cas);
-  } catch(e) {
+  } catch (e) {
     cas = JSON.parse('{' + cfg.cas + '}');
   }
 
   Object.keys(orgs).forEach(k => {
     addOrg(t, k);
     if (!cfg.isOrderer) {
-        addPeer(t, k, 0, orgs[k]);
+      addPeer(t, k, 0, orgs[k]);
     }
   });
 
-    if (cfg.isOrderer) {
-      addOrg(t, cfg.ordererName)
-    }
+  if (cfg.isOrderer) {
+    addOrg(t, cfg.ordererName)
+  }
 
   Object.keys(cas).forEach(k => {
     addCA(t, k, cas[k]);

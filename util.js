@@ -1,10 +1,11 @@
-const logger = require('log4js').getLogger('RestSocketServer');
+const fs = require('fs');
 const _ = require('lodash');
 const cfg = require('./config.js');
+const logger =  cfg.log4js.getLogger('RestSocketServer');
 
-class UtilityService {
+class Util {
 
-    static async retryOperation(nTimes, fn) {
+    async retryOperation(nTimes, fn) {
         return new Promise((resolve, reject) => {
             if (nTimes <= 0) return reject('Retried invocation unsuccessful');
             try {
@@ -13,11 +14,20 @@ class UtilityService {
             } catch (err) {
                 logger.trace(`Error: `, err, `\nRe-trying invocation: ${nTimes}.`);
                 setTimeout(() => {
-                    UtilityService.retryOperation(--nTimes, resolve, reject, fn)
+                    this.retryOperation(--nTimes, resolve, reject, fn)
                 }, cfg.CHANNEL_LISTENER_UPDATE_TIMEOUT);
             }
         });
     }
+
+    loadPemFromFile(pemFilePath) {
+        let certData = fs.readFileSync(pemFilePath);
+        return Buffer.from(certData).toString()
+    }
+
+    sleep(ms) {
+        return new Promise(resolve => setTimeout(resolve, ms));
+    }
 }
 
-module.exports = UtilityService;
+module.exports = new Util();
