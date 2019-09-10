@@ -9,23 +9,23 @@ class RestSocketServer {
     if(!fabricStarterClient) {
       const FabricStarterClient = require('./fabric-starter-client');
       fabricStarterClient = new FabricStarterClient();
+      fabricStarterClient.init();
     }
     this.listOfChannels = [];
     this.fabricStarterClient = fabricStarterClient;
   }
 
   async startSocketServer(server, opts) {
-    const self = this;
-    this.io = new SocketServer(server, {origins: '*:*'});
-    const channels = await this.fabricStarterClient.queryChannels();
-    this.opts = opts;
-
-    for (const channelId of channels.map(c => {
-        return c.channel_id;
-    })) {
-      await this.registerChannelChainblockListener(channelId);
-    }
+      this.io = new SocketServer(server, {origins: '*:*'});
+      this.opts = opts;
       this.startSocketServerTimer();
+
+
+      /*   const channels = await this.fabricStarterClient.queryChannels();
+         await channels.map(async c => {
+              await this.registerChannelChainblockListener(c.channelId);
+            });
+      */
   }
 
   startSocketServerTimer() {
@@ -33,7 +33,8 @@ class RestSocketServer {
       const self = this;
       let channelList = {};
       setInterval(async () => {
-          const channels = await fabricStarter.queryChannels();
+          let channels = await fabricStarter.queryChannels();
+          logger.debug(`New orgs join check, channels list received:`, channels);
           _.forEach(channels, async channel => {
               let channelId = channel.channel_id;
               let peers = await fabricStarter.getPeersForOrgOnChannel(channelId);
@@ -50,7 +51,7 @@ class RestSocketServer {
                   }
               });
               if (newPeersFound && self.listOfChannels.find(i => i === channelId)) {
-                  await self.sendRepeatableBlock(channelId);
+                  await self.sendRepeatingBlockNotification(channelId);
               }
               if (!self.listOfChannels.find(i => i === channelId)) {
                   logger.debug(`Found new channel ${channelId}`);
@@ -78,7 +79,7 @@ class RestSocketServer {
     return true;
   }
 
-  async sendRepeatableBlock(channel) {
+  async sendRepeatingBlockNotification(channel) {
       let info = await this.fabricStarterClient.queryInfo(channel);
       let number = info.height.low-1;
       let block = await this.fabricStarterClient.queryBlock(channel, number, true);

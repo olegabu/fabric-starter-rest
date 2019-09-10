@@ -44,7 +44,7 @@ class FabricCLI {
     downloadCerts(orgObj, domain = cfg.domain, wwwPort = 80) {
         certsManager.forEachCertificate(orgObj, domain, (certificateSubDir, fullCertificateDirectoryPath, certificateFileName, directoryPrefixConfig) => {
             const orgDomain = orgObj ? `${orgObj.orgId}.${domain}` : domain;
-            shell.exec(`/usr/bin/wget ${WGET_OPTS} --directory-prefix ${fullCertificateDirectoryPath} http://www.${orgDomain}:${wwwPort}/msp/${certificateSubDir}/${certificateFileName}`);
+            shell.exec(`/usr/bin/wget ${WGET_OPTS} --directory-prefix ${fullCertificateDirectoryPath} http://www.${orgDomain}:${wwwPort||80}/msp/${certificateSubDir}/${certificateFileName}`);
         });
     }
 
@@ -132,7 +132,11 @@ class FabricCLI {
     translateChannelConfig(configFileName) {
         const outputFileName = `${path.dirname(configFileName)}/${path.basename(configFileName, ".pb")}.json`;
         this.translateProtobufConfig(TRANSLATE_OP.proto_decode, CONFIG_TYPE['common.Block'], configFileName, outputFileName);
-        return this.loadFileContentSync(outputFileName);
+        const channelConfigProtobuf = this.loadFileContentSync(outputFileName);
+        const channelConfigEnvelope = JSON.parse(_.toString(channelConfigProtobuf));
+        let origChannelGroupConfig = _.get(channelConfigEnvelope, "data.data[0].payload.data.config");
+
+        return origChannelGroupConfig;
     }
 
 

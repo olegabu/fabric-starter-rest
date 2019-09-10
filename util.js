@@ -20,6 +20,11 @@ class Util {
         });
     }
 
+    filterOrderersOut(organizations) {
+        let ordererNames = [cfg.HARDCODED_ORDERER_NAME, `${cfg.HARDCODED_ORDERER_NAME}.${cfg.ORDERER_DOMAIN}`, `${cfg.ordererName}.${cfg.ORDERER_DOMAIN}`];
+        return _.differenceWith(organizations, ordererNames, (org, rejectOrg) => org.id === rejectOrg);
+    }
+
     loadPemFromFile(pemFilePath) {
         let certData = fs.readFileSync(pemFilePath);
         return Buffer.from(certData).toString()

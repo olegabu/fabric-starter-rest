@@ -4,6 +4,7 @@ const express = require('express');
 const webAppManager = require('./web-app-manager');
 
 const app = express();
+app.disable('etag');
 
 const server = app.listen(process.env.PORT || 3000, () => {
     logger.info('started fabric-starter rest server on port', server.address().port);

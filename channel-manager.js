@@ -9,20 +9,20 @@ class ChannelManager {
 
     async applyConfigToChannel(channelId, currentChannelConfigFile, configUpdateRes, fabricClient, admin) {
         fabricCLI.downloadOrdererMSP();
-        let channelConfigBlock = await fabricCLI.translateChannelConfig(currentChannelConfigFile);
-        logger.debug(`Got channel config ${channelId}:`, channelConfigBlock);
+        let channelGroupConfig = await fabricCLI.translateChannelConfig(currentChannelConfigFile);
+        logger.debug(`Got channel config ${channelId}:`, channelGroupConfig);
 
         try {
-            let channelConfigEnvelope = JSON.parse(channelConfigBlock.toString());
-            let origChannelGroupConfig = _.get(channelConfigEnvelope, "data.data[0].payload.data.config");
+            // let channelConfigEnvelope = JSON.parse(channelConfigBlock.toString());
+            // let channelGroupConfig = _.get(channelConfigEnvelope, "data.data[0].payload.data.config");
 
-            let updatedConfig = _.merge({}, origChannelGroupConfig);
+            let updatedConfig = _.merge({}, channelGroupConfig);
             if (_.get(updatedConfig, "channel_group.groups")) {
                 _.merge(updatedConfig.channel_group.groups, configUpdateRes.outputJson);
             }
 
-            logger.debug(`Channel updated config ${channelId}:`, _.toString(updatedConfig));
-            let configUpdate = fabricCLI.computeChannelConfigUpdate(channelId, origChannelGroupConfig, updatedConfig);
+            logger.debug(`Channel updated config ${channelId}:`, updatedConfig);
+            let configUpdate = fabricCLI.computeChannelConfigUpdate(channelId, channelGroupConfig, updatedConfig);
             logger.debug(`Got updated envelope ${channelId}:`, _.toString(configUpdate));
             const txId = fabricClient.newTransactionID(admin);
 

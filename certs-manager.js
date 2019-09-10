@@ -17,7 +17,20 @@ const ORDERER_BASE_CRYPTO_DIR = `${cfg.CRYPTO_CONFIG_DIR}/ordererOrganizations/$
 const PEER_BASE_CRYPTO_DIR = `${cfg.CRYPTO_CONFIG_DIR}/peerOrganizations/${cfg.org}.${cfg.domain}`;
 
 
+
 class CertificateManager {
+
+    constructor() {
+        this.ordererMSPEnv = {
+            CORE_PEER_LOCALMSPID: `${cfg.ordererName}.${cfg.ORDERER_DOMAIN}`,
+            CORE_PEER_MSPCONFIGPATH: this.getMSPConfigDirectory(),
+            CORE_PEER_TLS_ROOTCERT_FILE: this.getOrdererRootTLSFile()
+        };
+    }
+
+    getOrdererMSPEnv() {
+        return this.ordererMSPEnv;
+    }
 
     getMyBaseCertificatesDirectory() {
         return cfg.isOrderer ? ORDERER_BASE_CRYPTO_DIR : PEER_BASE_CRYPTO_DIR;

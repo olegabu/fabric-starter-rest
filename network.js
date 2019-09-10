@@ -21,7 +21,6 @@ function addOrg(t, org) {
 
     if (org === cfg.org) {
         const mspPath = certsManager.getMSPConfigDirectory(org);
-            // `${cfg.isOrderer ? cfg.ORDERER_CRYPTO_DIR : cfg.PEER_CRYPTO_DIR}/users/Admin@${cfg.certificationDomain}/msp`;
         const keystorePath = `${mspPath}/keystore`;
         const keystoreFiles = fs.readdirSync(keystorePath);
         const keyPath = `${keystorePath}/${keystoreFiles[0]}`;

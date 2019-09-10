@@ -116,19 +116,6 @@ class FabricStarterClient {
         return chaincodeQueryResponse.getChaincodes();
     }
 
-    async getConsortiumMemberList() {
-
-        let channel = await (this.client.getChannel(cfg.systemChannelId, false) || this.constructChannel(cfg.systemChannelId));
-        let sysChannelConfig = await channel.getChannelConfigFromOrderer();
-        logger.debug(sysChannelConfig);
-        let consortium = _.get(sysChannelConfig, "config.channel_group.groups.map.Consortiums");
-        let participants = _.get(consortium, 'value.groups.map.SampleConsortium.value.groups.map')
-        participants = _.filter(_.keys(participants), name => {
-            return name != "Orderer"
-        });
-        return participants
-    }
-
     async createChannel(channelId) {
         try {
             logger.info(`Creating channel ${channelId}`);
@@ -190,14 +177,26 @@ class FabricStarterClient {
 
     async addOrgToConsortium(orgObj, consortiumName) {
         await this.checkOrgDns(orgObj);
-        const extraEnv = {
-            CORE_PEER_LOCALMSPID: `${cfg.ordererName}.${cfg.ORDERER_DOMAIN}`,
-            CORE_PEER_MSPCONFIGPATH: certsManager.getMSPConfigDirectory(),
-            CORE_PEER_TLS_ROOTCERT_FILE: certsManager.getOrdererRootTLSFile()
-        };
-        let currentChannelConfigFile = fabricCLI.fetchChannelConfig(cfg.systemChannelId, extraEnv);
+        let currentChannelConfigFile = fabricCLI.fetchChannelConfig(cfg.systemChannelId, certsManager.getOrdererMSPEnv());
         let configUpdateRes = await fabricCLI.prepareNewConsortiumConfig(orgObj, consortiumName);
         return channelManager.applyConfigToChannel(cfg.systemChannelId, currentChannelConfigFile, configUpdateRes, this.ordererClient, IS_ADMIN);
+    }
+
+    async getConsortiumMemberList(consortiumName = 'SampleConsortium') {
+        // let channel = await (this.client.getChannel(cfg.systemChannelId, false) || this.constructChannel(cfg.systemChannelId));
+        // let sysChannelConfig = await channel.getChannelConfigFromOrderer();
+        let channelConfigBlock = fabricCLI.fetchChannelConfig(cfg.systemChannelId, certsManager.getOrdererMSPEnv());
+        let channelGroupConfig = await fabricCLI.translateChannelConfig(channelConfigBlock);
+        logger.debug(channelGroupConfig);
+        // let consortium = _.get(sysChannelConfig, "config.channel_group.groups.map.Consortiums");
+        // let participants = _.get(consortium, 'value.groups.map.SampleConsortium.value.groups.map');
+        let consortium = _.get(channelGroupConfig, `channel_group.groups.Consortiums.groups.${consortiumName}`);
+        let participants = _.get(consortium, 'groups');
+        // return util.filterOrderersOut(participants);
+        let orgNames = _.filter(_.keys(participants), name => {
+            return !(_.startsWith(name, "Orderer") || _.startsWith(name, "orderer"));
+        });
+        return orgNames;
     }
 
     async checkOrgDns(orgObj) {
@@ -604,12 +603,10 @@ class FabricStarterClient {
         this.client._channels = new Map(); //TODO: workaround until sdk supports cache invalidating
     }
 
-    async getOrganizations(channelId, filter = false) {
+    async getOrganizations(channelId, filter) {
         const channel = await this.getChannel(channelId);
-        let rejectOrgs = [cfg.HARDCODED_ORDERER_NAME, `${cfg.HARDCODED_ORDERER_NAME}.${cfg.ORDERER_DOMAIN}`, `${cfg.ordererName}.${cfg.ORDERER_DOMAIN}`];
-        return filter ?
-            _.differenceWith(channel.getOrganizations(), rejectOrgs, (org, rejectOrg) => org.id === rejectOrg)
-            : channel.getOrganizations();
+        const organizations = channel.getOrganizations();
+        return filter ? util.filterOrderersOut(organizations) : organizations;
     }
 
     async queryInstantiatedChaincodes(channelId) {
