@@ -32,15 +32,6 @@ CONFIG_TYPE.initEnum(['common.Config', 'common.Block', 'common.ConfigUpdate', 'c
 
 class FabricCLI {
 
-    downloadCerts1(orgDomain, org) {
-        _.forEach(_.keys(CERT_FOLDERS_PREFIXES), certFolder => {
-            let certPrefix = CERT_FOLDERS_PREFIXES[certFolder];
-            let directoryPrefix = this.getCertFileDir(certFolder, org ? cfg.orgCryptoConfigPath(org) : cfg.ORDERER_CRYPTO_DIR);
-            let certFileName = this.getCertFileName(certPrefix, org);
-            shell.exec(`/usr/bin/wget ${WGET_OPTS} --directory-prefix ${directoryPrefix} http://www.${orgDomain}/msp/${certFolder}/${certFileName}`);
-        });
-    }
-
     downloadCerts(orgObj, domain = cfg.domain, wwwPort = 80) {
         certsManager.forEachCertificate(orgObj, domain, (certificateSubDir, fullCertificateDirectoryPath, certificateFileName, directoryPrefixConfig) => {
             const orgDomain = orgObj ? `${orgObj.orgId}.${domain}` : domain;

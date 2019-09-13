@@ -1,21 +1,20 @@
 const fs = require('fs');
 const _ = require('lodash');
 const cfg = require('./config.js');
-const logger =  cfg.log4js.getLogger('RestSocketServer');
+const logger = cfg.log4js.getLogger('RestSocketServer');
 
 class Util {
 
     async retryOperation(nTimes, fn) {
-        return new Promise((resolve, reject) => {
+        return new Promise(async (resolve, reject) => {
             if (nTimes <= 0) return reject('Retried invocation unsuccessful');
             try {
-                let response = fn();
+                let response = await fn();
                 resolve(response);
             } catch (err) {
                 logger.trace(`Error: `, err, `\nRe-trying invocation: ${nTimes}.`);
-                setTimeout(() => {
-                    this.retryOperation(--nTimes, resolve, reject, fn)
-                }, cfg.CHANNEL_LISTENER_UPDATE_TIMEOUT);
+                this.sleep(cfg.CHANNEL_LISTENER_UPDATE_TIMEOUT);
+                return this.retryOperation(--nTimes, fn);
             }
         });
     }

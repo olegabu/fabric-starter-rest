@@ -67,7 +67,7 @@ class RestSocketServer {
 
     await this.fabricStarterClient.registerBlockEvent(channelId, block => {
       let blockNumber = block.number || _.get(block, "header.number");
-      logger.debug(`fabricStarterClient hase received block ${blockNumber} on ${block.channel_id}`);
+      logger.debug(`fabricStarterClient has received block ${blockNumber} on ${block.channel_id}`);
       logger.debug(block);
       this.io.emit('chainblock', block);
     }, e => {
