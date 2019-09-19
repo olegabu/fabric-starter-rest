@@ -203,7 +203,7 @@ class FabricStarterClient {
                 return !(_.startsWith(name, "Orderer") || _.startsWith(name, "orderer"));
             });
         } catch(err) {
-            logger.debug("Not enaught  permissions to access Consortium");
+            logger.debug("Not enough permissions to access Consortium");
         }
         return result;
     }
