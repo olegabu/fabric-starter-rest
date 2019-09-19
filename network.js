@@ -30,7 +30,7 @@ function addOrg(t, org) {
             path: keyPath
         };
         t.organizations[org].signedCert = {
-            path: `${mspPath}/signcerts/Admin@${cfg.certificationDomain}-cert.pem`
+            path: `${mspPath}/signcerts/Admin@${cfg.certificationDomain}-cert.pem` //TODO: use certsManager.getSignCertPath()
         };
     }
 }
@@ -47,7 +47,7 @@ function addPeer(t, org, i, peerAddress) {
       //'ssl-target-name-override': 'localhost',
     },
     tlsCACerts: {
-      path: `${cfg.PEER_CRYPTO_DIR}/peers/peer${i}.${org}.${cfg.domain}/msp/tlscacerts/tlsca.${org}.${cfg.domain}-cert.pem`
+      path: `${cfg.PEER_CRYPTO_DIR}/peers/peer${i}.${org}.${cfg.domain}/msp/tlscacerts/tlsca.${org}.${cfg.domain}-cert.pem`//TODO: use certsManager.getTLSxxx
     }
   };
 }
@@ -85,7 +85,8 @@ module.exports = function () {
     [`${cfg.ORDERER_ADDR}`]: {
       url: `grpcs://${cfg.ORDERER_ADDR}`,
           tlsCACerts: {
-        path: `${cfg.ORDERER_CRYPTO_DIR}/orderers/orderer.${cfg.ORDERER_DOMAIN}/tls/ca.crt`
+            path: certsManager.getOrdererRootTLSFile()
+            // path: `${cfg.ORDERER_CRYPTO_DIR}/orderers/orderer.${cfg.ORDERER_DOMAIN}/tls/ca.crt`
       }
     }
   };

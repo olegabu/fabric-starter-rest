@@ -63,7 +63,8 @@ class CertificateManager {
     }
 
     getOrdererRootTLSFile(ordererName = cfg.ordererName, ordererDomain = cfg.ORDERER_DOMAIN) {
-        return `${this.getOrgBaseCertificationDirectory()}/orderers/${ordererName}.${ordererDomain}/tls/ca.crt`
+        return `${this.getOrgBaseCertificationDirectory()}/msp/tlscacerts/tlsca.${cfg.ORDERER_DOMAIN}-cert.pem`
+        // return `${this.getOrgBaseCertificationDirectory()}/orderers/${ordererName}.${ordererDomain}/tls/ca.crt`
     }
 
     getPrivateKeyFilePath(orgId) {
