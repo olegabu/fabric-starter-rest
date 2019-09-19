@@ -38,8 +38,12 @@ class FabricStarterClient {
         await this.client.initCredentialStores();
         this.fabricCaClient = this.client.getCertificateAuthority();
         await this.ordererClient.initCredentialStores();
-        this.ordererClient.setAdminSigningIdentity(util.loadPemFromFile(certsManager.getPrivateKeyFilePath()),
-            util.loadPemFromFile(certsManager.getSignCertPath()), cfg.ORDERER_MSPID);
+        try {
+            this.ordererClient.setAdminSigningIdentity(util.loadPemFromFile(certsManager.getPrivateKeyFilePath()),
+                util.loadPemFromFile(certsManager.getSignCertPath()), cfg.ORDERER_MSPID);
+        } catch (err) {
+            logger.debug("Not orderer host")
+        }
     }
 
     async login(username, password) {
