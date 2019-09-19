@@ -187,20 +187,25 @@ class FabricStarterClient {
     }
 
     async getConsortiumMemberList(consortiumName = 'SampleConsortium') {
-        // let channel = await (this.client.getChannel(cfg.systemChannelId, false) || this.constructChannel(cfg.systemChannelId));
-        // let sysChannelConfig = await channel.getChannelConfigFromOrderer();
-        let channelConfigBlock = fabricCLI.fetchChannelConfig(cfg.systemChannelId, certsManager.getOrdererMSPEnv());
-        let channelGroupConfig = await fabricCLI.translateChannelConfig(channelConfigBlock);
-        logger.debug(channelGroupConfig);
-        // let consortium = _.get(sysChannelConfig, "config.channel_group.groups.map.Consortiums");
-        // let participants = _.get(consortium, 'value.groups.map.SampleConsortium.value.groups.map');
-        let consortium = _.get(channelGroupConfig, `channel_group.groups.Consortiums.groups.${consortiumName}`);
-        let participants = _.get(consortium, 'groups');
-        // return util.filterOrderersOut(participants);
-        let orgNames = _.filter(_.keys(participants), name => {
-            return !(_.startsWith(name, "Orderer") || _.startsWith(name, "orderer"));
-        });
-        return orgNames;
+        let result= [];
+        try {
+            // let channel = await (this.client.getChannel(cfg.systemChannelId, false) || this.constructChannel(cfg.systemChannelId));
+            // let sysChannelConfig = await channel.getChannelConfigFromOrderer();
+            let channelConfigBlock = fabricCLI.fetchChannelConfig(cfg.systemChannelId, certsManager.getOrdererMSPEnv());
+            let channelGroupConfig = await fabricCLI.translateChannelConfig(channelConfigBlock);
+            logger.debug(channelGroupConfig);
+            // let consortium = _.get(sysChannelConfig, "config.channel_group.groups.map.Consortiums");
+            // let participants = _.get(consortium, 'value.groups.map.SampleConsortium.value.groups.map');
+            let consortium = _.get(channelGroupConfig, `channel_group.groups.Consortiums.groups.${consortiumName}`);
+            let participants = _.get(consortium, 'groups');
+            // return util.filterOrderersOut(participants);
+            let result = _.filter(_.keys(participants), name => {
+                return !(_.startsWith(name, "Orderer") || _.startsWith(name, "orderer"));
+            });
+        } catch(err) {
+            logger.debug("Not enaught  permissions to access Consortium");
+        }
+        return result;
     }
 
     async checkOrgDns(orgObj) {
