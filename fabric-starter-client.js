@@ -34,6 +34,10 @@ class FabricStarterClient {
         this.registerQueue = new Map();
     }
 
+    startOrderer() {
+        fabricCLI.prepareRaftOrderer();
+    }
+
     async init() {
         await this.client.initCredentialStores();
         this.fabricCaClient = this.client.getCertificateAuthority();
@@ -199,7 +203,7 @@ class FabricStarterClient {
             let consortium = _.get(channelGroupConfig, `channel_group.groups.Consortiums.groups.${consortiumName}`);
             let participants = _.get(consortium, 'groups');
             // return util.filterOrderersOut(participants);
-            let result = _.filter(_.keys(participants), name => {
+            result = _.filter(_.keys(participants), name => {
                 return !(_.startsWith(name, "Orderer") || _.startsWith(name, "orderer"));
             });
         } catch(err) {
@@ -210,7 +214,7 @@ class FabricStarterClient {
 
     async checkOrgDns(orgObj) {
         let chaincodeList = await this.queryInstantiatedChaincodes(cfg.DNS_CHANNEL);
-        if (!chaincodeList.chaincodes.find(i => i.name === "dns"))
+        if (!chaincodeList || !chaincodeList.chaincodes.find(i => i.name === "dns"))
             return;
         const dns = await this.query(cfg.DNS_CHANNEL, "dns", "range", null, {targets: []});
         let dnsRecordsList = dns && dns.length && JSON.parse(dns[0]);
@@ -619,8 +623,12 @@ class FabricStarterClient {
     }
 
     async queryInstantiatedChaincodes(channelId) {
-        const channel = await this.getChannel(channelId);
-        return await channel.queryInstantiatedChaincodes();
+        try {
+            const channel = await this.getChannel(channelId);
+            return await channel.queryInstantiatedChaincodes();
+        } catch (e) {
+            return null;
+        }
     }
 
     async queryInfo(channelId) {

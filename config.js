@@ -21,6 +21,7 @@ let cryptoConfigPath = fs.realpathSync(process.env.CRYPTO_CONFIG_DIR || '../fabr
 logger.info(`Crypto-config path: ${cryptoConfigPath}`);
 
 const TEMPLATES_DIR = process.env.TEMPLATES_DIR || '/etc/hyperledger/templates';
+const YAMLS_DIR = process.env.YAMLS_DIR || `${TEMPLATES_DIR}/..`;
 
 const enrollId = process.env.ENROLL_ID || 'admin';
 const enrollSecret = process.env.ENROLL_SECRET || 'adminpw';
@@ -56,6 +57,7 @@ module.exports = {
     ORDERER_MSPID: `${ordererName}.${ordererDomain}`,
     CRYPTO_CONFIG_DIR: cryptoConfigPath,
     TEMPLATES_DIR: TEMPLATES_DIR,
+    YAMLS_DIR: YAMLS_DIR,
     ORDERER_CRYPTO_DIR: ORDERER_CRYPTO_DIR,
     ORDERER_TLS_CERT: `${ORDERER_CRYPTO_DIR}/msp/tlscacerts/tlsca.${ordererDomain}-cert.pem`,
     ORDERER_ADDR: ordererAddr,

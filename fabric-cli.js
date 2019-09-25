@@ -11,13 +11,6 @@ const cfg = require('./config'),
 
 const logger = cfg.log4js.getLogger('FabricCLI');
 
-
-const CERT_FOLDERS_PREFIXES = {
-    'admincerts': {certFileNamePart: 'Admin@', envVar: 'ORG_ADMIN_CERT'},
-    'cacerts': {certFileNamePart: 'ca.', envVar: 'ORG_ROOT_CERT'},
-    'tlscacerts': {certFileNamePart: 'tlsca.', envVar: 'ORG_TLS_ROOT_CERT'}
-};
-
 const WGET_OPTS = process.env.WGET_OPTS || '-N';
 
 class TRANSLATE_OP extends Enum {
@@ -48,7 +41,15 @@ class FabricCLI {
     }
 
 
-    execShellCommand(cmd, opts) {
+    prepareRaftOrderer(files) {
+        this.execShellCommand("docker-compose -f docker-compose-orderer-cli.yaml up -d", cfg.YAMLS_DIR,
+            _.assign(this.getEnv(), {ORDERER_GENESIS_PROFILE: 'RaftOrdererGenesis', DOMAIN: `osn-${cfg.org}.${cfg.domain}`}));
+    }
+
+
+    execShellCommand(cmd, dir, extraEnv) {
+        const env = _.assign({}, process.env, extraEnv || {});
+        const opts = {env: env};
         logger.debug(cmd);
         shell.exec(`${cmd} &2>1`, opts);
     }
@@ -66,31 +67,32 @@ class FabricCLI {
     }
 
     execPeerCommand(command, paramsStr, extraEnv) {
-        const env = _.assign({}, process.env, extraEnv || {});
-        const opts = {env: env};
-        this.execShellCommand(`echo $CORE_PEER_LOCALMSPID`, opts);
-        this.execShellCommand(`peer ${command} -o ${cfg.ORDERER_ADDR} --tls --cafile ${cfg.ORDERER_TLS_CERT} ${paramsStr}`, opts);
+        this.execShellCommand(`echo $CORE_PEER_LOCALMSPID`, null, extraEnv);
+        this.execShellCommand(`peer ${command} -o ${cfg.ORDERER_ADDR} --tls --cafile ${cfg.ORDERER_TLS_CERT} ${paramsStr}`, null, extraEnv);
     }
 
     async generateChannelConfigTx(channelId) {
-        await this.envSubst(`${cfg.TEMPLATES_DIR}/configtx-template.yaml`, `${cfg.CRYPTO_CONFIG_DIR}/configtx.yaml`,
-            {
-                DOMAIN: cfg.ORDERER_DOMAIN,
-                ORG: cfg.org,
-                PEER0_PORT: cfg.PEER0_PORT,
-                ORDERER_NAME: cfg.ordererName,
-                ORDERER_DOMAIN: cfg.ORDERER_DOMAIN,
-                ORDERER_NAME_PREFIX: cfg.ORDERER_NAME_PREFIX,
-                ORDERER_BATCH_TIMEOUT: cfg.ORDERER_BATCH_TIMEOUT,
-                ORDERER_GENERAL_LISTENPORT: cfg.ordererPort,
-                RAFT0_PORT: cfg.RAFT0_PORT,
-                RAFT1_PORT: cfg.RAFT0_PORT,
-                RAFT2_PORT: cfg.RAFT0_PORT
-            });
+        await this.envSubst(`${cfg.TEMPLATES_DIR}/configtx-template.yaml`, `${cfg.CRYPTO_CONFIG_DIR}/configtx.yaml`, this.getEnv());
 
         let outputTxFile = `${cfg.CRYPTO_CONFIG_DIR}/configtx/channel_${channelId}.tx`;
         this.generateConfigTxForChannel(channelId, cfg.CRYPTO_CONFIG_DIR, "CHANNEL", outputTxFile);
         return outputTxFile;
+    }
+
+    getEnv() {
+        return {
+            DOMAIN: cfg.DOMAIN,
+            ORG: cfg.org,
+            PEER0_PORT: cfg.peer0Port,
+            ORDERER_NAME: cfg.ordererName,
+            ORDERER_DOMAIN: cfg.ORDERER_DOMAIN,
+            ORDERER_NAME_PREFIX: cfg.ORDERER_NAME_PREFIX,
+            ORDERER_BATCH_TIMEOUT: cfg.ORDERER_BATCH_TIMEOUT,
+            ORDERER_GENERAL_LISTENPORT: cfg.ordererPort,
+            RAFT0_PORT: cfg.RAFT0_PORT,
+            RAFT1_PORT: cfg.RAFT0_PORT,
+            RAFT2_PORT: cfg.RAFT0_PORT
+        };
     }
 
     async generateChannelConfigTxContent(channelId) {
