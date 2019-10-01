@@ -24,9 +24,11 @@ module.exports = function(app, server) {
   const fabricStarterClient = new FabricStarterClient();
   const webAppManager = require('./web-app-manager');
 
+  const osnManager= require('./osn/osn-manager').OsnManager;
+  osnManager.init(fabricStarterClient);
+
   // socket.io server to pass blocks to webapps
-  const Socket = require('./rest-socket-server');
-  const socket = new Socket(fabricStarterClient);
+  const socket = require('./rest-socket-server');
   socket.startSocketServer(server, cfg.UI_LISTEN_BLOCK_OPTS).then(() => {
     logger.info('started socket server');
   });
@@ -76,7 +78,7 @@ module.exports = function(app, server) {
 
 // require presence of JWT in Authorization Bearer header
   const jwtSecret = fabricStarterClient.getSecret();
-  app.use(jwt({secret: jwtSecret}).unless({path: ['/', '/users', '/domain', '/mspid', '/config', new RegExp('/api-docs'), '/api-docs.json', /\/webapp/, /\/webapps\/.*/, '/admin/', '/msp/']}));
+  app.use(jwt({secret: jwtSecret}).unless({path: ['/', '/users', '/domain', '/mspid', '/config', '/msp/', new RegExp('/api-docs'), '/api-docs.json', /\/webapp/, /\/webapps\/.*/, '/admin/']}));
 
 // use fabricStarterClient for every logged in user
   const mapFabricStarterClient = {};
@@ -136,6 +138,16 @@ module.exports = function(app, server) {
   app.get('/config', (req, res) => {
     res.json(fabricStarterClient.getNetworkConfig());
   });
+
+  app.get('/osns', (req,res)=>{
+    res.json(osnManager.getOsns());
+  });
+
+  app.get('/osns/start', (req, res) => {
+    res.json(req.fabricStarterClient.startOrderer());
+  });
+
+
 
   /**
    * Query chaincodes installed on the first peer of my organization

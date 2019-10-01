@@ -42,7 +42,7 @@ class FabricCLI {
 
 
     prepareRaftOrderer(files) {
-        this.execShellCommand("docker-compose -f docker-compose-orderer-cli.yaml up -d", cfg.YAMLS_DIR,
+        this.execShellCommand("docker-compose -f docker-compose-orderer-cli.yaml up -d", cfg.DOCKER_COMPOSE_DIR,
             _.assign(this.getEnv(), {ORDERER_GENESIS_PROFILE: 'RaftOrdererGenesis', DOMAIN: `osn-${cfg.org}.${cfg.domain}`}));
     }
 
