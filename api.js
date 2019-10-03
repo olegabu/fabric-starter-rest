@@ -54,8 +54,7 @@ module.exports = function(app, server) {
 // serve msp directory with certificates as static
   const mspDir = process.env.MSP_DIR || './msp';
   const serveIndex = require('serve-index');
-//TODO serveIndex should show directory listing to find certs but not working
-  app.use('/msp', express.static(mspDir), serveIndex('/msp', {'icons': true}));
+  app.use('/msp', serveIndex(mspDir, {'icons': true}));
   logger.info('serving certificates at /msp from ' + mspDir);
 
 // serve favicon
@@ -78,7 +77,7 @@ module.exports = function(app, server) {
 
 // require presence of JWT in Authorization Bearer header
   const jwtSecret = fabricStarterClient.getSecret();
-  app.use(jwt({secret: jwtSecret}).unless({path: ['/', '/users', '/domain', '/mspid', '/config', '/msp/', new RegExp('/api-docs'), '/api-docs.json', /\/webapp/, /\/webapps\/.*/, '/admin/']}));
+  app.use(jwt({secret: jwtSecret}).unless({path: ['/', '/users', '/domain', '/mspid', '/config', /\/msp\/.*/, new RegExp('/api-docs'), '/api-docs.json', /\/webapp/, /\/webapps\/.*/, '/admin/']}));
 
 // use fabricStarterClient for every logged in user
   const mapFabricStarterClient = {};

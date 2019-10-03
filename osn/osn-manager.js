@@ -10,11 +10,11 @@ class OsnManager {
 
     init(fabricClient) {
         this.fabricStarterClient = fabricClient;
-        this.initOSN('default', {ordererName: cfg.ordererName, ordererDomain: cfg.ORDERER_DOMAIN, ordererPort: cfg.ordererPort});
-        this.initOSN('raft-osn', {ordererName: cfg.ordererName, ordererDomain: cfg.ORDERER_DOMAIN, ordererPort: cfg.ordererPort});
+        this.initOsnWrapper('default', {ordererName: cfg.ordererName, ordererDomain: cfg.ORDERER_DOMAIN, ordererPort: cfg.ordererPort});
+        this.initOsnWrapper('raft-osn', {ordererName: cfg.ordererName, ordererDomain: cfg.ORDERER_DOMAIN, ordererPort: cfg.ordererPort});
     }
 
-    initOSN(osnName, ...ordererConfig) {
+    initOsnWrapper(osnName, ...ordererConfig) {
         const osn = new OSN(osnName);
         _.forEach(ordererConfig, conf => {
             let orderer = this.initOrdererFromPath(conf);
@@ -27,11 +27,11 @@ class OsnManager {
         let ordererAddr = this.createOrdererAddress({ordererName, ordererDomain, ordererPort});
         const ordererRootTLSFile = certsManager.getOrdererRootTLSFile(ordererName, ordererDomain);
 
-        return this.createOrderer(ordererAddr, ordererRootTLSFile);
+        return this.createOrdererWrapper(ordererAddr, ordererRootTLSFile);
     }
 
-    createOrderer(addr, ordererRootTLSFile) {
-        const orderer = {addr, ordererRootTLSFile}; //this.fabricStarterClient.createOrderer(addr, ordererRootTLSFile);
+    createOrdererWrapper(addr, ordererRootTLSFile) {
+        const orderer = {addr, ordererRootTLSFile}; //this.fabricStarterClient.createOrdererWrapper(addr, ordererRootTLSFile);
         return orderer;
     }
 
@@ -68,7 +68,7 @@ class OSN {
 
     getOrderers() {
         return _.map(this.orderers, o=>o.name);
-        return this.orderers;
+        // return this.orderers;
     }
 
     getOrderer(addr) {
