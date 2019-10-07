@@ -16,6 +16,8 @@
     "body-parser": "^1.19.0",
     "chmod-plus": "0.0.3",
     "cors": "^2.8.5",
+    "docker-compose": "^0.22.2",
+    "dockerode": "^3.0.2",
     "enumify": "^1.0.4",
     "envsub": "^3.1.0",
     "express": "^4.17.1",

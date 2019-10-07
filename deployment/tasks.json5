@@ -1,0 +1,89 @@
+{
+  tasks: {
+    startRaftOrderingService3Nodes: {
+      name: 'Start RAFT Cluster with 3 Nodes',
+      params: {
+        ordererNames: 'raft1,raft2,raft3',
+        ordererDomain: "${ORDERER_DOMAIN}",
+        configtxTemplate: '3-raft-node-template.yaml'
+      }
+    },
+    prepareRaft1Node: {
+      name: 'Prepare one RAFT server',
+      params: {
+        ordererName: "${ORDERER_NAME}",
+        ordererDomain: "${ORDERER_DOMAIN}",
+        configtxTemplate: 'raft-node-template.yaml'
+      }
+    },
+    startRaft1Node: {
+      name: 'Start one RAFT server',
+      params: {
+        ordererName: "${ORDERER_NAME}",
+        ordererDomain: "${ORDERER_DOMAIN}",
+        configtxTemplate: 'raft-node-template.yaml'
+      }
+    },
+    addOrdererToRaftOrderingService: {
+      name: 'Add Orderer to RAFT Ordering Service configuration',
+      params: {
+        ordererName: "${ORDERER_NAME}",
+        ordererDomain: "${ORDERER_DOMAIN}",
+        ordererPort: "${ORDERER_GENERAL_LISTENPORT}",
+        wwwAddress: "${ORDERER_WWW_AADDRESS}"
+      }
+    },
+    passTaskToOtherParty: {
+      name: 'Pass task to Other Party',
+      params: {
+        targetOrgAddress: "${OTHER_PARTY_ADDRESS}"
+      }
+    },
+    waitForOtherPartyOnEntrypoint: {
+      name: 'Wait for other party complete and invoke entrypoint',
+      params: {
+        entryPointCallback: "${MY_WAIT_ENTRYPOINT}?scenario=${SCENARIO}&step=${step}"
+      }
+    },
+    waitForOtherPartyOnChaincode: {
+      name: 'Wait for other party complete and invoke chaincode',
+      params: {
+        channel: "common",
+        chaincode: "serviceChaincode"
+      }
+    },
+    inviteOrgToConsortium: {
+      name: 'Invite Org to Consortium',
+      params: {
+        org: {
+          mspId: "${ORG}",
+          peer0Port: '${PEER0_PORT}',
+          wwwPort: "${wwwPort}"
+        }
+      }
+    },
+    createChannel: {
+      name: 'Create Channel',
+      params: {
+        channel: "${CHANNEL}"
+      }
+    },
+    addOrgToChannel: {
+      name: 'Add Org To Channel',
+      params: {
+        channel: "${CHANNEL}",
+        org: {
+          mspId: "${ORG}",
+          peer0Port: '${PEER0_PORT}',
+          wwwPort: "${wwwPort}"
+        }
+      }
+    },
+    joinChannel: {
+      name: 'Join Channel',
+      params: {
+        channel: "common"
+      }
+    },
+  },
+}

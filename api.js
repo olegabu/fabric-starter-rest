@@ -126,6 +126,10 @@ module.exports = function(app, server) {
     res.json(fabricStarterClient.getMspid());
   });
 
+  app.get('/env', (req, res) => {
+    res.json({ORG: cfg.org, DOMAIN: cfg.domain});
+  });
+
   //TODO use for development only as it may expose sensitive data
   /**
    * Network config json to aid debugging; use for development only as it may expose sensitive data

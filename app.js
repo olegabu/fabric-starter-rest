@@ -10,8 +10,9 @@ const server = app.listen(process.env.PORT || 3000, () => {
     logger.info('started fabric-starter rest server on port', server.address().port);
 });
 
-const api = require('./api');
-api(app, server);
+require('./api')(app, server);
+require('./deployment')(app, server);
+
 
 // serve
 const glob = require('glob');
