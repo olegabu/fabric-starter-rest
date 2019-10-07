@@ -1,4 +1,5 @@
-const fs=require('fs');
+const fs = require('fs');
+const path = require('path');
 const log4js = require('log4js');
 log4js.configure({appenders: {stdout: {type: 'stdout'}}, categories: {default: {appenders: ['stdout'], level: 'ALL'}}});
 const logger = log4js.getLogger('config.js');
@@ -20,8 +21,8 @@ let cryptoConfigPath = fs.realpathSync(process.env.CRYPTO_CONFIG_DIR || '../fabr
 
 logger.info(`Crypto-config path: ${cryptoConfigPath}`);
 
-const TEMPLATES_DIR = process.env.TEMPLATES_DIR || '/etc/hyperledger/templates';
-const DOCKER_COMPOSE_DIR = process.env.DOCKER_COMPOSE_DIR || `${TEMPLATES_DIR}/..`;
+const TEMPLATES_DIR = process.env.TEMPLATES_DIR || path.join(cryptoConfigPath, '..', 'templates');
+const DOCKER_COMPOSE_DIR = process.env.DOCKER_COMPOSE_DIR || path.join(cryptoConfigPath, '..');
 
 const enrollId = process.env.ENROLL_ID || 'admin';
 const enrollSecret = process.env.ENROLL_SECRET || 'adminpw';
@@ -37,7 +38,7 @@ const ordererAddr = `${ordererName}.${ordererDomain}:${ordererPort}`;
 const ordererApiPort = process.env.ORDERER_API_PORT || '4500';
 const ordererApiAddr = `api.${ordererDomain}:${ordererApiPort}`;
 
-const certificationDomain= /*isOrderer ? */ `${myorg}.${DOMAIN}`;
+const certificationDomain = /*isOrderer ? */ `${myorg}.${DOMAIN}`;
 
 const systemChannelId = "orderer-system-channel";
 
@@ -84,8 +85,8 @@ module.exports = {
     UI_LISTEN_BLOCK_OPTS: process.env.UI_LISTEN_BLOCK_OPTS === "true" || process.env.UI_LISTEN_BLOCK_OPTS,
 
     DNS_CHANNEL: process.env.DNS_CHANNEL || "common",
-    DNS_UPDATE_TIMEOUT: process.env.DNS_UPDATE_TIMEOUT ||4000,
-    CHANNEL_LISTENER_UPDATE_TIMEOUT: process.env.CHANNEL_LISTENER_UPDATE_TIMEOUT ||10000,
+    DNS_UPDATE_TIMEOUT: process.env.DNS_UPDATE_TIMEOUT || 4000,
+    CHANNEL_LISTENER_UPDATE_TIMEOUT: process.env.CHANNEL_LISTENER_UPDATE_TIMEOUT || 10000,
     CHAINCODE_PROCESSING_TIMEOUT: process.env.CHAINCODE_PROCESSING_TIMEOUT || 150000,
 
     INVOKE_RETRY_COUNT: process.env.INVOKE_RETRY_COUNT || 3,

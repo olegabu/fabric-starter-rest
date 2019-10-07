@@ -15,13 +15,13 @@ class StartRaft_N_Nodes {
     async run(config) {
         let commonEnv = this.prepareEnvFromConfig(config);
         let env = this.updateOrdererEnv(commonEnv, 'ORDERER_NAME_1', 'RAFT0_PORT', 'Raft3OrdererGenesis');
+        logger.debug('Executing docker-compose with env:', env);
         await this.dockerCompose(env, 'docker-compose-orderer.yaml', 'cli.orderer');
 
         env = this.updateOrdererEnv(commonEnv, 'ORDERER_NAME_2', 'RAFT1_PORT');
         await this.dockerCompose(env, 'docker-compose-orderer.yaml', 'cli.orderer');
 
         env = this.updateOrdererEnv(commonEnv, 'ORDERER_NAME_3', 'RAFT2_PORT');
-        console.log(env);
         await this.dockerCompose(env, 'docker-compose-orderer.yaml', 'cli.orderer');
     }
 
@@ -59,6 +59,7 @@ class StartRaft_N_Nodes {
             ORDERER_NAME: ordererName,
             ORDERER_GENERAL_LISTENPORT: _.get(commonEnv, ordererPortVar, _.get(cfg, ordererPortVar)),
             ORDERER_GENESIS_PROFILE: genesisProfile,
+            // DOMAIN: commonEnv.ORDERER_DOMAIN,
             COMPOSE_PROJECT_NAME: `${ordererName}.${commonEnv.ORDERER_DOMAIN}`
         });
     }
