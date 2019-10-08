@@ -447,7 +447,7 @@ class FabricStarterClient {
 
         let badPeers;
 
-        if (targets.targets || targets.peers) {
+        if (_.has(targets,'targets') || _.has(targets, 'peers')) {
             const targetsList = this.createTargetsList(channel, targets);
             const foundPeers = targetsList.peers;
             badPeers = targetsList.badPeers;

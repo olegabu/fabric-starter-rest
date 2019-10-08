@@ -11,7 +11,6 @@ class OsnManager {
     init(fabricClient) {
         this.fabricStarterClient = fabricClient;
         this.initOsnWrapper('default', {ordererName: cfg.ordererName, ordererDomain: cfg.ORDERER_DOMAIN, ordererPort: cfg.ordererPort});
-        this.initOsnWrapper('raft-osn', {ordererName: cfg.ordererName, ordererDomain: cfg.ORDERER_DOMAIN, ordererPort: cfg.ordererPort});
     }
 
     initOsnWrapper(osnName, ...ordererConfig) {

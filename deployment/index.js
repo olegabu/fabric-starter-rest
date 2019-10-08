@@ -1,10 +1,10 @@
 
 const StartRaft_N_Nodes = require('./tasks/StartRaft_N_Nodes');
 
-module.exports = function(app) {
+module.exports = function(app, fabricStarterClient) {
 
     app.post('/deploy', async (req, res)=>{
-        res.json(await new StartRaft_N_Nodes().run(req.body));
+        res.json(await new StartRaft_N_Nodes(fabricStarterClient).run(req.body));
 
     })
 };

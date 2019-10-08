@@ -22,7 +22,7 @@ let cryptoConfigPath = fs.realpathSync(process.env.CRYPTO_CONFIG_DIR || '../fabr
 logger.info(`Crypto-config path: ${cryptoConfigPath}`);
 
 const TEMPLATES_DIR = process.env.TEMPLATES_DIR || path.join(cryptoConfigPath, '..', 'templates');
-const DOCKER_COMPOSE_DIR = process.env.DOCKER_COMPOSE_DIR || path.join(cryptoConfigPath, '..');
+const DOCKER_COMPOSE_DIR = process.env.DOCKER_COMPOSE_DIR || path.join(TEMPLATES_DIR, '..');
 
 const enrollId = process.env.ENROLL_ID || 'admin';
 const enrollSecret = process.env.ENROLL_SECRET || 'adminpw';
@@ -46,6 +46,7 @@ module.exports = {
     log4js: log4js,
     domain: DOMAIN,
     org: myorg,
+    MY_IP: process.env.MY_IP || '127.0.0.1',
 
     enrollId: enrollId,
     enrollSecret: enrollSecret,

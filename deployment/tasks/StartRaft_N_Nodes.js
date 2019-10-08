@@ -9,7 +9,8 @@ var docker = new Docker();
 
 class StartRaft_N_Nodes {
 
-    constructor() {
+    constructor(fabricStarterClient) {
+        this.fabricStarterClient = fabricStarterClient;
     }
 
     async run(config) {
@@ -23,6 +24,10 @@ class StartRaft_N_Nodes {
 
         env = this.updateOrdererEnv(commonEnv, 'ORDERER_NAME_3', 'RAFT2_PORT');
         await this.dockerCompose(env, 'docker-compose-orderer.yaml', 'cli.orderer');
+
+        await this.fabricStarterClient.invoke(cfg.DNS_CHANNEL, 'dns', 'registerOrderer', [cfg.MY_IP, env.ORDERER_NAME_1, env.ORDERER_DOMAIN, env.RAFT0_PORT]);
+        await this.fabricStarterClient.invoke(cfg.DNS_CHANNEL, 'dns', 'registerOrderer', [cfg.MY_IP, env.ORDERER_NAME_2, env.ORDERER_DOMAIN, env.RAFT1_PORT]);
+        await this.fabricStarterClient.invoke(cfg.DNS_CHANNEL, 'dns', 'registerOrderer', [cfg.MY_IP, env.ORDERER_NAME_3, env.ORDERER_DOMAIN, env.RAFT2_PORT]);
     }
 
     async dockerCompose(env, yamlFiles, yamlService) {
@@ -47,7 +52,7 @@ class StartRaft_N_Nodes {
 
         const ordererNames = _.get(config, 'ORDERER_NAMES', 'orderer,raft,raft2').split(",");
         for (let i = 0; i < _.size(ordererNames); i++) {
-            commonEnv[`ORDERER_NAME_${i+1}`] = ordererNames[i];
+            commonEnv[`ORDERER_NAME_${i + 1}`] = ordererNames[i];
         }
 
         return commonEnv;

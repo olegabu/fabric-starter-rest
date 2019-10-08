@@ -586,6 +586,8 @@ module.exports = function(app, server) {
       }));
   }));
 
+  require('./deployment')(app, fabricStarterClient);
+
   function extractArgs(args){
     let checkedArgs;
     if (args && _.isString(args))

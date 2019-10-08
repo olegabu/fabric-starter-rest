@@ -1,3 +1,5 @@
+'use strict';
+
 const fs = require('fs');
 const _ = require('lodash');
 const cfg = require('./config.js');
@@ -32,6 +34,38 @@ class Util {
     sleep(ms) {
         return new Promise(resolve => setTimeout(resolve, ms));
     }
+
+
+    convertStringValToMapVal(keyValueMap) {
+        return _.mapValues(keyValueMap, value=>_.keyBy(_.split(value, ' '), v=>v));
+    }
+
+    linesToKeyValueList(currHostsLines) {
+        let currHosts = _.map(currHostsLines, line => {
+            const ipsNames = _.split(_.trim(line), /[ \t]/);
+            let key = ipsNames[0];
+            let names = ipsNames.slice(1);
+
+            return {[key]: _.join(names, ' ')}
+        });
+        return _.reduce(currHosts, (result, h) => {
+            let key = _.keys(h)[0];
+            result[key] = h[key];
+            return result;
+        }, {});
+    }
+
+
+    mergeKeyValueLists(map1, map2) {
+        let hostsMap = this.convertStringValToMapVal(map1);
+        let listMap = this.convertStringValToMapVal(map2);
+
+        _.merge(hostsMap, listMap);
+        const result = _.mapValues(hostsMap, valKV=>_.join(_.keys(valKV), ' '));
+        return result;
+    }
+
+
 }
 
 module.exports = new Util();

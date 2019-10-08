@@ -11,7 +11,6 @@ const server = app.listen(process.env.PORT || 3000, () => {
 });
 
 require('./api')(app, server);
-require('./deployment')(app, server);
 
 
 // serve
