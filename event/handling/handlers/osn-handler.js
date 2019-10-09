@@ -7,12 +7,11 @@ let currOrderers = {};
 module.exports = (eventBus, socketServer, osnManager) => {
     eventBus.on("osn-configuration-changed", async (osnConfig) => {
         const difference = _.difference(_.keys(osnConfig), _.keys(currOrderers));
-        // if (!_.isEmpty(difference))
-        {
+        if (!_.isEmpty(difference)) {
             try {
                 _.forEach(difference, newOrderer => {
-                    let ordererConfig=_.get(osnConfig, `${newOrderer}`);
-                    const osnName=_.get(ordererConfig, 'osnName',  _.get(ordererConfig, 'ordererDomain'));
+                    let ordererConfig = _.get(osnConfig, `${newOrderer}`);
+                    const osnName = _.get(ordererConfig, 'osnName', _.get(ordererConfig, 'ordererDomain'));
                     osnManager.registerOSN(osnName, osnConfig[newOrderer]);
                 });
 
