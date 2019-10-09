@@ -25,9 +25,9 @@ class StartRaft_N_Nodes {
         env = this.updateOrdererEnv(commonEnv, 'ORDERER_NAME_3', 'RAFT2_PORT');
         await this.dockerCompose(env, 'docker-compose-orderer.yaml', 'cli.orderer');
 
-        await this.fabricStarterClient.invoke(cfg.DNS_CHANNEL, 'dns', 'registerOrderer', [cfg.MY_IP, env.ORDERER_NAME_1, env.ORDERER_DOMAIN, env.RAFT0_PORT]);
-        await this.fabricStarterClient.invoke(cfg.DNS_CHANNEL, 'dns', 'registerOrderer', [cfg.MY_IP, env.ORDERER_NAME_2, env.ORDERER_DOMAIN, env.RAFT1_PORT]);
-        await this.fabricStarterClient.invoke(cfg.DNS_CHANNEL, 'dns', 'registerOrderer', [cfg.MY_IP, env.ORDERER_NAME_3, env.ORDERER_DOMAIN, env.RAFT2_PORT]);
+        await this.fabricStarterClient.invoke(cfg.DNS_CHANNEL, 'dns', 'registerOrderer', [cfg.MY_IP, env.ORDERER_NAME_1, env.ORDERER_DOMAIN, env.RAFT0_PORT], null, true);
+        await this.fabricStarterClient.invoke(cfg.DNS_CHANNEL, 'dns', 'registerOrderer', [cfg.MY_IP, env.ORDERER_NAME_2, env.ORDERER_DOMAIN, env.RAFT1_PORT], null, true);
+        await this.fabricStarterClient.invoke(cfg.DNS_CHANNEL, 'dns', 'registerOrderer', [cfg.MY_IP, env.ORDERER_NAME_3, env.ORDERER_DOMAIN, env.RAFT2_PORT], null, true);
     }
 
     async dockerCompose(env, yamlFiles, yamlService) {
@@ -50,12 +50,17 @@ class StartRaft_N_Nodes {
             RAFT_NODES_COUNT: _.get(config, 'RAFT_NODES_COUNT', "3"),
         });
 
-        const ordererNames = _.get(config, 'ORDERER_NAMES', 'orderer,raft,raft2').split(",");
-        for (let i = 0; i < _.size(ordererNames); i++) {
-            commonEnv[`ORDERER_NAME_${i + 1}`] = ordererNames[i];
-        }
+        this.parseSequencedValues(config, commonEnv, 'ORDERER_NAMES', 'ORDERER_NAME_${i + 1}', 'orderer,raft,raft2');
+        this.parseSequencedValues(config, commonEnv, 'ORDERER_PORTS', 'RAFT${i}_PORT', '7050,7150,7250');
 
         return commonEnv;
+    }
+
+    parseSequencedValues(config, commonEnv, sequencedVariable, singleVarsPattern, defaultValue) {
+        const values = _.get(config, sequencedVariable, defaultValue).split(",");
+        for (let i = 0; i < _.size(values); i++) {
+            commonEnv[eval('`'+singleVarsPattern+'`')] = values[i];
+        }
     }
 
     updateOrdererEnv(commonEnv, ordererNameVar, ordererPortVar, genesisProfile) {

@@ -1,4 +1,4 @@
-module.exports = function(app, server) {
+module.exports = function(app, socketServer, fabricStarterClient, eventBus, osnManager) {
 
   const fs = require("fs");
   const path = require('path');
@@ -10,6 +10,8 @@ module.exports = function(app, server) {
   const cfg = require('./config.js');
   const util = require('./util');
 
+  const FabricStarterClient = require('./fabric-starter-client');
+
   // upload for chaincode and app installation
   const uploadDir = os.tmpdir() || './upload';
   const multer = require('multer');
@@ -19,19 +21,7 @@ module.exports = function(app, server) {
     {name: 'args', maxCount: 1},{name: 'chaincodeType', maxCount: 1},{name: 'chaincodeId', maxCount: 1},
     {name: 'chaincodeVersion', maxCount: 1},{name: 'waitForTransactionEvent', maxCount: 1},{name: 'policy', maxCount: 1}]);
 
-  // fabric client
-  const FabricStarterClient = require('./fabric-starter-client');
-  const fabricStarterClient = new FabricStarterClient();
   const webAppManager = require('./web-app-manager');
-
-  const osnManager= require('./osn/osn-manager').OsnManager;
-  osnManager.init(fabricStarterClient);
-
-  // socket.io server to pass blocks to webapps
-  const socket = require('./rest-socket-server');
-  socket.startSocketServer(server, cfg.UI_LISTEN_BLOCK_OPTS).then(() => {
-    logger.info('started socket server');
-  });
 
 // parse json payload and urlencoded params
   const bodyParser = require("body-parser");
@@ -138,17 +128,21 @@ module.exports = function(app, server) {
    * @returns {object} 200 - Network config
    * @returns {Error}  default - Unexpected error
    */
+
   app.get('/config', (req, res) => {
     res.json(fabricStarterClient.getNetworkConfig());
   });
+
 
   app.get('/osns', (req,res)=>{
     res.json(osnManager.getOsns());
   });
 
+/*
   app.get('/osns/start', (req, res) => {
     res.json(req.fabricStarterClient.startOrderer());
   });
+*/
 
 
 
@@ -265,7 +259,7 @@ module.exports = function(app, server) {
     try {
       const ret = await fabricStarterClient.joinChannel(channelId);
       util.retryOperation(cfg.LISTENER_RETRY_COUNT, async function () {
-        await socket.registerChannelChainblockListener(channelId);
+        await socketServer.registerChannelChainblockListener(channelId);
       });
       return ret;
     } catch(error) {
@@ -585,8 +579,6 @@ module.exports = function(app, server) {
               return webAppManager.getMiddlewareList();
       }));
   }));
-
-  require('./deployment')(app, fabricStarterClient);
 
   function extractArgs(args){
     let checkedArgs;

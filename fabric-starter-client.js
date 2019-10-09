@@ -672,6 +672,12 @@ class FabricStarterClient {
         return channelEventHub.registerBlockEvent(onEvent, onError);
     }
 
+    async registerChaincodeEvent(channelId, chaincodename, eventName, onEvent, onError, eventHubConnectOptions) {
+        const channel = await this.getChannel(channelId);
+        const channelEventHub = this.getChannelEventHub(channel, eventHubConnectOptions);
+        return channelEventHub.registerChaincodeEvent(chaincodeName, eventName, onEvent, onError, eventHubConnectOptions);
+    }
+
     async disconnectChannelEventHub(channelId) {
         const channel = await this.getChannel(channelId);
         const channelEventHub = this.getChannelEventHub(channel);

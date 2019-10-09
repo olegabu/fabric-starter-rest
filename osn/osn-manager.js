@@ -10,22 +10,25 @@ class OsnManager {
 
     init(fabricClient) {
         this.fabricStarterClient = fabricClient;
-        this.initOsnWrapper('default', {ordererName: cfg.ordererName, ordererDomain: cfg.ORDERER_DOMAIN, ordererPort: cfg.ordererPort});
+        this.registerOSN('default', {ordererName: cfg.ordererName, ordererDomain: cfg.ORDERER_DOMAIN, ordererPort: cfg.ordererPort});
     }
 
-    initOsnWrapper(osnName, ...ordererConfig) {
-        const osn = new OSN(osnName);
+    registerOSN(osnName, ...ordererConfig) {
+        let osn = _.find(this.osns, o=>o.name===osnName) ;
+        if (!osn) {
+            osn = new OSN(osnName);
+            this.osns.push(osn);
+        }
         _.forEach(ordererConfig, conf => {
-            let orderer = this.initOrdererFromPath(conf);
+            let orderer = this.createOrdererFromPath(conf);
             osn.addOrderer(orderer);
         });
-        this.osns.push(osn);
     }
 
-    initOrdererFromPath({ordererName, ordererDomain, ordererPort}) {
+
+    createOrdererFromPath({ordererName, ordererDomain, ordererPort}) {
         let ordererAddr = this.createOrdererAddress({ordererName, ordererDomain, ordererPort});
         const ordererRootTLSFile = certsManager.getOrdererRootTLSFile(ordererName, ordererDomain);
-
         return this.createOrdererWrapper(ordererAddr, ordererRootTLSFile);
     }
 
@@ -42,10 +45,10 @@ class OsnManager {
         return _.find(this.osns, i => i.getName() === osnName);
     }
 
-    getOrderer(ordererAddr, osnName = 'default') {
-        const osn = getOsn(osnName);
-        return osn && osn.getOrderer(ordererAddr)
-    }
+    // getOrderer(ordererAddr, osnName = 'default') {
+    //     const osn = getOsn(osnName);
+    //     return osn && osn.getOrderer(ordererAddr)
+    // }
 
     createOrdererAddress({ordererName, ordererDomain, ordererPort}) {
         return `${ordererName}.${ordererDomain}:${ordererPort}`;
@@ -62,7 +65,11 @@ class OSN {
     }
 
     addOrderer(orderer) {
-        this.orderers.push(orderer);
+        const ordererIndex = this.getOrdererIndex(_.get(orderer, "addr"));
+        if (ordererIndex!==-1){
+            this.orderers[ordererIndex]=orderer;
+        } else
+            this.orderers.push(orderer);
     }
 
     getOrderers() {
@@ -70,8 +77,8 @@ class OSN {
         // return this.orderers;
     }
 
-    getOrderer(addr) {
-        _.find(this.orderers, o => o.addr === addr);
+    getOrdererIndex(addr) {
+        return _.findIndex(this.orderers, o => o.addr === addr);
     }
 
 }
