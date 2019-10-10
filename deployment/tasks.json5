@@ -3,7 +3,7 @@
     startRaftOrderingService3Nodes: {
       name: 'Start RAFT Cluster with 3 Nodes',
       params: {
-        ordererNames: 'raft1,raft2,raft3',
+        ordererNames: 'raft0,raft1,raft2',
         ordererDomain: "${ORDERER_DOMAIN}",
         configtxTemplate: '3-raft-node-template.yaml'
       }

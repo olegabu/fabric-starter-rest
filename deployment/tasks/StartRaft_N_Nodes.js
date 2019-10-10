@@ -25,9 +25,9 @@ class StartRaft_N_Nodes {
         env = this.updateOrdererEnv(commonEnv, 'ORDERER_NAME_2', 'RAFT2_PORT');
         await this.dockerCompose(env, 'docker-compose-orderer.yaml', 'cli.orderer');
 
-        await this.fabricStarterClient.invoke(cfg.DNS_CHANNEL, 'dns', 'registerOrderer', [cfg.MY_IP, env.ORDERER_NAME_0, env.ORDERER_DOMAIN, env.RAFT0_PORT], null, true);
-        await this.fabricStarterClient.invoke(cfg.DNS_CHANNEL, 'dns', 'registerOrderer', [cfg.MY_IP, env.ORDERER_NAME_1, env.ORDERER_DOMAIN, env.RAFT1_PORT], null, true);
-        await this.fabricStarterClient.invoke(cfg.DNS_CHANNEL, 'dns', 'registerOrderer', [cfg.MY_IP, env.ORDERER_NAME_2, env.ORDERER_DOMAIN, env.RAFT2_PORT], null, true);
+        await this.fabricStarterClient.invoke(cfg.DNS_CHANNEL, 'dns', 'registerOrderer', [env.ORDERER_NAME_0, env.ORDERER_DOMAIN, env.RAFT0_PORT, cfg.MY_IP || ''], null, true);
+        await this.fabricStarterClient.invoke(cfg.DNS_CHANNEL, 'dns', 'registerOrderer', [env.ORDERER_NAME_1, env.ORDERER_DOMAIN, env.RAFT1_PORT, cfg.MY_IP || ''], null, true);
+        await this.fabricStarterClient.invoke(cfg.DNS_CHANNEL, 'dns', 'registerOrderer', [env.ORDERER_NAME_2, env.ORDERER_DOMAIN, env.RAFT2_PORT, cfg.MY_IP || ''], null, true);
     }
 
     async dockerCompose(env, yamlFiles, yamlService) {
@@ -59,7 +59,7 @@ class StartRaft_N_Nodes {
     parseSequencedValues(config, commonEnv, sequencedVariable, singleVarsPattern, defaultValue) {
         const values = _.get(config, sequencedVariable, defaultValue).split(",");
         for (let i = 0; i < _.size(values); i++) {
-            commonEnv[eval('`'+singleVarsPattern+'`')] = values[i];
+            commonEnv[eval('`' + singleVarsPattern + '`')] = values[i];
         }
     }
 
@@ -68,8 +68,7 @@ class StartRaft_N_Nodes {
         return _.assign({}, commonEnv, {
             ORDERER_NAME: ordererName,
             ORDERER_GENERAL_LISTENPORT: _.get(commonEnv, ordererPortVar, _.get(cfg, ordererPortVar)),
-            [genesisProfile ? 'ORDERER_GENESIS_PROFILE' :''] : genesisProfile,
-            // DOMAIN: commonEnv.ORDERER_DOMAIN,
+            [genesisProfile ? 'ORDERER_GENESIS_PROFILE' : '']: genesisProfile,
             COMPOSE_PROJECT_NAME: `${ordererName}.${commonEnv.ORDERER_DOMAIN}`
         });
     }

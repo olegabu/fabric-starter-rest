@@ -23,7 +23,7 @@ module.exports = async (app, _fabricStarterClient, eventBus) => {
     const orgDomain = `${process.env.ORG}.${process.env.DOMAIN}`;
     const myIp = process.env.MY_IP;
     const ordererDomain = process.env.ORDERER_DOMAIN || process.env.DOMAIN;
-    const queryTarget = process.env.DNS_QUERY_TARGET || `peer0.${orgDomain}:${process.env.PEER0_PORT||7051}`;
+    const queryTarget = process.env.DNS_QUERY_TARGET || `peer0.${orgDomain}:${process.env.PEER0_PORT || 7051}`;
 
     let blockListenerStarted = false;
 
@@ -66,7 +66,7 @@ module.exports = async (app, _fabricStarterClient, eventBus) => {
                 keyValueHostRecords = filterOutByIp(keyValueHostRecords, myIp);
                 logger.debug("DNS after org filtering:", keyValueHostRecords);
 
-                 // let hostsFileContent = generateHostsRecords(keyValueHostRecords);
+                // let hostsFileContent = generateHostsRecords(keyValueHostRecords);
 
                 writeFile(NODE_HOSTS_FILE, keyValueHostRecords);
                 writeFile(ORDERER_HOSTS_FILE, keyValueHostRecords);
@@ -80,10 +80,12 @@ module.exports = async (app, _fabricStarterClient, eventBus) => {
 
         if (osnResponses) {
             try {
-                let keyValueHostRecords = JSON.parse(osnResponses);
-                eventBus.emit('osn-configuration-changed', keyValueHostRecords);
+                if (osnResponses[0] !== '') {
+                    let keyValueHostRecords = JSON.parse(osnResponses);
+                    eventBus.emit('osn-configuration-changed', keyValueHostRecords);
+                }
             } catch (e) {
-                logger.error(`Can't parse OSN record: ${osnResponses}`, e);
+                logger.warn(`Can't parse OSN record: ${osnResponses}`, e);
             }
         }
     }
