@@ -18,7 +18,7 @@ module.exports = async (app, _fabricStarterClient, eventBus) => {
     const chaincodeName = process.env.DNS_CHAINCODE || 'dns';
     const username = process.env.DNS_USERNAME || 'dns';
     const password = process.env.DNS_PASSWORD || 'pass';
-    const skip = !process.env.MULTIHOST;
+    // const skip = !process.env.MULTIHOST;
     const period = process.env.DNS_PERIOD || 60000;
     const orgDomain = `${process.env.ORG}.${process.env.DOMAIN}`;
     const myIp = process.env.MY_IP;
@@ -41,10 +41,10 @@ module.exports = async (app, _fabricStarterClient, eventBus) => {
     await processEvent();
 
     async function processEvent() {
-        if (skip) {
-            logger.info('Skipping dns track as not MULTIHOST');
-            return;
-        }
+        // if (skip) {
+        //     logger.info('Skipping dns track as not MULTIHOST');
+        //     return;
+        // }
 
         if (!blockListenerStarted) {
             try {
@@ -119,8 +119,7 @@ module.exports = async (app, _fabricStarterClient, eventBus) => {
 
 
     function writeFile(file, keyValueHostRecords) {
-        if (existsAndIsFile(file))
-        {
+        if (existsAndIsFile(file)) {
             try {
                 const currHostsLines = fs.readFileSync(file, 'utf-8').split('\n');
                 const currHosts = util.linesToKeyValueList(currHostsLines);
@@ -128,8 +127,8 @@ module.exports = async (app, _fabricStarterClient, eventBus) => {
                 let newHostsMap = util.mergeKeyValueLists(currHosts, keyValueHostRecords);
 
                 let hostsFileContent = `# replaced by dns listener on ${channel}\n`;
-                _.forOwn(newHostsMap, (value, key)=> {
-                    hostsFileContent = hostsFileContent+ key + ' ' + value+ '\n';
+                _.forOwn(newHostsMap, (value, key) => {
+                    hostsFileContent = hostsFileContent + key + ' ' + value + '\n';
                 });
 
                 fs.writeFileSync(file, hostsFileContent);
@@ -138,7 +137,7 @@ module.exports = async (app, _fabricStarterClient, eventBus) => {
             } catch (err) {
                 logger.error(`cannot writeFile ${file}`, err);
             }
-         else {
+        } else {
             logger.debug(`Skipping ${file}`);
         }
     }
