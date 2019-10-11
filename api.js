@@ -10,6 +10,8 @@ module.exports = function(app, socketServer, fabricStarterClient, eventBus, osnM
   const cfg = require('./config.js');
   const util = require('./util');
 
+  const Org = require('./model/Org');
+
   const FabricStarterClient = require('./fabric-starter-client');
 
   // upload for chaincode and app installation
@@ -117,7 +119,7 @@ module.exports = function(app, socketServer, fabricStarterClient, eventBus, osnM
   });
 
   app.get('/env', (req, res) => {
-    res.json({ORG: cfg.org, DOMAIN: cfg.domain});
+    res.json({ORG: cfg.org, DOMAIN: cfg.domain, BOOTSTRAP_IP: cfg.BOOTSTRAP_IP, MY_IP: cfg.MY_IP});
   });
 
   //TODO use for development only as it may expose sensitive data
@@ -337,12 +339,9 @@ module.exports = function(app, socketServer, fabricStarterClient, eventBus, osnM
    * @security JWT
    */
   app.post('/channels/:channelId/orgs', asyncMiddleware(async(req, res, next) => {
-    res.json(await req.fabricStarterClient.addOrgToChannel(req.params.channelId, orgFromHttpBody(req.body)));
+    res.json(await req.fabricStarterClient.addOrgToChannel(req.params.channelId, Org.orgFromHttpBody(req.body)));
   }));
 
-  function orgFromHttpBody(body){
-    return {orgId: body.orgId, orgIp: body.orgIp, peer0Port: body.peerPort, wwwPort: body.wwwPort}
-  }
 
   /**
    * Query a given block in a channel
@@ -516,7 +515,7 @@ module.exports = function(app, socketServer, fabricStarterClient, eventBus, osnM
    * @security JWT
    */
   app.post('/consortium/members', asyncMiddleware(async(req, res, next) => {
-    res.json(await req.fabricStarterClient.addOrgToConsortium(orgFromHttpBody(req.body)));
+    res.json(await req.fabricStarterClient.addOrgToConsortium(Org.orgFromHttpBody(req.body)));
   }));
 
   /**

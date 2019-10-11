@@ -31,7 +31,7 @@ class Util {
         return Buffer.from(certData).toString()
     }
 
-    sleep(ms) {
+    async sleep(ms) {
         return new Promise(resolve => setTimeout(resolve, ms));
     }
 
