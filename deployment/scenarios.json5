@@ -72,7 +72,7 @@
     */
     joinChannel: {
       name: "Join existing channel",
-      params: [{name:'url', value:"localhost:4000"}, {name:'channel', value: "common"}, {name:'orgId', value:"${ORG}"}, {name:"orgIp", value:"localhost"}, {name: 'task', value: 'AddOrgToChannel', visible: 'false'}],
+      params: [{name:'url', value:"${BOOTSTRAP_IP}:4000"}, {name:'channel', value: "common"}, {name:'orgId', value:"${ORG}"}, {name:"orgIp", value:"${MY_IP}"}, {name: 'task', value: 'AddOrgToChannel', visible: 'false'}],
       steps: [
         {
           task: 'PassTaskToOtherParty',

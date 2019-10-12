@@ -5,19 +5,19 @@ require('json5/lib/register');
 
 module.exports = function (app, fabricStarterClient, eventBus) {
 
-    app.post('/deploy/:scenarioId', async (req, res) => {
+    app.post('/deploy/scenario/:scenarioId', async (req, res) => {
         const scenarioId = _.get(req, 'params.scenarioId');
         await executeScenario(req, res, scenarioId);
     });
 
-    app.post('/externaltask', async (req, res) => {
+    app.post('/deploy/externaltask', async (req, res) => {
         let taskId = req.body.task;
         console.log("\n\nEXTERNALTASK\n\n");
         res.json(await executeTask(taskId, req.body, req.fabricStarterClient));
-        axios.post(`${req.body.callbackUrl}/taskcompleted/${req.body.executionId}`);
+        axios.post(`${req.body.callbackUrl}//deploy/taskcompleted/${req.body.executionId}`);
     });
 
-    app.post('/taskcompleted/:executionId', (req, res) => {
+    app.post('/deploy/taskcompleted/:executionId', (req, res) => {
         console.log("\n\nTASKCOMPLETED\n\n");
         eventBus.emit('TaskCompleted', {executionId: _.get(req, 'params.executionId')});
     });
@@ -27,7 +27,7 @@ module.exports = function (app, fabricStarterClient, eventBus) {
     });
 
     app.get('/scenarios', (req, res) => {
-        res.json(loadScenarios());
+        res.json({scenarios:loadScenarios(), tasks:require('./tasks.json5')});
     });
 
     async function executeScenario(req, res, scenarioId) {
@@ -40,7 +40,7 @@ module.exports = function (app, fabricStarterClient, eventBus) {
 
     async function executeTask(taskId, config, fabricStarterClient, executionId) {
         let task = new (require(`./tasks/${taskId}`))(fabricStarterClient);
-        return task.run(_.assign({}, config, {executionId}));
+        return await task.run(_.assign({}, config, {executionId}));
     }
 
     function loadScenarios() {

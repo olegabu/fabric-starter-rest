@@ -69,7 +69,7 @@ module.exports = function(app, socketServer, fabricStarterClient, eventBus, osnM
 
 // require presence of JWT in Authorization Bearer header
   const jwtSecret = fabricStarterClient.getSecret();
-  app.use(jwt({secret: jwtSecret}).unless({path: ['/', '/users', '/domain', '/mspid', '/config', /\/msp\/.*/, new RegExp('/api-docs'), '/api-docs.json', /\/webapp/, /\/webapps\/.*/, '/admin/']}));
+  app.use(jwt({secret: jwtSecret}).unless({path: ['/', '/users', '/domain', '/mspid', '/config', /\/msp\/.*/, new RegExp('/api-docs'), '/api-docs.json', /\/webapp/, /\/webapps\/.*/, /\/settings\/.*/, '/admin/']}));
 
 // use fabricStarterClient for every logged in user
   const mapFabricStarterClient = {};

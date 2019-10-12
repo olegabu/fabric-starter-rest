@@ -13,7 +13,7 @@ class PassTaskToOtherParty {
         let task = _.get(config, 'task');
         let otherPartyUrl = _.get(config, 'url');
 
-        await axios.post(`http://${otherPartyUrl}/externaltask`, {
+        await axios.post(`http://${otherPartyUrl}/deploy/externaltask`, {
             task: task,
             params: config,
             executionId: `task-${Math.random()}`,

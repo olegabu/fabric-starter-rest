@@ -29,6 +29,26 @@ module.exports = async (app, _fabricStarterClient, eventBus) => {
 
     logger.info('started');
 
+    let orgs = {};
+    let keyValueTaskSettings = {};
+
+    app.get("/settings/tasks", (req, res) => {
+        res.json(keyValueTaskSettings);
+    });
+
+    app.post("/settings/tasks", (req, res) => {
+        logger.info('Saving tasks');
+
+        keyValueTaskSettings = req.body;
+        // const dnsResponses = await fabricStarterClient.query(channel, chaincodeName, 'get', '["dns"]', {targets: queryTarget});
+        res.status(200);
+    });
+
+    app.get("/settings/orgs", (req, res) => {
+        // let orgs=_.map(_.keys(keyValueHostRecords), k=>keyValueHostRecords[k],
+        res.json(orgs);
+    });
+
     setInterval(async () => {
         logger.info(`periodically query every ${period} msec for dns entries and update ${NODE_HOSTS_FILE}`);
         try {
@@ -57,37 +77,55 @@ module.exports = async (app, _fabricStarterClient, eventBus) => {
             }
         }
 
-        const dnsResponses = await fabricStarterClient.query(channel, chaincodeName, 'get', '["dns"]', {targets: queryTarget});
-        logger.debug('dnsResponses', dnsResponses);
+        let dnsRecords = await getChaincodeData("dns");
+        if (dnsRecords) {
+            dnsRecords = filterOutByIp(dnsRecords, myIp);
+            writeFile(NODE_HOSTS_FILE, dnsRecords);
+            writeFile(ORDERER_HOSTS_FILE, dnsRecords);
+        }
+        /*
+                const dnsResponses = await fabricStarterClient.query(channel, chaincodeName, 'get', '["dns"]', {targets: queryTarget});
+                logger.debug('dnsResponses', dnsResponses);
 
-        if (dnsResponses) {
-            try {
-                let keyValueHostRecords = JSON.parse(dnsResponses);
-                keyValueHostRecords = filterOutByIp(keyValueHostRecords, myIp);
-                logger.debug("DNS after org filtering:", keyValueHostRecords);
+                if (dnsResponses) {
+                    try {
+                        let keyValueHostRecords = JSON.parse(dnsResponses);
+                        keyValueHostRecords = filterOutByIp(keyValueHostRecords, myIp);
+                        logger.debug("DNS after org filtering:", keyValueHostRecords);
 
-                // let hostsFileContent = generateHostsRecords(keyValueHostRecords);
+                        // let hostsFileContent = generateHostsRecords(keyValueHostRecords);
 
-                writeFile(NODE_HOSTS_FILE, keyValueHostRecords);
-                writeFile(ORDERER_HOSTS_FILE, keyValueHostRecords);
-            } catch (e) {
-                logger.warn("Unparseable dns-records: \n", dnsResponses);
-            }
+                        writeFile(NODE_HOSTS_FILE, keyValueHostRecords);
+                        writeFile(ORDERER_HOSTS_FILE, keyValueHostRecords);
+
+                    } catch (e) {
+                        logger.warn("Unparseable dns-records: \n", dnsResponses);
+                    }
+                }*/
+
+        const osns = await getChaincodeData("osn");
+        if (osns) {
+            eventBus.emit('osn-configuration-changed', osns);
         }
 
-        const osnResponses = await fabricStarterClient.query(channel, chaincodeName, 'get', '["osn"]', {targets: queryTarget});
-        logger.debug('osnResponses', osnResponses);
+        orgs = await getChaincodeData("orgs") || {};
 
-        if (osnResponses) {
-            try {
-                if (osnResponses[0] !== '') {
-                    let keyValueHostRecords = JSON.parse(osnResponses);
-                    eventBus.emit('osn-configuration-changed', keyValueHostRecords);
-                }
-            } catch (e) {
-                logger.warn(`Can't parse OSN record: ${osnResponses}`, e);
-            }
-        }
+        /*        const osnResponses = await fabricStarterClient.query(channel, chaincodeName, 'get', '["osn"]', {targets: queryTarget});
+                logger.debug('osnResponses', osnResponses);
+
+                if (osnResponses) {
+                    try {
+                        if (osnResponses[0] !== '') {
+                            let keyValueHostRecords = JSON.parse(osnResponses);
+                            eventBus.emit('osn-configuration-changed', keyValueHostRecords);
+                        }
+                    } catch (e) {
+                        logger.warn(`Can't parse OSN record: ${osnResponses}`, e);
+                    }
+                }*/
+
+        // taskSettigns=await getChaincodeData("tasksSettings") ||{};
+
     }
 
     async function login() {
@@ -110,15 +148,25 @@ module.exports = async (app, _fabricStarterClient, eventBus) => {
         });
     }
 
-    function existsAndIsFile(file) {
+    async function getChaincodeData(dataKey) {
+        let result = null;
+        const dataResponses = await fabricStarterClient.query(channel, chaincodeName, 'get', `["${dataKey}"]`, {targets: queryTarget});
+        logger.debug(`dataResponses for ${dataKey}`, dataResponses);
         try {
-            fs.accessSync(file, fs.constants.W_OK);
-            return fs.statSync(file).isFile()
+            if (dataResponses && dataResponses[0] !== '') {
+                result = JSON.parse(dataResponses);
+            }
         } catch (e) {
-            logger.debug(`Cannot open file ${file}`, e);
+            logger.warn(`Can't parse chaincode data record: ${dataResponses}`, e);
         }
+        return result;
     }
 
+
+    function filterOutByIp(list, ip) {
+        delete list[ip];
+        return list;
+    }
 
     function writeFile(file, keyValueHostRecords) {
         if (existsAndIsFile(file)) {
@@ -144,17 +192,12 @@ module.exports = async (app, _fabricStarterClient, eventBus) => {
         }
     }
 
-
-    function filterOutByIp(list, ip) {
-        delete list[ip];
-        return list;
-    }
-
-    function generateHostsRecords(list) {
-        let h = `# replaced by dns listener on ${channel}\n`;
-        _.forEach(_.keys(list), ip => {
-            h = h.concat(ip, ' ', list[ip], '\n');
-        });
-        return h;
+    function existsAndIsFile(file) {
+        try {
+            fs.accessSync(file, fs.constants.W_OK);
+            return fs.statSync(file).isFile()
+        } catch (e) {
+            logger.debug(`Cannot open file ${file}`, e);
+        }
     }
 };

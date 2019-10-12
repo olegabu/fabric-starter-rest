@@ -45,7 +45,7 @@
     },
     inviteOrgToConsortium: {
       name: 'Invite Org to Consortium',
-      params: {org: {mspId: "${ORG}", peer0Port: '${PEER0_PORT}', wwwPort: "${wwwPort}"}}
+      params: {org: {mspId: "${ORG}", peer0Port: '${PEER0_PORT}', wwwPort: "${WWW_PORT}"}}
     },
     createChannel: {
       name: 'Create Channel',
