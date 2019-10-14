@@ -17,7 +17,7 @@ class JoinChannel {
         logger.debug("Starting task JoinChannel for: ", config);
         const remoteOrgIp = _.get(config, 'targetOrgMap.org.ip');
         let remoteOrgDomain = _.get(config, 'targetOrgMap.orgDomain');
-        util.writeFile("/etc/hosts", {[remoteOrgIp]: `peer0.${remoteOrgDomain} www.${remoteOrgDomain} api.${remoteOrgDomain}`});
+        // util.writeFile("/etc/hosts", {[remoteOrgIp]: `peer0.${remoteOrgDomain} www.${remoteOrgDomain} api.${remoteOrgDomain}`});
 
         // this.fabricStarterClient.joinChannel(channel);
         await channelManager.joinChannel(channel, this.fabricStarterClient, this.socketServer);
