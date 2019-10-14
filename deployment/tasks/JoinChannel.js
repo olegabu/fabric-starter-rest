@@ -2,7 +2,7 @@ const _ = require('lodash');
 const cfg = require('../../config');
 const logger = cfg.log4js.getLogger(__filename);
 const channelManager = require('../../channel-manager');
-const util = require('../util');
+const util = require('../../util');
 
 class JoinChannel {
 
