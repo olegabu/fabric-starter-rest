@@ -82,8 +82,8 @@ module.exports = async (app, _fabricStarterClient, eventBus) => {
         let dnsRecords = await getChaincodeData("dns");
         if (dnsRecords) {
             dnsRecords = filterOutByIp(dnsRecords, myIp);
-            writeFile(NODE_HOSTS_FILE, dnsRecords);
-            writeFile(ORDERER_HOSTS_FILE, dnsRecords);
+            util.writeFile(NODE_HOSTS_FILE, dnsRecords);
+            util.writeFile(ORDERER_HOSTS_FILE, dnsRecords);
         }
 
         const osns = await getChaincodeData("osn");
@@ -140,38 +140,5 @@ module.exports = async (app, _fabricStarterClient, eventBus) => {
     function filterOutByIp(list, ip) {
         delete list[ip];
         return list;
-    }
-
-    function writeFile(file, keyValueHostRecords) {
-        if (existsAndIsFile(file)) {
-            try {
-                const currHostsLines = fs.readFileSync(file, 'utf-8').split('\n');
-                const currHosts = util.linesToKeyValueList(currHostsLines);
-
-                let newHostsMap = util.mergeKeyValueLists(currHosts, keyValueHostRecords);
-
-                let hostsFileContent = `# replaced by dns listener on ${channel}\n`;
-                _.forOwn(newHostsMap, (value, key) => {
-                    hostsFileContent = hostsFileContent + key + ' ' + value + '\n';
-                });
-
-                fs.writeFileSync(file, hostsFileContent);
-
-                logger.info(`written: ${file}\n`, hostsFileContent);
-            } catch (err) {
-                logger.error(`cannot writeFile ${file}`, err);
-            }
-        } else {
-            logger.debug(`Skipping ${file}`);
-        }
-    }
-
-    function existsAndIsFile(file) {
-        try {
-            fs.accessSync(file, fs.constants.W_OK);
-            return fs.statSync(file).isFile()
-        } catch (e) {
-            logger.debug(`Cannot open file ${file}`, e);
-        }
     }
 };

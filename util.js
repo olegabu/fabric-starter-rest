@@ -65,6 +65,40 @@ class Util {
         return result;
     }
 
+    writeFile(file, keyValueHostRecords) {
+        if (this.existsAndIsFile(file)) {
+            try {
+                const currHostsLines = fs.readFileSync(file, 'utf-8').split('\n');
+                const currHosts = this.linesToKeyValueList(currHostsLines);
+
+                let newHostsMap = this.mergeKeyValueLists(currHosts, keyValueHostRecords);
+
+                let hostsFileContent = `# replaced by dns listener on ${channel}\n`;
+                _.forOwn(newHostsMap, (value, key) => {
+                    hostsFileContent = hostsFileContent + key + ' ' + value + '\n';
+                });
+
+                fs.writeFileSync(file, hostsFileContent);
+
+                logger.info(`written: ${file}\n`, hostsFileContent);
+            } catch (err) {
+                logger.error(`cannot writeFile ${file}`, err);
+            }
+        } else {
+            logger.debug(`Skipping ${file}`);
+        }
+    }
+
+
+    existsAndIsFile(file) {
+        try {
+            fs.accessSync(file, fs.constants.W_OK);
+            return fs.statSync(file).isFile()
+        } catch (e) {
+            logger.debug(`Cannot open file ${file}`, e);
+        }
+    }
+
 
 }
 
