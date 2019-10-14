@@ -6,6 +6,4 @@ class Org {
 }
 
 
-module.exports = {
-    Org: Org
-};
+module.exports = Org;

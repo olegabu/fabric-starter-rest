@@ -1,11 +1,11 @@
 {
 
           startRaftCluster: {
-            name: "Start new RAFT ordering service",
-            params: [{name: 'ORDERER_NAMES', value: 'raft0,raft1,raft2'}, {
-              name: 'ORDERER_DOMAIN',
-              value: 'osn-${ORG}.${DOMAIN}'
-            }, {name: 'ORDERER_PORTS', value: '7050,7150,7250'}],
+            name: "Start new RAFT OSN",
+            params: [{name: 'ORDERER_NAMES', value: 'raft0,raft1,raft2'},
+              {name: 'ORDERER_DOMAIN',value: 'osn-${ORG}.${DOMAIN}'},
+              {name: 'ORDERER_PORTS', value: '7150,7250,7350'}
+            ],
             steps: [
               {
                 step: "1",
@@ -26,7 +26,7 @@
             steps: [
               {
                 task: 'PassTaskToOtherParty',
-                params: {task: "prepareRaft1Node"},
+                params: {task: "PrepareRaft1Node"},
                 auto: true,
               },
               {
@@ -34,58 +34,65 @@
               },
               {
                 task: 'PassTaskToOtherParty',
-                params: {task: "startRaft1Node"},
+                params: {task: "StartRaft1Node"},
                 auto: true,
               },
             ]
           },
 
+ */
           joinRaftOrderingService: {
-            name: 'Join existing RAFT ordering service',
-            params: ['ORDERER_NAME', 'ORDERER_DOMAIN', 'ORDERER_GENERAL_LISTENPORT', 'WWW_PORT'],
+            name: 'Start my RAFT orderer and Join existing RAFT OSN',
+            params: [
+              {name: 'TARGET_ORDERER', value: 'raft0.osn-org1.${DOMAIN}'},
+              {name: 'MY_ORDERER_NAME', value: 'raft4'},
+                     {name: 'MY_ORDERER_DOMAIN',value: 'osn-${ORG}.${DOMAIN}'},
+                     {name: 'MY_ORDERER_PORT', value: '7150'},
+                    {name: 'apiPort', value: '4000'}, {name: 'task', value: 'AddOrdererToRaftOrderingService', visible: 'false'}
+            ],
             steps: [
               {
-                task: "prepareRaft1Node",
-                params: {ordererName: "${ORDERER_NAME}", ordererDomain: "${ORDERER_DOMAIN}"}
+                task: "PrepareRaft1Node",
+                params: {ordererName: "${MY_ORDERER_NAME}", ordererDomain: "${MY_ORDERER_DOMAIN}"}
               },
               {
                 task: 'PassTaskToOtherParty',
-                params: {task: "addOrdererToRaftOrderingService",},
+                params: [{name: 'task', value: "AddOrdererToRaftOrderingService", valueIsATask: true}],
                 auto: true,
               },
               {
-                task: "startRaft1Node",
-                params: {ordererName: "${ORDERER_NAME}", ordererDomain: "${ORDERER_DOMAIN}"}
+                task: "StartRaft1Node",
+                params: {ordererName: "${MY_ORDERER_NAME}", ordererDomain: "${MY_ORDERER_NAME}"}
               }
             ]
           },
+  /*
+           addToConsortium: {
+             name: "Add Org To Consortium with policy ANY",
+             steps: [{
+               task: 'inviteOrgToConsortium',
+               params: {mspId: "${NEWORG}"},
+               auto: true,
+             }]
+           },
 
-          addToConsortium: {
-            name: "Add Org To Consortium with policy ANY",
-            steps: [{
-              task: 'inviteOrgToConsortium',
-              params: {mspId: "${NEWORG}"},
-              auto: true,
-            }]
-          },
-
-    */
+     */
     joinChannel: {
-      name: "Join existing channel",
-      params: [{name:'url', value:"${BOOTSTRAP_IP}:4000"}, {name:'channel', value: "common"}, {name:'orgId', value:"${ORG}"}, {name:"orgIp", value:"${MY_IP}"}, {name: 'task', value: 'AddOrgToChannel', visible: 'false'}],
+      name: "Join me to existing channel",
+      params: [{name:'channel', value: "common"}, {name:'orgId', value:"${ORG}"}, {name:"orgIp", value:"${MY_IP}"}, {name: 'apiPort', value: '4000'}, {name: 'task', value: 'AddOrgToChannel', visible: 'false'}],
       steps: [
         {
           task: 'PassTaskToOtherParty',
           params: [{name: 'task', value: "AddOrgToChannel", valueIsATask: true}],
           auto: true,
         },
-        {
+      /*  {
           task: 'WaitForOtherPartyOnEntrypoint',
           params: {
             entryPointCallback: "${MY_IP}",
           },
           auto: true,
-        },
+        },*/
         {
           task: 'JoinChannel',
           params: {

@@ -215,28 +215,17 @@ class FabricStarterClient {
         let chaincodeList = await this.queryInstantiatedChaincodes(cfg.DNS_CHANNEL);
         if (!chaincodeList || !chaincodeList.chaincodes.find(i => i.name === "dns"))
             return;
-        const dns = await this.query(cfg.DNS_CHANNEL, "dns", "range", null, {targets: []});
-        let dnsRecordsList = dns && dns.length && JSON.parse(dns[0]);
+        const dns = await this.query(cfg.DNS_CHANNEL, "dns", "get", '["dns"]', {targets: []});
+        try {
+            let dnsRecordsList = dns && dns.length && JSON.parse(dns[0]);
 
-        let dnsRecordForIp = _.find(dnsRecordsList, dnsRecord => _.get(dnsRecord.ip === orgObj.orgIp));
-        if (dnsRecordForIp && !_.includes(dnsRecordForIp.value, `${orgObj.orgId}.${cfg.domain}`)) {
-            throw new Error(`Specified Ip linked to another org: ${dnsRecordForIp.value}`);
-        }
-        const orgId = _.get(orgObj,"orgId");
-        const orgIp = _.get(orgObj,"orgIp");
-        let dnsRecordForOrg = _.find(dnsRecordsList, dnsRecord => _.includes(_.get(dnsRecord, "value"), `${orgId}.${cfg.domain}`));
+            const orgId = _.get(orgObj, "orgId");
+            const orgIp = _.get(orgObj, "orgIp");
 
-        if (!dnsRecordForOrg && !orgIp) {
-            const msg = `Please provide Organization's Ip to register in DNS`;
-            logger.error(msg);
-            throw new Error(msg);
-        }
-
-        if (orgIp) {
             await this.invoke(cfg.DNS_CHANNEL, "dns", "registerOrg", [`${orgId}.${cfg.domain}`, orgIp], {targets: []}, true)
-                .then(()=>util.sleep(cfg.DNS_UPDATE_TIMEOUT));
-        } else {
-            logger.debug(`Dns includes`, dnsRecordForOrg);
+                .then(() => util.sleep(cfg.DNS_UPDATE_TIMEOUT));
+        } catch (e) {
+            logger.warn("Unparseable", dns);
         }
     }
 

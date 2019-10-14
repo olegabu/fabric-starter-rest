@@ -47,6 +47,7 @@ module.exports = {
     domain: DOMAIN,
     org: myorg,
     MY_IP: process.env.MY_IP,
+    DOCKER_REGISTRY: process.env.DOCKER_REGISTRY,
     WWW_PORT: process.env.WWW_PORT || '80',
     BOOTSTRAP_IP: process.env.BOOTSTRAP_IP,
 

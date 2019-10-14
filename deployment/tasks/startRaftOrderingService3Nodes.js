@@ -20,11 +20,11 @@ class startRaftOrderingService3Nodes {
         await this.dockerCompose(env, ['docker-compose-orderer.yaml', 'docker-compose-orderer-domain.yaml'], 'cli.orderer');
         await this.fabricStarterClient.invoke(cfg.DNS_CHANNEL, 'dns', 'registerOrderer', [env.ORDERER_NAME_0, env.ORDERER_DOMAIN, env.RAFT0_PORT, cfg.MY_IP || ''], null, true);
 
-        env = this.updateOrdererEnv(commonEnv, 'ORDERER_NAME_1', 'RAFT1_PORT');
+        env = this.updateOrdererEnv(commonEnv, 'ORDERER_NAME_1', 'RAFT1_PORT', 'RaftOrdererGenesis');
         await this.dockerCompose(env, ['docker-compose-orderer.yaml', 'docker-compose-orderer-domain.yaml'], 'cli.orderer');
         await this.fabricStarterClient.invoke(cfg.DNS_CHANNEL, 'dns', 'registerOrderer', [env.ORDERER_NAME_1, env.ORDERER_DOMAIN, env.RAFT1_PORT, cfg.MY_IP || ''], null, true);
 
-        env = this.updateOrdererEnv(commonEnv, 'ORDERER_NAME_2', 'RAFT2_PORT');
+        env = this.updateOrdererEnv(commonEnv, 'ORDERER_NAME_2', 'RAFT2_PORT', 'RaftOrdererGenesis');
         await this.dockerCompose(env, ['docker-compose-orderer.yaml', 'docker-compose-orderer-domain.yaml'], 'cli.orderer');
 
         await this.fabricStarterClient.invoke(cfg.DNS_CHANNEL, 'dns', 'registerOrderer', [env.ORDERER_NAME_2, env.ORDERER_DOMAIN, env.RAFT2_PORT, cfg.MY_IP || ''], null, true);

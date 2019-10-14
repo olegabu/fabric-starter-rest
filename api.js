@@ -12,6 +12,7 @@ module.exports = function(app, socketServer, fabricStarterClient, eventBus, osnM
 
   const Org = require('./model/Org');
 
+  const channelManager = require('./channel-manager');
   const FabricStarterClient = require('./fabric-starter-client');
 
   // upload for chaincode and app installation
@@ -74,6 +75,21 @@ module.exports = function(app, socketServer, fabricStarterClient, eventBus, osnM
 // use fabricStarterClient for every logged in user
   const mapFabricStarterClient = {};
 
+
+  eventBus.on("orgs-configuration-changed", (orgs)=>{
+      // const token = jsonwebtoken.sign({sub: req.fabricStarterClient.user.getName()}, jwtSecret);
+
+      const fabricStarterTaskClient =_.get(mapFabricStarterClient, _.keys(mapFabricStarterClient)[0]);
+
+      if (fabricStarterTaskClient) {
+        orgs[`${cfg.org}.${cfg.domain}`] = orgs[`${cfg.org}.${cfg.domain}`] || {};
+        const jwtToken = jsonwebtoken.sign({sub: fabricStarterTaskClient.user.getName()}, jwtSecret, {expiresIn: 1800});
+        orgs[`${cfg.org}.${cfg.domain}`].jwt = jwtToken;
+      }
+
+      console.log("API", orgs);
+  });
+
   app.use((req, res, next) => {
     if (req.user) {
       const login = req.user.sub;
@@ -119,7 +135,7 @@ module.exports = function(app, socketServer, fabricStarterClient, eventBus, osnM
   });
 
   app.get('/env', (req, res) => {
-    res.json({ORG: cfg.org, DOMAIN: cfg.domain, BOOTSTRAP_IP: cfg.BOOTSTRAP_IP, MY_IP: cfg.MY_IP});
+    res.json({ORG: cfg.org, DOMAIN: cfg.domain, BOOTSTRAP_IP: cfg.BOOTSTRAP_IP, MY_IP: cfg.MY_IP||''});
   });
 
   //TODO use for development only as it may expose sensitive data
@@ -238,7 +254,7 @@ module.exports = function(app, socketServer, fabricStarterClient, eventBus, osnM
    * @security JWT
    */
   app.post('/channels/:channelId', asyncMiddleware(async(req, res, next) => {
-    let ret = await joinChannel(req.params.channelId, req.fabricStarterClient);
+    let ret = await channelManager.joinChannel(req.params.channelId, req.fabricStarterClient, socketServer);
     res.json(ret);
   }));
 
@@ -254,9 +270,10 @@ module.exports = function(app, socketServer, fabricStarterClient, eventBus, osnM
    */
   app.post('/channels', asyncMiddleware(async(req, res, next) => {
     await req.fabricStarterClient.createChannel(req.body.channelId);
-    res.json(await joinChannel(req.body.channelId, req.fabricStarterClient));
+    res.json(await channelManager.joinChannel(req.body.channelId, req.fabricStarterClient, socketServer));
   }));
 
+/*
   async function joinChannel(channelId, fabricStarterClient) {
     try {
       const ret = await fabricStarterClient.joinChannel(channelId);
@@ -269,6 +286,7 @@ module.exports = function(app, socketServer, fabricStarterClient, eventBus, osnM
       throw new Error(error.message);
     }
   }
+*/
 
   /**
    * Query channel info

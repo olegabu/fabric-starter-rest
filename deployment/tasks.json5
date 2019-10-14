@@ -7,7 +7,7 @@
         configtxTemplate: '3-raft-node-template.yaml'
       }
     },
-    prepareRaft1Node: {
+    PrepareRaft1Node: {
       name: 'Prepare one RAFT server',
       params: {
         ordererName: "${ORDERER_NAME}",

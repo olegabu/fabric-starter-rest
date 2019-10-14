@@ -7,17 +7,20 @@ module.exports = async (app, _fabricStarterClient, eventBus) => {
     const fs = require('fs');
     const _ = require('lodash');
     const logger = require('log4js').getLogger('dns');
+    const jwt = require('jsonwebtoken');
+
     const FabricStarterClient = require('../fabric-starter-client');
     const fabricStarterClient = new FabricStarterClient();
     const util = require('../util');
+    const cfg = require('../config.js');
 
     const NODE_HOSTS_FILE = '/etc/hosts';
     const ORDERER_HOSTS_FILE = '/etc/hosts_orderer';
 
     const channel = process.env.DNS_CHANNEL || 'common';
     const chaincodeName = process.env.DNS_CHAINCODE || 'dns';
-    const username = process.env.DNS_USERNAME || 'dns';
-    const password = process.env.DNS_PASSWORD || 'pass';
+    const username = process.env.DNS_USERNAME || 'serviceUser';
+    const password = process.env.DNS_PASSWORD || 'servicePass';
     // const skip = !process.env.MULTIHOST;
     const period = process.env.DNS_PERIOD || 60000;
     const orgDomain = `${process.env.ORG}.${process.env.DOMAIN}`;
@@ -25,29 +28,28 @@ module.exports = async (app, _fabricStarterClient, eventBus) => {
     const ordererDomain = process.env.ORDERER_DOMAIN || process.env.DOMAIN;
     const queryTarget = process.env.DNS_QUERY_TARGET || `peer0.${orgDomain}:${process.env.PEER0_PORT || 7051}`;
 
+
     let blockListenerStarted = false;
 
     logger.info('started');
 
+    let taskSettings = {};
     let orgs = {};
-    let keyValueTaskSettings = {};
 
     app.get("/settings/tasks", (req, res) => {
-        res.json(keyValueTaskSettings);
+        res.json(taskSettings);
     });
 
     app.post("/settings/tasks", (req, res) => {
         logger.info('Saving tasks');
 
-        keyValueTaskSettings = req.body;
+        taskSettings = req.body;
+        eventBus.emit('orgs-configuration-changed', orgs);
+        eventBus.emit('osn-configuration-changed');
         // const dnsResponses = await fabricStarterClient.query(channel, chaincodeName, 'get', '["dns"]', {targets: queryTarget});
         res.status(200);
     });
 
-    app.get("/settings/orgs", (req, res) => {
-        // let orgs=_.map(_.keys(keyValueHostRecords), k=>keyValueHostRecords[k],
-        res.json(orgs);
-    });
 
     setInterval(async () => {
         logger.info(`periodically query every ${period} msec for dns entries and update ${NODE_HOSTS_FILE}`);
@@ -83,46 +85,19 @@ module.exports = async (app, _fabricStarterClient, eventBus) => {
             writeFile(NODE_HOSTS_FILE, dnsRecords);
             writeFile(ORDERER_HOSTS_FILE, dnsRecords);
         }
-        /*
-                const dnsResponses = await fabricStarterClient.query(channel, chaincodeName, 'get', '["dns"]', {targets: queryTarget});
-                logger.debug('dnsResponses', dnsResponses);
-
-                if (dnsResponses) {
-                    try {
-                        let keyValueHostRecords = JSON.parse(dnsResponses);
-                        keyValueHostRecords = filterOutByIp(keyValueHostRecords, myIp);
-                        logger.debug("DNS after org filtering:", keyValueHostRecords);
-
-                        // let hostsFileContent = generateHostsRecords(keyValueHostRecords);
-
-                        writeFile(NODE_HOSTS_FILE, keyValueHostRecords);
-                        writeFile(ORDERER_HOSTS_FILE, keyValueHostRecords);
-
-                    } catch (e) {
-                        logger.warn("Unparseable dns-records: \n", dnsResponses);
-                    }
-                }*/
 
         const osns = await getChaincodeData("osn");
         if (osns) {
             eventBus.emit('osn-configuration-changed', osns);
         }
 
-        orgs = await getChaincodeData("orgs") || {};
+        const chainOrgs = await getChaincodeData("orgs");
+        if (chainOrgs) {
+            orgs = _.merge(orgs, chainOrgs);
+            eventBus.emit('orgs-configuration-changed', orgs);
+            eventBus.emit('osn-configuration-changed', osns);
+        }
 
-        /*        const osnResponses = await fabricStarterClient.query(channel, chaincodeName, 'get', '["osn"]', {targets: queryTarget});
-                logger.debug('osnResponses', osnResponses);
-
-                if (osnResponses) {
-                    try {
-                        if (osnResponses[0] !== '') {
-                            let keyValueHostRecords = JSON.parse(osnResponses);
-                            eventBus.emit('osn-configuration-changed', keyValueHostRecords);
-                        }
-                    } catch (e) {
-                        logger.warn(`Can't parse OSN record: ${osnResponses}`, e);
-                    }
-                }*/
 
         // taskSettigns=await getChaincodeData("tasksSettings") ||{};
 
@@ -161,7 +136,6 @@ module.exports = async (app, _fabricStarterClient, eventBus) => {
         }
         return result;
     }
-
 
     function filterOutByIp(list, ip) {
         delete list[ip];
