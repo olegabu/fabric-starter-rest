@@ -9,19 +9,15 @@
     },
     PrepareRaft1Node: {
       name: 'Prepare one RAFT server',
-      params: {
-        ordererName: "${ORDERER_NAME}",
-        ordererDomain: "${ORDERER_DOMAIN}",
-        configtxTemplate: 'raft-node-template.yaml'
-      }
+      params: [{name:'ORDERER_NAME', value:''},{name:'ORDERER_DOMAIN', value:''}
+      ]
     },
-    startRaft1Node: {
-      name: 'Start one RAFT server',
-      params: {
-        ordererName: "${ORDERER_NAME}",
-        ordererDomain: "${ORDERER_DOMAIN}",
-        configtxTemplate: 'raft-node-template.yaml'
-      }
+    StartRaft1Node: {
+      name: 'Start RAFT orderer',
+      params: [
+        {name:'ORDERER_NAME', value:''},
+        {name:'ORDERER_DOMAIN', value:''}
+      ]
     },
     addOrdererToRaftOrderingService: {
       name: 'Add Orderer to RAFT Ordering Service configuration',
