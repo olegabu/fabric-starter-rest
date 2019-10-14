@@ -3,7 +3,7 @@
 const fs = require('fs');
 const _ = require('lodash');
 const cfg = require('./config.js');
-const logger = cfg.log4js.getLogger('RestSocketServer');
+const logger = cfg.log4js.getLogger('util');
 
 class Util {
 
@@ -73,7 +73,7 @@ class Util {
 
                 let newHostsMap = this.mergeKeyValueLists(currHosts, keyValueHostRecords);
 
-                let hostsFileContent = `# replaced by dns listener on ${channel}\n`;
+                let hostsFileContent = `# replaced by writeFile  \n`;
                 _.forOwn(newHostsMap, (value, key) => {
                     hostsFileContent = hostsFileContent + key + ' ' + value + '\n';
                 });
