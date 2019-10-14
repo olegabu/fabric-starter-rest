@@ -70,7 +70,7 @@ module.exports = function (app, fabricStarterClient, eventBus, socketServer) {
             }
             logger.debug('task completed', scenario);
         } catch (e) {
-            logger.Error(scenario, e);
+            logger.error(scenario, e);
             // res.status(500).json(e && e.message);
         }
     }

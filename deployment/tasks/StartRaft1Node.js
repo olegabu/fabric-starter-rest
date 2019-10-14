@@ -17,7 +17,7 @@ class StartRaft1Node {
         let targetOrderer=_.get(config, 'TARGET_ORDERER');
         let env = this.updateOrdererEnv(commonEnv, 'ORDERER_NAME', 'ORDERER_PORT', 'RaftOrdererGenesis');
         logger.debug('Executing docker-compose with env:', env);
-        await this.dockerCompose(env, ['docker-compose-orderer.yaml', 'docker-compose-orderer-domain.yaml'], 'orderer');
+        await this.dockerCompose(env, ['docker-compose-orderer.yaml', 'docker-compose-orderer-domain.yaml', 'docker-compose-orderer-ports.yaml'], 'orderer');
         await this.fabricStarterClient.invoke(cfg.DNS_CHANNEL, 'dns', 'registerOrderer', [env.ORDERER_NAME, env.ORDERER_DOMAIN, env.ORDERER_PORT, cfg.MY_IP || ''], null, true);
 
     }
@@ -56,7 +56,7 @@ class StartRaft1Node {
             ORDERER_NAME: ordererName,
             ORDERER_GENERAL_LISTENPORT: _.get(commonEnv, ordererPortVar, _.get(cfg, ordererPortVar)),
             [genesisProfile ? 'ORDERER_GENESIS_PROFILE' : '']: genesisProfile,
-            COMPOSE_PROJECT_NAME: `${ordererName}.${commonEnv.ORDERER_DOMAIN}`
+            COMPOSE_PROJECT_NAME: `${ordererName}.${commonEnv.ORDERER_DOMAIN}`,
             DOCKER_REGISTRY: cfg.DOCKER_REGISTRY
         });
     }
