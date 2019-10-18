@@ -42,14 +42,17 @@ const certificationDomain = /*isOrderer ? */ `${myorg}.${DOMAIN}`;
 
 const systemChannelId = "orderer-system-channel";
 
+const bootstrapIp = process.env.BOOTSTRAP_IP;
+
+const myIp = process.env.MY_IP;
 module.exports = {
     log4js: log4js,
     domain: DOMAIN,
     org: myorg,
-    MY_IP: process.env.MY_IP,
+    MY_IP: myIp,
     DOCKER_REGISTRY: process.env.DOCKER_REGISTRY,
     WWW_PORT: process.env.WWW_PORT || '80',
-    BOOTSTRAP_IP: process.env.BOOTSTRAP_IP,
+    BOOTSTRAP_IP: bootstrapIp,
 
     enrollId: enrollId,
     enrollSecret: enrollSecret,
@@ -104,6 +107,9 @@ module.exports = {
     ORDERER_BATCH_TIMEOUT: ordererBatchTimeout,
 
     DEFAULT_PEER0PORT: DEFAULT_PEER0PORT,
-    HARDCODED_ORDERER_NAME: HARDCODED_ORDERER_NAME
+    HARDCODED_ORDERER_NAME: HARDCODED_ORDERER_NAME,
 
+    NAMING_URL_PATTERN: new RegExp(process.env.NAMING_URL_PATTERN || '${ORG}.${DOMAIN}'),
+
+    env: {ORG: myorg, DOMAIN: DOMAIN, BOOTSTRAP_IP: bootstrapIp, MY_IP: myIp || ''}
 };

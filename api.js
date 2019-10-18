@@ -135,7 +135,7 @@ module.exports = function(app, socketServer, fabricStarterClient, eventBus, osnM
   });
 
   app.get('/env', (req, res) => {
-    res.json({ORG: cfg.org, DOMAIN: cfg.domain, BOOTSTRAP_IP: cfg.BOOTSTRAP_IP, MY_IP: cfg.MY_IP||''});
+    res.json(cfg.env);
   });
 
   //TODO use for development only as it may expose sensitive data
