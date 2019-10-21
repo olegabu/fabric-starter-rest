@@ -110,6 +110,7 @@ module.exports = {
     HARDCODED_ORDERER_NAME: HARDCODED_ORDERER_NAME,
 
     NAMING_URL_PATTERN: new RegExp(process.env.NAMING_URL_PATTERN || '${ORG}.${DOMAIN}'),
+    NAMING_ORG_DOMAIN_PATTERN: new RegExp(process.env.NAMING_ORG_DOMAIN_PATTERN || '${ORG_DOMAIN}'),
 
     env: {ORG: myorg, DOMAIN: DOMAIN, BOOTSTRAP_IP: bootstrapIp, MY_IP: myIp || ''}
 };

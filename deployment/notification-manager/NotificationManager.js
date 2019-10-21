@@ -9,16 +9,13 @@ class NotificationManager {
 
     constructor(app, fabricStarterClient, eventBus) {
         this.fabricStarterClient = fabricStarterClient;
-        this.interactionHandler= new HttpInteractionHandler(app);
+        this.interactionHandler = new HttpInteractionHandler(app);
     }
 
-    notifyOtherOrg() {
-        // this.interactionHandler.
+    notifyOtherOrg(config) {
+        return this.interactionHandler.notifyOrg(config)
     }
 
-    eventReceived() {
-
-    }
 }
 
 
@@ -28,19 +25,21 @@ module.exports = NotificationManager;
 class HttpInteractionHandler {
 
     constructor(app) {
-        this.registerNotifier(app);
-        this.registerListener(app);
+        this.registerNotifyListener(app);
+        this.registerCompletionListener(app);
     }
 
-    async notifyOtherOrg() {
+    async notifyOrg(config) {
         let task = _.get(config, 'task');
-        // let otherPartyUrl = _.get(config, 'url');
-        let otherPartyDnsName =  /*naming.getApiOrgAddress()*/ 'api.' + _.get(config, 'targetOrgMap.orgDomain');
         let otherPartyIp = _.get(config, 'targetOrgMap.org.ip');
-        let apiPort=_.get(config, 'apiPort');
-        let otherPartyUrl = (otherPartyIp || otherPartyDnsName)+`:${apiPort}`;
+        let apiPort = _.get(config, 'apiPort');
+        let orgDomain = _.get(config, 'targetOrgMap.orgDomain');
+        let otherPartyDnsName = naming.getApiOrgAddress(orgDomain);
 
-        let myUrl = cfg.MY_IP || `api.${cfg.org}.${cfg.domain}:${apiPort}`;
+        let otherPartyUrl = (otherPartyIp || otherPartyDnsName) + `:${apiPort}`;
+
+        let myUrl = cfg.MY_IP || `${naming.getApiOrgAddress(cfg.org, cfg.domain)}:${apiPort}`;
+
         let authHeader = 'Bearer ' + _.get(config, 'targetOrgMap.org.jwt');
         logger.debug("Passing task to other org:", otherPartyUrl, task, config);
 
@@ -56,12 +55,11 @@ class HttpInteractionHandler {
                 });
             logger.debug("Response for ", config, resp);
         } catch (err) {
-            logger.error("Error for ", config, err);
+            logger.error("Error ", err, " for ", config);
         }
     }
 
-
-    registerNotifier(app) {
+    registerNotifyListener(app) {
         app.post('/deploy/externaltask', async (req, res) => {
             let taskId = req.body.task;
             console.log("\n\nEXTERNALTASK", req.body);
@@ -76,7 +74,7 @@ class HttpInteractionHandler {
         });
     }
 
-    registerListener(app) {
+    registerCompletionListener(app) {
         app.post('/settings/taskcompleted/:executionId', (req, res) => {
             const executionId = _.get(req, 'params.executionId');
             console.log("\n\nTASKCOMPLETED, executionId:", executionId, "\n\n");

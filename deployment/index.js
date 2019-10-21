@@ -1,16 +1,18 @@
 const _ = require('lodash');
 const axios = require('axios');
-const JSON5 = require('json5');
 var async = require("async");
 
+const JSON5 = require('json5');
 require('json5/lib/register');
 
+const NotificationManager = require('./notification-manager/NotificationManager');
 
 const cfg = require('../config');
 const logger = cfg.log4js.getLogger("Tasks");
 
 module.exports = function (app, fabricStarterClient, eventBus, socketServer) {
 
+    const notificationManager = new NotificationManager(app, fabricStarterClient, eventBus);
 
     let orgs = {};
     eventBus.on("orgs-configuration-changed", orgsChange => {
@@ -30,7 +32,7 @@ module.exports = function (app, fabricStarterClient, eventBus, socketServer) {
         res.json({message: 'task completed'});
     });
 
-    app.post('/deploy/externaltask', async (req, res) => {
+/*    app.post('/deploy/externaltask', async (req, res) => {
         let taskId = req.body.task;
         console.log("\n\nEXTERNALTASK", req.body);
         let taskResult = await executeTask(taskId, _.get(req, 'body'), req.fabricStarterClient, req.body.executionId);
@@ -41,14 +43,14 @@ module.exports = function (app, fabricStarterClient, eventBus, socketServer) {
             logger.error("Error for EXTERNALTASK:", req.body, e);
         }
         res.json(taskResult);
-    });
-
+    });*/
+/*
     app.post('/settings/taskcompleted/:executionId', (req, res) => {
         const executionId = _.get(req, 'params.executionId');
         console.log("\n\nTASKCOMPLETED, executionId:", executionId, "\n\n");
         eventBus.emit('TaskCompleted', {executionId: executionId});
         res.json({message:"completed"});
-    });
+    });*/
 
     app.get('/tasks', (req, res) => {
         res.json(require('./tasks.json5'));
@@ -77,7 +79,8 @@ module.exports = function (app, fabricStarterClient, eventBus, socketServer) {
 
     async function executeTask(taskId, config, fabricStarterClient, executionId) {
         logger.debug("Executing task:", taskId, " with config: ", config);
-        let task = new (require(`./tasks/${taskId}`))(fabricStarterClient, eventBus, socketServer);
+        const taskClass = require(`./tasks/${taskId}`);
+        let task = new (taskClass)(fabricStarterClient, eventBus, socketServer, notificationManager);
         return await task.run(_.assign({}, config, {executionId}));
     }
 

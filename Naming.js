@@ -3,29 +3,31 @@ const cfg = require('./config.js');
 
 module.exports = {
 
-    evalPattern: function (env) {
-        let result = cfg.NAMING_URL_PATTERN || '';
-        _.forEach(_.keys(env), key => {
-            result = result.replace(new RegExp("\\${" + key + "}", 'g'), env[key]);
-        });
-        return result;
-    },
-
-    getApiOrgAddress: function (org, domain) {
-        let orgEnv = _.assign({}, _.env, {ORG: org, DOMAIN: domain});
-        let nameDomainFromPattern = this.evalPattern(orgEnv);
+    getApiOrgAddress: function (orgDomain, domain) {
+        let nameDomainFromPattern = this.evalPattern(orgDomain, domain);
         return `api.${nameDomainFromPattern}`;
     },
 
-    getPeerOrgAddress: function (org, domain, peerNum = 0) {
-        let orgEnv = _.assign({}, _.env, {ORG: org, DOMAIN: domain});
-        let nameDomainFromPattern = this.evalPattern(orgEnv);
+    getPeerOrgAddress: function (orgDomain, peerNum = 0, domain) {
+        let nameDomainFromPattern = this.evalPattern(orgDomain, domain);
         return `peer${peerNum}.${nameDomainFromPattern}`;
     },
 
-    getWwwOrgAddress: function (org, domain) {
-        let orgEnv = _.assign({}, cfg.env, {ORG: org, DOMAIN: domain});
-        let nameDomainFromPattern = this.evalPattern(orgEnv);
+    getWwwOrgAddress: function (orgDomain, domain) {
+        let nameDomainFromPattern = this.evalPattern(orgDomain, domain);
         return `www.${nameDomainFromPattern}`;
-    }
+    },
+
+    evalPattern: function (orgDomain, domain) {
+        let orgEnv = domain
+            ? _.assign({},  cfg.env, {ORG_DOMAIN: orgDomain})
+            : _.assign({},  cfg.env, {ORG: orgDomain, DOMAIN: domain});
+
+        let result = (domain ? cfg.NAMING_URL_PATTERN : cfg.NAMING_ORG_DOMAIN_PATTERN) || '';
+
+        _.forEach(_.keys(env), key => {
+            result = result.replace(new RegExp("\\${" + key + "}", 'g'), env[orgEnv]);
+        });
+        return result;
+    },
 };

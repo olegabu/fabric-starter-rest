@@ -6,12 +6,19 @@ const logger = cfg.log4js.getLogger(__filename);
 
 class PassTaskToOtherParty {
 
-    constructor(fabricStarterClient) {
+    constructor(fabricStarterClient, eventBus, socketServer, notificationManager) {
         this.fabricStarterClient = fabricStarterClient;
+        this.notificationManager = notificationManager;
     }
 
     async run(config) {
+
+        const orgDomain =_.get(config, 'targetOrgMap.orgDomain');
         let task = _.get(config, 'task');
+
+        return this.notificationManager.notifyOtherOrg(config);
+
+
         // let otherPartyUrl = _.get(config, 'url');
         let otherPartyDnsName = 'api.' + _.get(config, 'targetOrgMap.orgDomain');
         let otherPartyIp = _.get(config, 'targetOrgMap.org.ip');
