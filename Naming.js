@@ -20,13 +20,13 @@ module.exports = {
 
     evalPattern: function (orgDomain, domain) {
         let orgEnv = domain
-            ? _.assign({},  cfg.env, {ORG_DOMAIN: orgDomain})
-            : _.assign({},  cfg.env, {ORG: orgDomain, DOMAIN: domain});
+            ? _.assign({},  cfg.env, {ORG: orgDomain, DOMAIN: domain})
+            : _.assign({},  cfg.env, {ORG_DOMAIN: orgDomain});
 
         let result = (domain ? cfg.NAMING_URL_PATTERN : cfg.NAMING_ORG_DOMAIN_PATTERN) || '';
 
-        _.forEach(_.keys(env), key => {
-            result = result.replace(new RegExp("\\${" + key + "}", 'g'), env[orgEnv]);
+        _.forEach(_.keys(orgEnv), key => {
+            result = result.replace(new RegExp("\\${" + key + "}", 'g'), orgEnv[key]);
         });
         return result;
     },

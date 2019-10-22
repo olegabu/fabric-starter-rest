@@ -5,31 +5,39 @@ const cfg = require('../../config');
 const logger = cfg.log4js.getLogger(__filename);
 const naming = require('../../Naming');
 
-class NotificationManager {
+class TaskBroker {
 
-    constructor(app, fabricStarterClient, eventBus) {
-        this.fabricStarterClient = fabricStarterClient;
-        this.interactionHandler = new HttpInteractionHandler(app);
+    constructor(app, eventBus, scenarioExecutor) {
+        this.scenarioExecutor = scenarioExecutor;
+        this.interactionHandler = new HttpInteractionHandler(app, this);
     }
 
-    notifyOtherOrg(config) {
-        return this.interactionHandler.notifyOrg(config)
+    scheduleTaskToOtherOrg(config) {
+        return this.interactionHandler.scheduleToOtherOrg(config)
     }
 
+    async receiveTaskFromOtherOrg(taskId, config, fabricStarterClient, executionId) {
+        return this.scenarioExecutor.executeTask(taskId, config, fabricStarterClient, executionId);
+    }
+
+    otherPartyTaskCompleted(executionId) {
+        return this.scenarioExecutor.otherPartyTaskCompleted(executionId);
+    }
 }
 
 
-module.exports = NotificationManager;
+module.exports = TaskBroker;
 
 
 class HttpInteractionHandler {
 
-    constructor(app) {
-        this.registerNotifyListener(app);
-        this.registerCompletionListener(app);
+    constructor(app, taskBroker) {
+        this.taskBroker = taskBroker;
+        this.registerReceiveExternalTaskListener(app);
+        this.registerTaskCompletedListener(app);
     }
 
-    async notifyOrg(config) {
+    async scheduleToOtherOrg(config) {
         let task = _.get(config, 'task');
         let otherPartyIp = _.get(config, 'targetOrgMap.org.ip');
         let apiPort = _.get(config, 'apiPort');
@@ -59,14 +67,14 @@ class HttpInteractionHandler {
         }
     }
 
-    registerNotifyListener(app) {
+    registerReceiveExternalTaskListener(app) {
         app.post('/deploy/externaltask', async (req, res) => {
             let taskId = req.body.task;
-            console.log("\n\nEXTERNALTASK", req.body);
-            let taskResult = await executeTask(taskId, _.get(req, 'body'), req.fabricStarterClient, req.body.executionId);
+            logger.debug("\n\nEXTERNALTASK", req.body);
+            let taskResult = await this.taskBroker.receiveTaskFromOtherOrg(taskId, _.get(req, 'body'), req.fabricStarterClient, req.body.executionId);
             try {
                 let resp = await axios.post(`http://${req.body.callbackUrl}/settings/taskcompleted/${req.body.executionId}`);
-                logger.debug("Response for EXTERNALTASK:", req.body, resp);
+                logger.debug("Response for EXTERNALTASK:", req.body, _.get(resp, 'body'));
             } catch (e) {
                 logger.error("Error for EXTERNALTASK:", req.body, e);
             }
@@ -74,11 +82,11 @@ class HttpInteractionHandler {
         });
     }
 
-    registerCompletionListener(app) {
+    registerTaskCompletedListener(app) {
         app.post('/settings/taskcompleted/:executionId', (req, res) => {
             const executionId = _.get(req, 'params.executionId');
-            console.log("\n\nTASKCOMPLETED, executionId:", executionId, "\n\n");
-            eventBus.emit('TaskCompleted', {executionId: executionId});
+            console.log("\n\nReceived TASKCOMPLETED, executionId:", executionId, "\n\n");
+            this.taskBroker.otherPartyTaskCompleted(executionId);
             res.json({message: "completed"});
         });
     }

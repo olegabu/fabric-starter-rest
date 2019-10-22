@@ -86,13 +86,13 @@
           params: [{name: 'task', value: "AddOrgToChannel", valueIsATask: true}],
           auto: true,
         },
-      /*  {
-          task: 'WaitForOtherPartyOnEntrypoint',
+        {
+          task: 'WaitForOtherPartyTaskCompleted',
           params: {
             entryPointCallback: "${MY_IP}",
           },
           auto: true,
-        },*/
+        },
         {
           task: 'JoinChannel',
           params: {

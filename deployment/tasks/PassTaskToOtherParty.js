@@ -6,9 +6,9 @@ const logger = cfg.log4js.getLogger(__filename);
 
 class PassTaskToOtherParty {
 
-    constructor(fabricStarterClient, eventBus, socketServer, notificationManager) {
+    constructor(fabricStarterClient, eventBus, socketServer, scenarioExecutor) {
         this.fabricStarterClient = fabricStarterClient;
-        this.notificationManager = notificationManager;
+        this.scenarioExecutor = scenarioExecutor;
     }
 
     async run(config) {
@@ -16,7 +16,7 @@ class PassTaskToOtherParty {
         const orgDomain =_.get(config, 'targetOrgMap.orgDomain');
         let task = _.get(config, 'task');
 
-        return this.notificationManager.notifyOtherOrg(config);
+        return this.scenarioExecutor.passTaskToOtherParty(config);
 
 
         // let otherPartyUrl = _.get(config, 'url');

@@ -3,7 +3,7 @@ const util = require('../../util');
 const cfg = require('../../config');
 const logger = cfg.log4js.getLogger(__filename);
 
-class WaitForOtherPartyOnEntrypoint {
+class WaitForOtherPartyTaskCompleted {
 
     constructor(fabricStarterClient, eventBus) {
         this.eventBus = eventBus;
@@ -28,4 +28,4 @@ class WaitForOtherPartyOnEntrypoint {
 }
 
 
-module.exports = WaitForOtherPartyOnEntrypoint;
+module.exports = WaitForOtherPartyTaskCompleted;

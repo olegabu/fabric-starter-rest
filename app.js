@@ -22,7 +22,7 @@ const webAppManager = require('./web-app-manager');
     const osnManager = startOsnManager(fabricStarterClient);
 
     startRestApi(app, socketServer, fabricStarterClient, eventBus, osnManager);
-    startDeploymentApi(app, fabricStarterClient, eventBus, socketServer);
+    startDeploymentApi(app, eventBus, socketServer);
     registerMiddlewares(app, fabricStarterClient, eventBus);
     registerWebapps(app);
     startEventHandlers(eventBus, socketServer, osnManager);
@@ -55,8 +55,8 @@ const webAppManager = require('./web-app-manager');
         require('./api')(app, socketServer, fabricStarterClient, eventBus, osnManager);
     }
 
-    function startDeploymentApi(app, fabricStarterClient, eventBus, socketServer) {
-        require('./deployment')(app, fabricStarterClient, eventBus, socketServer);
+    function startDeploymentApi(app, eventBus, socketServer) {
+        require('./deployment')(app, eventBus, socketServer);
     }
 
     function registerMiddlewares(app, fabricStarterClient, eventBus) {

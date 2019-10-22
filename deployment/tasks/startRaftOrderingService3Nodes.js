@@ -50,7 +50,7 @@ class startRaftOrderingService3Nodes {
             RAFT_NODES_COUNT: _.get(config, 'RAFT_NODES_COUNT', "3"),
         });
 
-        this.parseSequencedValues(config, commonEnv, 'ORDERER_NAMES', 'ORDERER_NAME_${i}', 'orderer,raft1,raft2');
+        this.parseSequencedValues(config, commonEnv, 'ORDERER_NAMES', 'ORDERER_NAME_${i}', 'raft0,raft1,raft2');
         this.parseSequencedValues(config, commonEnv, 'ORDERER_PORTS', 'RAFT${i}_PORT', '7050,7150,7250');
 
         return commonEnv;

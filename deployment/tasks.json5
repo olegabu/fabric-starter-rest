@@ -31,7 +31,7 @@
       name: 'Pass task to Other Party',
       params: [{name: 'url', value: ''}]
     },
-    WaitForOtherPartyOnEntrypoint: {
+  WaitForOtherPartyTaskCompleted: {
       name: 'Wait for other party complete and invoke entrypoint',
       params: {entryPointCallback: "${MY_WAIT_ENTRYPOINT}?scenario=${SCENARIO}&step=${step}"}
     },

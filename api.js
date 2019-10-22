@@ -76,18 +76,23 @@ module.exports = function(app, socketServer, fabricStarterClient, eventBus, osnM
   const mapFabricStarterClient = {};
 
 
-  eventBus.on("orgs-configuration-changed", (orgs)=>{
-      // const token = jsonwebtoken.sign({sub: req.fabricStarterClient.user.getName()}, jwtSecret);
+  let orgsMap = {};
 
-      const fabricStarterTaskClient =_.get(mapFabricStarterClient, _.keys(mapFabricStarterClient)[0]);
+  app.get("/settings/orgs", (req, res) => {
+    res.json(orgsMap);
+  });
 
-      if (fabricStarterTaskClient) {
-        orgs[`${cfg.org}.${cfg.domain}`] = orgs[`${cfg.org}.${cfg.domain}`] || {};
-        const jwtToken = jsonwebtoken.sign({sub: fabricStarterTaskClient.user.getName()}, jwtSecret, {expiresIn: 1800});
-        orgs[`${cfg.org}.${cfg.domain}`].jwt = jwtToken;
-      }
+  eventBus.on("orgs-configuration-changed", (orgs) => {
+    const fabricStarterTaskClient = _.get(mapFabricStarterClient, _.keys(mapFabricStarterClient)[0]);
 
-      console.log("API", orgs);
+    if (fabricStarterTaskClient) {
+      orgs[`${cfg.org}.${cfg.domain}`] = orgs[`${cfg.org}.${cfg.domain}`] || {};
+      const jwtToken = jsonwebtoken.sign({sub: fabricStarterTaskClient.user.getName()}, jwtSecret, {expiresIn: 1800});
+      orgs[`${cfg.org}.${cfg.domain}`].jwt = jwtToken;
+    }
+    orgsMap = orgs;
+    console.log("API", orgs);
+    socketServer.sendRepeatingBlockNotification(cfg.DNS_CHANNEL);
   });
 
   app.use((req, res, next) => {

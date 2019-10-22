@@ -5,30 +5,19 @@ var async = require("async");
 const JSON5 = require('json5');
 require('json5/lib/register');
 
-const NotificationManager = require('./notification-manager/NotificationManager');
-
 const cfg = require('../config');
 const logger = cfg.log4js.getLogger("Tasks");
 
-module.exports = function (app, fabricStarterClient, eventBus, socketServer) {
+const ScenarioExecutor = require('./ScenarioExecutor');
 
-    const notificationManager = new NotificationManager(app, fabricStarterClient, eventBus);
+module.exports = function (app, eventBus, socketServer) {
 
-    let orgs = {};
-    eventBus.on("orgs-configuration-changed", orgsChange => {
-        orgs = orgsChange;
-    });
-
-    app.get("/settings/orgs", (req, res) => {
-        // let orgs=_.map(_.keys(keyValueHostRecords), k=>keyValueHostRecords[k],
-        // orgs[`${cfg.org}/${cfg/domain}`].jwt=fabricStarterClient.getSecret();
-        res.json(orgs);
-    });
+    this.scenarioExecutor = new ScenarioExecutor(app, eventBus, socketServer);
 
     app.post('/deploy/scenario/:scenarioId', async (req, res) => {
         const scenarioId = _.get(req, 'params.scenarioId');
         logger.debug("\nExternal scenario execution:", scenarioId, "\n\n");
-        executeScenario(req, res, scenarioId);
+        this.scenarioExecutor.executeScenario(req, res, scenarioId);
         res.json({message: 'task completed'});
     });
 
@@ -52,14 +41,15 @@ module.exports = function (app, fabricStarterClient, eventBus, socketServer) {
         res.json({message:"completed"});
     });*/
 
-    app.get('/tasks', (req, res) => {
-        res.json(require('./tasks.json5'));
-    });
+    // app.get('/tasks', (req, res) => {
+    //     res.json(this.scenarioExecutor.loadTasks());
+    // });
 
     app.get('/scenarios', (req, res) => {
-        res.json({scenarios: loadScenarios(), tasks: require('./tasks.json5')});
+        res.json({scenarios: this.scenarioExecutor.loadScenarios(), tasks: this.scenarioExecutor.loadTasks()});
     });
 
+/*
     async function executeScenario(req, res, scenarioId) {
         let scenario = loadScenario(scenarioId);
         let executionId = `task-${Math.random()}`;
@@ -92,5 +82,6 @@ module.exports = function (app, fabricStarterClient, eventBus, socketServer) {
         const scenarios = loadScenarios();
         return _.get(scenarios, scenarioId);
     }
+*/
 
 };
