@@ -205,7 +205,7 @@ class FabricCLI {
                 });
         */
 
-        const outputFile = `crypto-config/${newOrg.orgId}_OrgConfig.json`;
+        const outputFile = `${cfg.CRYPTO_CONFIG_DIR}/${newOrg.orgId}_OrgConfig.json`;
         let newOrgSubstitution = await this.envSubst(`${cfg.TEMPLATES_DIR}/${configTemplateFile}`, outputFile, env);
 
         return {outputFile, outputJson: JSON.parse(newOrgSubstitution.outputContents)};

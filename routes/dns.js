@@ -47,7 +47,7 @@ module.exports = async (app, _fabricStarterClient, eventBus) => {
         eventBus.emit('orgs-configuration-changed', orgs);
         eventBus.emit('osn-configuration-changed');
         // const dnsResponses = await fabricStarterClient.query(channel, chaincodeName, 'get', '["dns"]', {targets: queryTarget});
-        res.status(200);
+        res.status(200).send("");
     });
 
 

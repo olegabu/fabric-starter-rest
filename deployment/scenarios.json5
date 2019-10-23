@@ -42,7 +42,7 @@
 
  */
           joinRaftOrderingService: {
-            name: 'Start my RAFT orderer and Join existing RAFT OSN',
+            name: 'Prepare my RAFT orderer and Join existing RAFT OSN',
             params: [
               {name: 'TARGET_ORDERER', value: 'raft0.osn-org1.${DOMAIN}'},
               {name: 'MY_ORDERER_NAME', value: 'raft4'},

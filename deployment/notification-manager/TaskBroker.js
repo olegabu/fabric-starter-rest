@@ -61,7 +61,7 @@ class HttpInteractionHandler {
                 {
                     headers: {Authorization: authHeader}
                 });
-            logger.debug("Response for ", config, resp);
+            logger.debug("Response for ", config, _.get(resp, 'response'));
         } catch (err) {
             logger.error("Error ", err, " for ", config);
         }
@@ -74,7 +74,7 @@ class HttpInteractionHandler {
             let taskResult = await this.taskBroker.receiveTaskFromOtherOrg(taskId, _.get(req, 'body'), req.fabricStarterClient, req.body.executionId);
             try {
                 let resp = await axios.post(`http://${req.body.callbackUrl}/settings/taskcompleted/${req.body.executionId}`);
-                logger.debug("Response for EXTERNALTASK:", req.body, _.get(resp, 'body'));
+                logger.debug("Response for EXTERNALTASK:", req.body, _.get(resp, 'response'));
             } catch (e) {
                 logger.error("Error for EXTERNALTASK:", req.body, e);
             }

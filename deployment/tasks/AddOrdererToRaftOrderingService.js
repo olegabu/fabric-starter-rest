@@ -16,8 +16,8 @@ class AddOrdererToRaftOrderingService {
         let commonEnv = this.prepareEnvFromConfig(conf);
         let env = this.updateOrdererEnv(commonEnv, 'ORDERER_NAME', 'ORDERER_PORT', 'RaftOrdererGenesis');
         let targetOrderer=_.get(conf, 'TARGET_ORDERER');
-        logger.debug('Executing docker-compose with env:', env);
-        await compose.exec(`cli.${targetOrderer}`, `container-scripts/orderer/raft-full-add-new-orderer.sh ${env.ORDERER_NAME} ${env.ORDERER_DOMAIN} ${env.ORDERER_PORT} ${env.WWW_PORT}`);
+        logger.debug('AddOrdererToRaftOrderingService by executing docker-compose with env:', {ORDERER_NAME: env.ORDERER_NAME, ORDERER_DOMAIN: env.ORDERER_DOMAIN, ORDERER_PORT: env.ORDERER_PORT, WWW_PORT: env.WWW_PORT});
+        await compose.exec(`cli.${targetOrderer}`, `container-scripts/orderer/raft-full-add-new-orderer.sh ${env.ORDERER_NAME} ${env.ORDERER_DOMAIN} ${env.ORDERER_PORT} ${env.WWW_PORT}`, {log: true});
     }
 
 
