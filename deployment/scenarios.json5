@@ -45,15 +45,15 @@
             name: 'Prepare my RAFT orderer and Join existing RAFT OSN',
             params: [
               {name: 'TARGET_ORDERER', value: 'raft0.osn-org1.${DOMAIN}'},
-              {name: 'MY_ORDERER_NAME', value: 'raft4'},
-                     {name: 'MY_ORDERER_DOMAIN',value: 'osn-${ORG}.${DOMAIN}'},
-                     {name: 'MY_ORDERER_PORT', value: '7150'},
+              {name: 'ORDERER_NAME', value: 'raft4'},
+                     {name: 'ORDERER_DOMAIN',value: 'osn-${ORG}.${DOMAIN}'},
+                     {name: 'ORDERER_PORT', value: '7150'},
                     {name: 'apiPort', value: '4000'}, {name: 'task', value: 'AddOrdererToRaftOrderingService', visible: 'false'}
             ],
             steps: [
               {
                 task: "PrepareRaft1Node",
-                params: {ordererName: "${MY_ORDERER_NAME}", ordererDomain: "${MY_ORDERER_DOMAIN}"}
+                params: {ordererName: "${ORDERER_NAME}", ordererDomain: "${ORDERER_DOMAIN}"}
               },
               {
                 task: 'PassTaskToOtherParty',
@@ -62,7 +62,7 @@
               },
               {
                 task: "StartRaft1Node",
-                params: {ordererName: "${MY_ORDERER_NAME}", ordererDomain: "${MY_ORDERER_NAME}"}
+                params: {ordererName: "${ORDERER_NAME}", ordererDomain: "${ORDERER_NAME}"}
               }
             ]
           },

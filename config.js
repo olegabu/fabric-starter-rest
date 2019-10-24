@@ -43,6 +43,7 @@ const certificationDomain = /*isOrderer ? */ `${myorg}.${DOMAIN}`;
 const systemChannelId = "orderer-system-channel";
 
 const bootstrapIp = process.env.BOOTSTRAP_IP;
+const bootstrapPort = process.env.BOOTSTRAP_PORT || '4000';
 
 const myIp = process.env.MY_IP;
 module.exports = {
@@ -50,7 +51,7 @@ module.exports = {
     domain: DOMAIN,
     org: myorg,
     MY_IP: myIp,
-    DOCKER_REGISTRY: process.env.DOCKER_REGISTRY,
+    DOCKER_REGISTRY: process.env.DOCKER_REGISTRY || 'docker.io',
     WWW_PORT: process.env.WWW_PORT || '80',
     BOOTSTRAP_IP: bootstrapIp,
 
@@ -112,5 +113,5 @@ module.exports = {
     NAMING_URL_PATTERN: process.env.NAMING_URL_PATTERN || '${ORG}.${DOMAIN}',
     NAMING_ORG_DOMAIN_PATTERN: process.env.NAMING_ORG_DOMAIN_PATTERN || '${ORG_DOMAIN}',
 
-    env: {ORG: myorg, DOMAIN: DOMAIN, BOOTSTRAP_IP: bootstrapIp, MY_IP: myIp || ''}
+    env: {ORG: myorg, DOMAIN: DOMAIN, BOOTSTRAP_IP: bootstrapIp, MY_IP: myIp || '', BOOTSTRAP_PORT:bootstrapPort}
 };

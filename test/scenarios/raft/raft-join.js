@@ -2,14 +2,13 @@
 
 const assert = require('assert');
 // const expect = require('chai').expect;
-const randomstring = require('randomstring');
 
 
 const util = require('../../util');
-const dnsMiddle = require('../../routes/dns.js');
+const scenarioExecutor = require('../../../deployment/ScenarioExecutor');
 
 
-describe('dns-middleware', function () {
+describe('test join-to-raft scenario', function () {
 
     this.timeout(2000);
     before('initialize', async () => {
@@ -19,6 +18,7 @@ describe('dns-middleware', function () {
 
         describe('#mergHostRecords', () => {
             it('test new records are appended but not duplicated', () => {
+
                 const currHosts = util.linesToKeyValueList(["192.168.99.1 aaa.com www.aaa.com"]);
                 assert.deepStrictEqual(currHosts, {"192.168.99.1": "aaa.com www.aaa.com"});
 
