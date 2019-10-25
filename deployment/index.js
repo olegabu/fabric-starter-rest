@@ -17,7 +17,7 @@ module.exports = function (app, eventBus, socketServer) {
     app.post('/deploy/scenario/:scenarioId', async (req, res) => {
         const scenarioId = _.get(req, 'params.scenarioId');
         logger.debug("\nExternal scenario execution:", scenarioId, "\n\n");
-        this.scenarioExecutor.executeScenario(req, res, scenarioId);
+        this.scenarioExecutor.executeScenario(req.body, req.fabricStarterClient, scenarioId);
         res.json({message: 'task completed'});
     });
 

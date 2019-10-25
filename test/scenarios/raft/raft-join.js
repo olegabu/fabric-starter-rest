@@ -3,29 +3,29 @@
 const assert = require('assert');
 // const expect = require('chai').expect;
 
+const FabricStarterClient = require('../../../fabric-starter-client');
+const fabricStarterClient = new FabricStarterClient();
 
-const util = require('../../util');
-const scenarioExecutor = require('../../../deployment/ScenarioExecutor');
+
+const ScenarioExecutor = require('../../../deployment/ScenarioExecutor');
 
 
 describe('test join-to-raft scenario', function () {
 
     this.timeout(2000);
     before('initialize', async () => {
+        await fabricStarterClient.init();
+        await fabricStarterClient.loginOrRegister('testUser', 'testPass');
     });
 
-    describe('Test Host file content', () => {
+    describe('Test Scenario execution', () => {
 
-        describe('#mergHostRecords', () => {
-            it('test new records are appended but not duplicated', () => {
+        describe('#joinRaftNode', () => {
+            it('prepare new raft orderer', async () => {
 
-                const currHosts = util.linesToKeyValueList(["192.168.99.1 aaa.com www.aaa.com"]);
-                assert.deepStrictEqual(currHosts, {"192.168.99.1": "aaa.com www.aaa.com"});
-
-                let newHosts = {"192.168.99.1": "bbb.com aaa.com"};
-                const mergedHosts = util.mergeKeyValueLists(currHosts, newHosts);
-
-                assert.deepStrictEqual(mergedHosts, {"192.168.99.1": "aaa.com www.aaa.com bbb.com"})
+                const scenarioExecutor= new ScenarioExecutor();
+                const taskConfig = {ORDERER_NAME:'raft4', ORDERER_DOMAIN:'osn-org2.example.com', ORDERER_PORT:'7450', apiPort:'4000'};
+                await scenarioExecutor.executeTask('StartRaft1Node', taskConfig, fabricStarterClient, 'test-execution');
 
             });
         });

@@ -16,12 +16,12 @@ class ScenarioExecutor {
         this.taskBroker = new TaskBroker(app, eventBus, this);
     }
 
-    async executeScenario(req, res, scenarioId) {
+    async executeScenario(config, fabricStarterClient, scenarioId) {
         let scenario = this.loadScenario(scenarioId);
         let executionId = `task-${Math.random()}`;
         try {
             await async.eachSeries(_.get(scenario, 'steps'), async step => {
-                if (step.task) await this.executeTask(step.task, req.body, req.fabricStarterClient, executionId);
+                if (step.task) await this.executeTask(step.task, config, fabricStarterClient, executionId);
             });
             logger.debug('task completed', scenario);
         } catch (e) {
