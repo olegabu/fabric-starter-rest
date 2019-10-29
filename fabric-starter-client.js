@@ -165,7 +165,8 @@ class FabricStarterClient {
             let channelTxContent = await fabricCLI.generateChannelConfigTxContent(channelId);
             let config_update = this.client.extractChannelConfig(channelTxContent);
             channelReq.config = config_update;
-            channelReq.signatures = [this.client.signChannelConfig(config_update)];
+            let signature = await this.client.signChannelConfig(config_update);
+            channelReq.signatures = [signature];
             let res = await this.client.createChannel(channelReq);
             if (!res || res.status != "SUCCESS") {
                 logger.error(res);

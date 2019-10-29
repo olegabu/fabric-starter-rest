@@ -140,8 +140,7 @@ class GostCryptoSuite extends api.CryptoSuite {
      * @returns {string} The hashed digest in hexidecimal string encoding
      */
     hash(msg, opts) {
-        // let algorithm = opts ? ( opts.algorithm ? opts.algorithm : GOST_R_34_11_94) : GOST_R_34_11_94;
-        let hash = libGost.digest(msg); // msg is actually a buffer
+        let hash = libGost.digest(msg);
         let hex = gostCrypto.coding.Hex.encode(hash);
         logger.debug(`Hashing:`);
         logger.debug(`\tMESSAGE:\n${gostCrypto.coding.Hex.encode(hash)}\n`);
