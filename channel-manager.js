@@ -27,9 +27,10 @@ class ChannelManager {
             const txId = fabricClient.newTransactionID(admin);
 
             try {
+                let signature = await fabricClient.signChannelConfig(configUpdate);
                 let update = await fabricClient.updateChannel({
                     txId, name: channelId, config: configUpdate, orderer: fabricClient.getOrderer(cfg.ORDERER_ADDR), //self.createOrderer(),
-                    signatures: [fabricClient.signChannelConfig(configUpdate)]
+                    signatures: [signature]
                 });
                 logger.info(`Update channel result ${channelId}:`, update);
             } catch (e) {
