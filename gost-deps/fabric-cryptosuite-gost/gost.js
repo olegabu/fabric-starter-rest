@@ -144,7 +144,7 @@ class GostCryptoSuite extends api.CryptoSuite {
         let hash = libGost.digest(msg); // msg is actually a buffer
         let hex = gostCrypto.coding.Hex.encode(hash);
         logger.debug(`Hashing:`);
-        logger.debug(`\tMESSAGE:\n${gostCrypto.coding.Hex.encode(msg)}\n`);
+        logger.debug(`\tMESSAGE:\n${gostCrypto.coding.Hex.encode(hash)}\n`);
         logger.debug(`\tDIGEST: ${hex}`);
         return hex;
     }

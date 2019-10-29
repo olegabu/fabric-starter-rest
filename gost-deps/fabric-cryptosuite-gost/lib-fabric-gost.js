@@ -70,7 +70,8 @@ function verify(key, signature, content) {
 }
 
 function digest(data) {
-    return Hasher.digest(data);
+    let content = Buffer.isBuffer(data) ? data : Buffer.from(data);
+    return Hasher.digest(content);
 }
 
 module.exports = {

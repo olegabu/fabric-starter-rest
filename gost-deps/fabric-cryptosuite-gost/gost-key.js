@@ -1,9 +1,9 @@
 const api = require('fabric-client/lib/api.js');
 const Hash = require('fabric-client/lib/hash.js');
 const GostDist = require('crypto-gost/dist/CryptoGost.js');
-const GostCrypto = GostDist.CryptoGost;
+const gostCrypto = GostDist.CryptoGost;
 const GostEngine = GostDist.GostEngine;
-
+const libGost = require('./lib-fabric-gost.js');
 /**
  * Implementation of {@link module:api.Key} interface
  * @class
@@ -91,7 +91,7 @@ class GOSTKey extends api.Key {
      * @returns {string} The subject key identifier of this key as a hexidecial encoded string
      */
     getSKI() {
-        let hash = GOST_R_34.Hasher.digest(this.pem);
+        let hash = libGost.digest(this.pem);
         return gostCrypto.coding.Hex.encode(hash);
         // let key = this.isPrivate() ? this.getPublicKey() : this;
         // if (!key || !key.theKey || !key.theKey.buffer) throw new Error('getSKI Error: key data is missing');
