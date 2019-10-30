@@ -245,7 +245,7 @@ module.exports = function(app, server) {
    */
   app.post('/channels', asyncMiddleware(async(req, res, next) => {
     await req.fabricStarterClient.createChannel(req.body.channelId);
-    res.json(await channelManager.joinChannel(req.params.channelId, req.fabricStarterClient, socket));
+    res.json(await channelManager.joinChannel(req.body.channelId, req.fabricStarterClient, socket));
   }));
 
   async function joinChannel(channelId, fabricStarterClient) {
