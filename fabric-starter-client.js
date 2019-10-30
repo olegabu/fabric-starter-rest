@@ -668,8 +668,8 @@ class FabricStarterClient {
         return channelEventHub.disconnect();
     }
 
-    createOrderer() {
-        return this.client.newOrderer(`grpcs://${cfg.ORDERER_ADDR}`, {pem: util.loadPemFromFile(cfg.ORDERER_TLS_CERT)});
+    createOrderer(addr=cfg.ORDERER_ADDR, ordererRootTLSFile=cfg.ORDERER_TLS_CERT) {
+        return this.client.newOrderer(`grpcs://${addr}`, {pem: util.loadPemFromFile(ordererRootTLSFile)});
     }
 
     createPeerFromUrl(peerEndpoint) {

@@ -1,11 +1,25 @@
 const fabricCLI = require('./fabric-cli');
 const cfg = require('./config');
 const _ = require('lodash');
+const util = require('./util');
 
 const logger = cfg.log4js.getLogger('ChannelManager');
 
 
 class ChannelManager {
+
+    async joinChannel(channelId, fabricStarterClient, socketServer) {
+        try {
+            const ret = await fabricStarterClient.joinChannel(channelId);
+            await util.retryOperation(cfg.LISTENER_RETRY_COUNT, async function () {
+                await socketServer.registerChannelChainblockListener(channelId);
+            });
+            return ret;
+        } catch(error) {
+            logger.error(error.message);
+            throw new Error(error.message);
+        }
+    }
 
     async applyConfigToChannel(channelId, currentChannelConfigFile, configUpdateRes, fabricClient, admin) {
         fabricCLI.downloadOrdererMSP();
@@ -28,7 +42,7 @@ class ChannelManager {
 
             try {
                 let update = await fabricClient.updateChannel({
-                    txId, name: channelId, config: configUpdate, orderer: fabricClient.getOrderer(cfg.ORDERER_ADDR), //self.createOrderer(),
+                    txId, name: channelId, config: configUpdate, //orderer: fabricStarterClient.getOrderer(cfg.ORDERER_ADDR), //self.createOrderer(),
                     signatures: [fabricClient.signChannelConfig(configUpdate)]
                 });
                 logger.info(`Update channel result ${channelId}:`, update);
