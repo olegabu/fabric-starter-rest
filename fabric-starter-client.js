@@ -142,11 +142,12 @@ class FabricStarterClient {
             let config_update = this.client.extractChannelConfig(channelTxContent);
             channelReq.config = config_update;
             channelReq.signatures = [this.client.signChannelConfig(config_update)];
-            let res = await this.client.createChannel(channelReq);
-            if (!res || res.status != "SUCCESS") {
-                logger.error(res);
-                throw new Error(res.info);
-            }
+            // let res = await this.client.createChannel(channelReq);
+            fabricCLI.createChannelByCli(channelId);
+            // if (!res || res.status != "SUCCESS") {
+                // logger.error(res);
+                // throw new Error(res.info);
+            // }
         } finally {
             this.chmodCryptoFolder();
         }
@@ -166,8 +167,9 @@ class FabricStarterClient {
             block: genesis_block,
             txId: gen_tx_id
         };
+        logger.debug(`Joining channel request [${channelId}]:`, j_request);
         let result = await channel.joinChannel(j_request);
-        logger.debug(`Join channel ${channelId}:`, result);
+        logger.debug(`Joined channel ${channelId}:`, result);
         return result;
     }
 

@@ -93,8 +93,8 @@ module.exports = {
     LISTENER_RETRY_COUNT: process.env.LISTENER_RETRY_COUNT || 20,
 
     RAFT0_PORT: process.env.RAFT0_PORT || ordererPort,
-    RAFT1_PORT: process.env.RAFT1_PORT || ordererPort,
-    RAFT2_PORT: process.env.RAFT2_PORT || ordererPort,
+    RAFT1_PORT: process.env.RAFT1_PORT || '7150',
+    RAFT2_PORT: process.env.RAFT2_PORT || '7250',
     ORDERER_NAME_PREFIX: ordererNamePrefix,
     ORDERER_BATCH_TIMEOUT: ordererBatchTimeout,
 

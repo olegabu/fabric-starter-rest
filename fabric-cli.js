@@ -79,6 +79,11 @@ class FabricCLI {
         return outputTxFile;
     }
 
+    createChannelByCli(channelName) {
+        let arg =` -c ${channelName} -f ${cfg.CRYPTO_CONFIG_DIR}/configtx/channel_${channelName}.tx `;
+        this.execPeerCommand('channel create', arg);
+    }
+
     getEnv() {
         return {
             DOMAIN: cfg.DOMAIN,
@@ -90,8 +95,8 @@ class FabricCLI {
             ORDERER_BATCH_TIMEOUT: cfg.ORDERER_BATCH_TIMEOUT,
             ORDERER_GENERAL_LISTENPORT: cfg.ordererPort,
             RAFT0_PORT: cfg.RAFT0_PORT,
-            RAFT1_PORT: cfg.RAFT0_PORT,
-            RAFT2_PORT: cfg.RAFT0_PORT
+            RAFT1_PORT: cfg.RAFT1_PORT,
+            RAFT2_PORT: cfg.RAFT2_PORT
         };
     }
 
