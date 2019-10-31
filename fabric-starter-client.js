@@ -172,8 +172,8 @@ class FabricStarterClient {
             // let res = await this.client.createChannel(channelReq);
             fabricCLI.createChannelByCli(channelId);
             // if (!res || res.status != "SUCCESS") {
-            // logger.error(res);
-            // throw new Error(res.info);
+                // logger.error(res);
+                // throw new Error(res.info);
             // }
         } finally {
             this.chmodCryptoFolder();
@@ -258,7 +258,6 @@ class FabricStarterClient {
             logger.warn("Unparseable", dns);
         }
     }
-
     async constructChannel(channelId, optionalPeer) {
         let channel = this.client.getChannel(channelId, false);
         if (!channel) {
@@ -695,7 +694,7 @@ class FabricStarterClient {
         return channelEventHub.disconnect();
     }
 
-    createOrderer(addr = cfg.ORDERER_ADDR, ordererRootTLSFile = cfg.ORDERER_TLS_CERT) {
+    createOrderer(addr=cfg.ORDERER_ADDR, ordererRootTLSFile=cfg.ORDERER_TLS_CERT) {
         return this.client.newOrderer(`grpcs://${addr}`, {pem: util.loadPemFromFile(ordererRootTLSFile)});
     }
 
