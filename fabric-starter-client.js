@@ -57,7 +57,10 @@ class FabricStarterClient {
         if (cfg.AUTH_MODE === 'CA') {
             this.user = await this.client.setUserContext({username: username, password: password}, true);
         } else if (cfg.AUTH_MODE === 'ADMIN') {
-            this.user = await this.createUserWithAdminRights(username);
+            if (cfg.enrollId != username || cfg.enrollSecret != password) {
+                throw Error("Invalid credentials");
+            }
+            this.user = await this.createUserWithAdminRights(username, password);
         } else {
             throw Error("AUTH_MODE is not defined.");
         }
