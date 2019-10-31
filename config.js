@@ -6,6 +6,7 @@ const logger = log4js.getLogger('config.js');
 const DEFAULT_PEER0PORT = '7051';
 const HARDCODED_ORDERER_NAME = process.env.HARDCODED_ORDERER_NAME || 'orderer';
 
+const AUTH_MODE = process.env.AUTH_MODE || 'CA';
 
 const DOMAIN = process.env.DOMAIN || 'example.com';
 const myorg = process.env.ORG || 'org1';
@@ -99,6 +100,7 @@ module.exports = {
     ORDERER_BATCH_TIMEOUT: ordererBatchTimeout,
 
     DEFAULT_PEER0PORT: DEFAULT_PEER0PORT,
-    HARDCODED_ORDERER_NAME: HARDCODED_ORDERER_NAME
+    HARDCODED_ORDERER_NAME: HARDCODED_ORDERER_NAME,
 
+    AUTH_MODE: AUTH_MODE
 };
