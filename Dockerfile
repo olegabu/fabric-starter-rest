@@ -19,7 +19,7 @@ COPY "package.json" .
 RUN npm install && npm cache rm --force \
     && apt-get remove -y python make && apt-get purge
 
-RUN git clone https://github.com/olegabu/fabric-starter-admin-web.git --branch orderer --depth 1 admin && cd admin && npm install
+RUN git clone https://github.com/olegabu/fabric-starter-admin-web.git --branch scenario --depth 1 admin && cd admin && npm install
 RUN cd admin && au build --env prod
 
 # add project files (see .dockerignore for a list of excluded files)
