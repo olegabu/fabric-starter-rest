@@ -252,8 +252,10 @@ class FabricStarterClient {
             const orgId = _.get(orgObj, "orgId");
             const orgIp = _.get(orgObj, "orgIp");
 
-            await this.invoke(cfg.DNS_CHANNEL, "dns", "registerOrg", [`${orgId}.${cfg.domain}`, orgIp], {targets: []}, true)
-                .then(() => util.sleep(cfg.DNS_UPDATE_TIMEOUT));
+            if (orgIp){
+                await this.invoke(cfg.DNS_CHANNEL, "dns", "registerOrg", [`${orgId}.${cfg.domain}`, orgIp], {targets: []}, true)
+                    .then(() => util.sleep(cfg.DNS_UPDATE_TIMEOUT));
+            }
         } catch (e) {
             logger.warn("Unparseable", dns);
         }
