@@ -44,7 +44,7 @@ class ChannelManager {
                 let signature = await fabricClient.signChannelConfig(configUpdate);
                 let update = await fabricClient.updateChannel({
                     txId, name: channelId, config: configUpdate, //orderer: fabricStarterClient.getOrderer(cfg.ORDERER_ADDR), //self.createOrderer(),
-                    signatures: [fabricClient.signChannelConfig(configUpdate)]
+                    signatures: [signature]
                 });
                 logger.info(`Update channel result ${channelId}:`, update);
             } catch (e) {
