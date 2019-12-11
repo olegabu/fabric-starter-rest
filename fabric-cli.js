@@ -182,11 +182,11 @@ class FabricCLI {
     }
 
     async prepareNewOrgConfig(newOrg) {
-        return this.prepareOrgConfigStruct(newOrg, 'NewOrg.json', {NEWORG_PEER0_PORT: newOrg.peer0Port || cfg.DEFAULT_PEER0PORT})
+        return this.prepareOrgConfigStruct(newOrg, 'NewOrg.json', {NEWORG_PEER0_PORT: newOrg.peer0Port || cfg.DEFAULT_PEER0PORT, SIGNATURE_HASH_FAMILY: cfg.SIGNATURE_HASH_FAMILY})
     }
 
     async prepareNewConsortiumConfig(newOrg, consortiumName) {
-        return this.prepareOrgConfigStruct(newOrg, 'Consortium.json', {CONSORTIUM_NAME: consortiumName || cfg.DEFAULT_CONSORTIUM})
+        return this.prepareOrgConfigStruct(newOrg, 'Consortium.json', {CONSORTIUM_NAME: consortiumName || cfg.DEFAULT_CONSORTIUM, SIGNATURE_HASH_FAMILY: cfg.SIGNATURE_HASH_FAMILY})
     }
 
     async prepareOrgConfigStruct(newOrg, configTemplateFile, extraEnv) {
