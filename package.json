@@ -27,7 +27,7 @@
     "lodash": "^4.17.13",
     "log4js": "^3.0.6",
     "multer": "^1.4.1",
-    "npm": "^6.10.0",
+    "npm": "^6.13.4",
     "serve-favicon": "^2.5.0",
     "serve-index": "^1.9.1",
     "shelljs": "^0.8.3",
