@@ -157,7 +157,7 @@ const Channel = class {
 	 *           Default is to use the first ChannelPeer assigned to this channel.
 	 * @property {Array.<(Peer | ChannelPeer)>} targets - Optional. The target peers to be used
 	 *           to make the initialization requests for configuration information.
-	 *             When used with `target` parameter, the peer referenced there will be
+	 * 	         When used with `target` parameter, the peer referenced there will be
 	 *           added to the `targets` array.
 	 *           Default is to use the first ChannelPeer assigned to this channel.
 	 * @property {boolean} discover - Optional. Use the discovery service on the
@@ -417,7 +417,7 @@ const Channel = class {
 			logger.debug('%s - peers msp:%s', method, msp_id);
 			const peers = discovery_results.peers_by_org[msp_id].peers;
 			for (const peer of peers) {
-				for (const chaincode of peer.chaincodes) {
+				for (const chaincode of  peer.chaincodes) {
 					const interest = this._buildDiscoveryInterest(chaincode.name);
 					const plan_id = JSON.stringify(interest);
 					logger.debug('%s - looking at adding plan_id of  %s', method, plan_id);
@@ -786,8 +786,9 @@ const Channel = class {
 
 				this.removePeer(check);
 			} else {
-				const error = new Error(`Peer ${name} already exists`);
+				const error = new Error();
 				error.name = 'DuplicatePeer';
+				error.message = 'Peer ' + name + ' already exists';
 				logger.error(error.message);
 				throw error;
 			}
@@ -814,28 +815,38 @@ const Channel = class {
 	 * channel. Peers that have been created by the {@link Client#newPeer}
 	 * method and then added to this channel may be reference by the url if no
 	 * name was provided in the options during the create.
-	 * A {@link ChannelPeer} provides a reference to {@link Peer}, [channel event hub objects]{@link ChannelEventHub}
-	 * along with attributes of how this peer is being used on this channel.
+	 * A {@link ChannelPeer} provides a reference to peer and channel event hub along
+	 * with how this peer is being used on this channel.
 	 *
 	 * @param {string} name - The name of the peer
 	 * @returns {ChannelPeer} The ChannelPeer instance.
 	 */
 	getPeer(name) {
 		const channel_peer = this._channel_peers.get(name);
+
 		if (!channel_peer) {
 			throw new Error(util.format(PEER_NOT_ASSIGNED_MSG, name));
 		}
+
 		return channel_peer;
 	}
 
 	/**
-	 * See in [getPeer]{@link Channel#getPeer}
+	 * This method will return a {@link ChannelPeer}. This object holds a reference
+	 * to the {@link Peer} and the {@link ChannelEventHub} objects and the attributes
+	 * of how the peer is defined on the channel.
 	 *
-	 * @param {string} name - The name of the peer
+	 * @param {string} name - The name of the peer assigned to this channel
 	 * @returns {ChannelPeer} The ChannelPeer instance
 	 */
 	getChannelPeer(name) {
-		return this.getPeer(name);
+		const channel_peer = this._channel_peers.get(name);
+
+		if (!channel_peer) {
+			throw new Error(util.format(PEER_NOT_ASSIGNED_MSG, name));
+		}
+
+		return channel_peer;
 	}
 
 	/**
@@ -854,7 +865,9 @@ const Channel = class {
 	}
 
 	/**
-	 * See in [getPeers]{@link Channel#getPeers}
+	 * Returns a list of {@link ChannelPeer} assigned to this channel instance.
+	 * A {@link ChannelPeer} provides a reference to peer and channel event hub along
+	 * with how this peer is being used on this channel.
 	 * @returns {ChannelPeer[]} The channel peer list on the channel.
 	 */
 	getChannelPeers() {
@@ -2403,7 +2416,7 @@ const Channel = class {
 			signer,
 			chaincodeId: Constants.LSCC,
 			fcn: 'GetCollectionsConfig',
-			args: [options.chaincodeId]
+			args: [options.chaincodeId],
 		};
 
 		try {
@@ -2617,7 +2630,7 @@ const Channel = class {
 			chaincodeDeploymentSpec.toBuffer(),
 			Buffer.from(''),
 			Buffer.from('escc'), // default
-			Buffer.from('vscc') // default
+			Buffer.from('vscc'), // default
 		];
 		if (request['endorsement-policy']) {
 			lcccSpec_args[3] = this._buildEndorsementPolicy(request['endorsement-policy']);
@@ -2774,13 +2787,8 @@ const Channel = class {
 		}
 
 		// convert any names into peer objects or if empty find all
-		// endorsing peers added to this channel if discovery is off
-		if (!this._use_discovery || request.targets) {
-			logger.debug('%s - checking for targets');
-			request.targets = this._getTargets(request.targets, Constants.NetworkConfig.ENDORSING_PEER_ROLE);
-		} else {
-			logger.debug('%s - discovery is on and no targets');
-		}
+		// endorsing peers added to this channel
+		request.targets = this._getTargets(request.targets, Constants.NetworkConfig.ENDORSING_PEER_ROLE);
 
 		// always use the handler if available (may not be just for discovery)
 		if (this._endorsement_handler) {
@@ -3240,7 +3248,6 @@ const Channel = class {
 		const signer = clientContext._getSigningIdentity(use_admin_signer);
 		return client_utils.toEnvelope(client_utils.signProposal(signer, payload));
 	}
-
 	/**
 	 * @typedef {Object} ChaincodeQueryRequest
 	 * @property {Peer[]} targets - Optional. The peers that will receive this
@@ -3531,7 +3538,9 @@ const Channel = class {
 			if (role === Constants.NetworkConfig.EVENT_SOURCE_ROLE) {
 				target_msg = 'peer';
 			}
-			throw new Error(`"${target_msg}" parameter not specified and no peers are set on this Channel instance or specified for this channel in the network `);
+			throw new Error(util.format('"%s" parameter not specified and no peers' +
+				' ' + 'are set on this Channel instance' +
+				' ' + 'or specfied for this channel in the network ', target_msg));
 		}
 
 		return targets;
@@ -4083,7 +4092,7 @@ function decodeCollectionsConfig(payload) {
 	const queryResponse = _collectionProto.CollectionConfigPackage.decode(payload);
 	queryResponse.config.forEach((config) => {
 		let collectionConfig = {
-			type: config.payload
+			type: config.payload,
 		};
 		if (config.payload === 'static_collection_config') {
 			const {static_collection_config} = config;
@@ -4094,7 +4103,7 @@ function decodeCollectionsConfig(payload) {
 			delete static_collection_config.member_orgs_policy;
 			static_collection_config.policy = {
 				identities: identities.map(i => JSON.parse(i)),
-				policy: signature_policy.rule.n_out_of
+				policy: signature_policy.rule.n_out_of,
 			};
 
 			static_collection_config.block_to_live = static_collection_config.block_to_live.toInt();

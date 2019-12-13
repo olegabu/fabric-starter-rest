@@ -68,6 +68,7 @@ module.exports.newCryptoSuite = (setting) => {
 	if (setting && setting.algorithm && typeof setting === 'object' && typeof setting.algorithm === 'string') {
 		algorithm = setting.algorithm.toUpperCase();
 	} else {
+		algorithm = 'EC';
 		algorithm = 'GOST';
 	}
 

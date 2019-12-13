@@ -15,13 +15,13 @@
 'use strict';
 
 const path = require('path');
+const sbuf = require('stream-buffers');
 const utils = require('../utils.js');
 const walk = require('ignore-walk');
 
 const logger = utils.getLogger('JavaPackager.js');
 
 const BasePackager = require('./BasePackager');
-const BufferStream = require('./BufferStream');
 
 class JavaPackager extends BasePackager {
 
@@ -34,6 +34,7 @@ class JavaPackager extends BasePackager {
 	async package (chaincodePath, metadataPath) {
 		logger.debug('packaging Java source from %s', chaincodePath);
 
+		const buffer = new sbuf.WritableStreamBuffer();
 		let descriptors = await this.findSource(chaincodePath);
 		if (metadataPath) {
 			logger.debug('packaging metadata files from %s', metadataPath);
@@ -41,9 +42,9 @@ class JavaPackager extends BasePackager {
 			const metaDescriptors = await super.findMetadataDescriptors(metadataPath);
 			descriptors = descriptors.concat(metaDescriptors);
 		}
-		const stream = new BufferStream();
-		await super.generateTarGz(descriptors, stream);
-		return stream.toBuffer();
+		await super.generateTarGz(descriptors, buffer);
+
+		return buffer.getContents();
 	}
 
 	/**
@@ -57,8 +58,7 @@ class JavaPackager extends BasePackager {
 	async findSource (filePath) {
 		const descriptors = [];
 
-		const ignoreFiles = ['.fabricignore'];
-		const files = await walk({path: filePath, follow: true, ignoreFiles});
+		const files = await walk({path: filePath, follow: true});
 		if (files) {
 			files.forEach((entry) => {
 				const desc = {

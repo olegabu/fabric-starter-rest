@@ -685,7 +685,7 @@ const Client = class extends BaseClient {
 	 * @param {byte[]} loadConfig - The Configuration Update in byte form
 	 * @return {ConfigSignature} - The signature of the current user on the config bytes
 	 */
-	async signChannelConfig(loadConfig) {
+	signChannelConfig(loadConfig) {
 		logger.debug('signChannelConfigUpdate - start');
 		if (!loadConfig) {
 			throw new Error('Channel configuration update parameter is required.');
@@ -705,7 +705,7 @@ const Client = class extends BaseClient {
 
 		// get all the bytes to be signed together, then sign
 		const signing_bytes = Buffer.concat([signature_header_bytes, loadConfig]);
-		const sig = await signer.sign(signing_bytes);
+		const sig = signer.sign(signing_bytes);
 		const signature_bytes = Buffer.from(sig);
 
 		// build the return object

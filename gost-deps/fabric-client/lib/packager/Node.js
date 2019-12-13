@@ -14,15 +14,14 @@
 
 'use strict';
 
-const fs = require('fs-extra');
 const path = require('path');
+const sbuf = require('stream-buffers');
 const utils = require('../utils.js');
 const walk = require('ignore-walk');
 
 const logger = utils.getLogger('packager/Node.js');
 
 const BasePackager = require('./BasePackager');
-const BufferStream = require('./BufferStream');
 
 class NodePackager extends BasePackager {
 
@@ -33,7 +32,7 @@ class NodePackager extends BasePackager {
 	 * @param {string} [metadataPath] The path to the top-level directory containing metadata descriptors
 	 * @returns {Promise.<TResult>}
 	 */
-	async package (chaincodePath, metadataPath) {
+	package (chaincodePath, metadataPath) {
 		logger.debug('packaging Node from %s', chaincodePath);
 
 		// Compose the path to the chaincode project directory
@@ -44,17 +43,21 @@ class NodePackager extends BasePackager {
 		// strictly necessary yet, they pave the way for the future where we
 		// will need to assemble sources from multiple packages
 
-		const srcDescriptors = await this.findSource(projDir);
-		let descriptors;
-		if (metadataPath) {
-			const metaDescriptors = await super.findMetadataDescriptors(metadataPath);
-			descriptors = srcDescriptors.concat(metaDescriptors);
-		} else {
-			descriptors = srcDescriptors;
-		}
-		const stream = new BufferStream();
-		await super.generateTarGz(descriptors, stream);
-		return stream.toBuffer();
+		const buffer = new sbuf.WritableStreamBuffer();
+		return this.findSource(projDir).then((srcDescriptors) => {
+			if (metadataPath) {
+				return super.findMetadataDescriptors(metadataPath)
+					.then((metaDescriptors) => {
+						return srcDescriptors.concat(metaDescriptors);
+					});
+			} else {
+				return srcDescriptors;
+			}
+		}).then((descriptors) => {
+			return super.generateTarGz(descriptors, buffer);
+		}).then(() => {
+			return buffer.getContents();
+		});
 	}
 
 	/**
@@ -64,43 +67,36 @@ class NodePackager extends BasePackager {
 	 * @param filePath
 	 * @returns {Promise}
 	 */
-	async findSource (filePath) {
-		const ignoreFiles = ['.fabricignore', '.npmignore'];
-		const fabricIgnoreFileExists = await fs.exists(path.join(filePath, '.fabricignore'));
-
-		let files = await walk({
+	findSource (filePath) {
+		return walk({
 			path: filePath,
 			// applies filtering based on the same rules as "npm publish":
 			// if .npmignore exists, uses rules it specifies
-			ignoreFiles,
+			ignoreFiles: ['.npmignore'],
 			// follow symlink dirs
 			follow: true
-		});
+		}).then((files) => {
+			const descriptors = [];
 
-		const descriptors = [];
+			if (!files) {
+				files = [];
+			}
 
-		if (!files) {
-			files = [];
-		}
-
-		// ignore the node_modules folder by default, unless the user has
-		// provided a .fabricignore file - in which case they are in full
-		// control of what gets packaged.
-		if (!fabricIgnoreFileExists) {
+			// ignore the node_modules folder by default
 			files = files.filter(f => f.indexOf('node_modules') !== 0);
-		}
 
-		files.forEach((entry) => {
-			const desc = {
-				name: path.join('src', entry).split('\\').join('/'), // for windows style paths
-				fqp: path.join(filePath, entry)
-			};
+			files.forEach((entry) => {
+				const desc = {
+					name: path.join('src', entry).split('\\').join('/'), // for windows style paths
+					fqp: path.join(filePath, entry)
+				};
 
-			logger.debug('adding entry', desc);
-			descriptors.push(desc);
+				logger.debug('adding entry', desc);
+				descriptors.push(desc);
+			});
+
+			return descriptors;
 		});
-
-		return descriptors;
 	}
 }
 

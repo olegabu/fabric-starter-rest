@@ -23,6 +23,8 @@ logger.debug(`invokeTimeout=${cfg.CHAINCODE_PROCESSING_TIMEOUT} asLocalhost=${as
 
 class FabricStarterClient {
     constructor(networkConfig) {
+        FabricStarterClient.setConfigObject(cfg.CRYPTO_SUIT_CONFIG);
+
         this.networkConfig = networkConfig || require('./network')();
         logger.info('constructing with network config:', JSON.stringify(this.networkConfig));
         this.client = Client.loadFromConfig(this.networkConfig); // or networkConfigFile
@@ -32,6 +34,12 @@ class FabricStarterClient {
         this.affiliation = this.org;
         this.channelsInitializationMap = new Map();
         this.registerQueue = new Map();
+    }
+
+    static setConfigObject(config) {
+        _.forEach(config, (value, key)=>{
+            Client.setConfigSetting(key, value);
+        } )
     }
 
     startOrderer() {

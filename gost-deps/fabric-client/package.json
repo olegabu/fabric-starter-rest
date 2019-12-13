@@ -5,8 +5,8 @@
     "hyperledger",
     "blockchain"
   ],
-  "version": "1.4.5-snapshot",
-  "tag": "unstable-1.4",
+  "version": "1.4.4",
+  "tag": "latest",
   "main": "index.js",
   "scripts": {
     "test": "nyc mocha --exclude 'test/data/**/*.js' --recursive  -t 10000"
@@ -25,6 +25,7 @@
     "bn.js": "^4.11.3",
     "callsite": "^1.0.0",
     "elliptic": "^6.2.3",
+    "fabric-ca-client": "^1.4.4",
     "fabric-cryptosuite-gost": "file:../fabric-cryptosuite-gost",
     "fs-extra": "^6.0.1",
     "grpc": "1.22.2",
@@ -42,6 +43,7 @@
     "protobufjs": "5.0.3",
     "promise-settle": "^0.3.0",
     "sjcl": "1.0.7",
+    "stream-buffers": "3.0.1",
     "tar-stream": "1.6.1",
     "url": "^0.11.0",
     "winston": "^2.2.0"

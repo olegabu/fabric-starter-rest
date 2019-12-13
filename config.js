@@ -1,12 +1,13 @@
 const fs=require('fs');
+const JSON5 = require('json5');
 const log4js = require('log4js');
 log4js.configure({appenders: {stdout: {type: 'stdout'}}, categories: {default: {appenders: ['stdout'], level: 'ALL'}}});
 const logger = log4js.getLogger('config.js');
 
+const gostConfig=require('./gost-deps/crypto-suit-config');
+
 const DEFAULT_PEER0PORT = '7051';
 const HARDCODED_ORDERER_NAME = process.env.HARDCODED_ORDERER_NAME || 'orderer';
-
-const AUTH_MODE = process.env.AUTH_MODE || 'CA';
 
 const DOMAIN = process.env.DOMAIN || 'example.com';
 const myorg = process.env.ORG || 'org1';
@@ -102,6 +103,8 @@ module.exports = {
     DEFAULT_PEER0PORT: DEFAULT_PEER0PORT,
     HARDCODED_ORDERER_NAME: HARDCODED_ORDERER_NAME,
 
-    AUTH_MODE: AUTH_MODE,
-    SIGNATURE_HASH_FAMILY: process.env.SIGNATURE_HASH_FAMILY || 'SHA2'
+    AUTH_MODE: process.env.AUTH_MODE || (process.env.CRYPTO_ALGORITHM==='GOST' ? 'ADMIN' : 'CA'),
+    SIGNATURE_HASH_FAMILY: process.env.SIGNATURE_HASH_FAMILY || (process.env.CRYPTO_ALGORITHM ==='GOST' ? 'SM3' : 'SHA2'),
+    CRYPTO_SUIT_CONFIG: process.env.CRYPTO_ALGORITHM==='GOST' ? gostConfig : {}
+
 };

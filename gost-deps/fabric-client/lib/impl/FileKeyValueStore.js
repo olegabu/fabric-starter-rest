@@ -33,9 +33,7 @@ const FileKeyValueStore = class extends api.KeyValueStore {
 		logger.debug('constructor', {options: options});
 
 		if (!options || !options.path) {
-            //throw new Error('Must provide the path to the directory to hold files for the store.');
-            if (!options) options = {};
-            options.path = './default-store';
+			throw new Error('Must provide the path to the directory to hold files for the store.');
 		}
 
 		// Create the keyValStore instance
