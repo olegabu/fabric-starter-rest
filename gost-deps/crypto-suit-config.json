@@ -2,5 +2,6 @@
   "crypto-suite-software": {
     "GOST": "fabric-cryptosuite-gost/gost.js"
   },
-  "crypto-hash-algo": "GOST R 34.11-1994-256"
+  "crypto-hash-algo": "GOST R 34.11-1994-256",
+  "default-algortihm": "GOST"
 }
