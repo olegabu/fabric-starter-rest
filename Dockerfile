@@ -9,6 +9,7 @@ WORKDIR /usr/src/app
 
 ## install dependencies
 # COPY ["package.json", "package-lock.json"] .
+COPY gost-deps ./gost-deps
 COPY "package.json" .
 
 RUN apt-get update && apt-get install python make  \

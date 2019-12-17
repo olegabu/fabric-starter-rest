@@ -23,8 +23,10 @@ logger.debug(`invokeTimeout=${cfg.CHAINCODE_PROCESSING_TIMEOUT} asLocalhost=${as
 
 class FabricStarterClient {
     constructor(networkConfig) {
+        FabricStarterClient.setConfigObject(cfg.CRYPTO_SUIT_CONFIG);
+
         this.networkConfig = networkConfig || require('./network')();
-        logger.info('constructing with network config', JSON.stringify(this.networkConfig));
+        logger.info('constructing with network config:', JSON.stringify(this.networkConfig));
         this.client = Client.loadFromConfig(this.networkConfig); // or networkConfigFile
         this.ordererClient = Client.loadFromConfig(this.networkConfig); // or networkConfigFile
         this.peer = this.client.getPeersForOrg()[0];
@@ -34,30 +36,61 @@ class FabricStarterClient {
         this.registerQueue = new Map();
     }
 
+    static setConfigObject(config) {
+        _.forEach(config, (value, key)=>{
+            Client.setConfigSetting(key, value);
+        } )
+    }
+
     startOrderer() {
         fabricCLI.prepareRaftOrderer();
     }
 
     async init() {
         await this.client.initCredentialStores();
-        this.fabricCaClient = this.client.getCertificateAuthority();
+        this.fabricCaClient = cfg.AUTH_MODE === 'CA' ? this.client.getCertificateAuthority() : undefined;
         await this.ordererClient.initCredentialStores();
         try {
-            this.ordererClient.setAdminSigningIdentity(util.loadPemFromFile(certsManager.getPrivateKeyFilePath()),
-                util.loadPemFromFile(certsManager.getSignCertPath()), cfg.ORDERER_MSPID);
+            this.ordererClient.setAdminSigningIdentity(
+                util.loadPemFromFile(certsManager.getPrivateKeyFilePath()),
+                util.loadPemFromFile(certsManager.getSignCertPath()),
+                cfg.ORDERER_MSPID
+            );
         } catch (err) {
             logger.debug("Not orderer host")
         }
     }
 
     async login(username, password) {
-        this.user = await this.client.setUserContext({username: username, password: password}, true);
+        if (cfg.AUTH_MODE === 'CA') {
+            this.user = await this.client.setUserContext({username: username, password: password}, true);
+        } else if (cfg.AUTH_MODE === 'ADMIN') {
+            if (cfg.enrollId != username || cfg.enrollSecret != password) {
+                throw Error("Invalid credentials");
+            }
+            this.user = await this.createUserWithAdminRights(username, password);
+        } else {
+            throw Error("AUTH_MODE is not defined.");
+        }
+    }
+
+    async createUserWithAdminRights(username) {
+        let mspId = this.org;
+        return await this.client.createUser({
+            username: username,
+            mspid: mspId,
+            cryptoContent: {
+                privateKey: certsManager.getPrivateKeyFilePath(mspId),
+                signedCert: certsManager.getSignCertPath(mspId)
+            },
+            skipPersistence: true
+        });
     }
 
     logoutUser(userName) {
-        const userCachePath = _.get(this,"networkConfig.client.credentialStore.path");
+        const userCachePath = _.get(this, "networkConfig.client.credentialStore.path");
         if (userCachePath) {
-            const userFile=path.join(userCachePath, userName);
+            const userFile = path.join(userCachePath, userName);
             try {
                 fs.unlinkSync(userFile);
             } catch (err) {
@@ -67,17 +100,19 @@ class FabricStarterClient {
     }
 
     async register(username, password, affiliation) {
-        const registrar = this.fabricCaClient.getRegistrar()[0];
-        const admin = await this.client.setUserContext({
-            username: registrar.enrollId,
-            password: registrar.enrollSecret
-        });
-        await this.fabricCaClient.register({
-            enrollmentID: username,
-            enrollmentSecret: password,
-            affiliation: affiliation || this.affiliation,
-            maxEnrollments: -1
-        }, admin);
+        if (cfg.AUTH_MODE === 'CA') {
+            const registrar = this.fabricCaClient.getRegistrar()[0];
+            const admin = await this.client.setUserContext({
+                username: registrar.enrollId,
+                password: registrar.enrollSecret
+            });
+            await this.fabricCaClient.register({
+                enrollmentID: username,
+                enrollmentSecret: password,
+                affiliation: affiliation || this.affiliation,
+                maxEnrollments: -1
+            }, admin);
+        }
     }
 
     async loginOrRegister(username, password, affiliation) {
@@ -141,7 +176,7 @@ class FabricStarterClient {
             let channelTxContent = await fabricCLI.generateChannelConfigTxContent(channelId);
             let config_update = this.client.extractChannelConfig(channelTxContent);
             channelReq.config = config_update;
-            channelReq.signatures = [this.client.signChannelConfig(config_update)];
+            channelReq.signatures = [await this.client.signChannelConfig(config_update)];
             // let res = await this.client.createChannel(channelReq);
             fabricCLI.createChannelByCli(channelId);
             // if (!res || res.status != "SUCCESS") {
@@ -193,7 +228,7 @@ class FabricStarterClient {
     }
 
     async getConsortiumMemberList(consortiumName = 'SampleConsortium') {
-        let result= [];
+        let result = [];
         try {
             // let channel = await (this.client.getChannel(cfg.systemChannelId, false) || this.constructChannel(cfg.systemChannelId));
             // let sysChannelConfig = await channel.getChannelConfigFromOrderer();
@@ -208,7 +243,7 @@ class FabricStarterClient {
             result = _.filter(_.keys(participants), name => {
                 return !(_.startsWith(name, "Orderer") || _.startsWith(name, "orderer"));
             });
-        } catch(err) {
+        } catch (err) {
             logger.debug("Not enough permissions to access Consortium");
         }
         return result;
@@ -233,7 +268,6 @@ class FabricStarterClient {
             logger.warn("Unparseable", dns);
         }
     }
-
     async constructChannel(channelId, optionalPeer) {
         let channel = this.client.getChannel(channelId, false);
         if (!channel) {
@@ -448,8 +482,7 @@ class FabricStarterClient {
             logger.trace('badPeers', badPeers);
 
             proposal.targets = foundPeers;
-        }
-        else {
+        } else {
             proposal.targets = [this.peer];
         }
 
@@ -474,7 +507,7 @@ class FabricStarterClient {
                 proposal: proposalResponse[1],
             };
 
-            const promise = waitForTransactionEvent ? fsClient.waitForTransactionEvent(txId, channel) : Promise.resolve({txId:txId});
+            const promise = waitForTransactionEvent ? fsClient.waitForTransactionEvent(txId, channel) : Promise.resolve({txId: txId});
 
             const broadcastResponse = await channel.sendTransaction(transactionRequest);
             logger.trace('broadcastResponse', broadcastResponse);
@@ -547,8 +580,7 @@ class FabricStarterClient {
 
         if (args) {
             proposal.args = JSON.parse(args);
-        }
-        else {
+        } else {
             proposal.args = [];
         }
 
@@ -629,7 +661,7 @@ class FabricStarterClient {
         return await channel.queryInfo(this.peer, true);
     }
 
-    async queryBlock(channelId, number, admin=false) {
+    async queryBlock(channelId, number, admin = false) {
         const channel = await this.getChannel(channelId);
         return await channel.queryBlock(number, this.peer, admin);
     }
