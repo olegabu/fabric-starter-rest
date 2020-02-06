@@ -49,4 +49,5 @@ EXPOSE 3000
 CMD [ "npm", "start" ]
 
 #  command for docker-compose.yaml: sh -c "sh -c '/usr/local/bin/docker-entrypoint.sh agent -dev -client 0.0.0.0 &' && npm start"
-
+#  init: true
+#  dns: consul:8600
