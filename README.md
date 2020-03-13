@@ -1,4 +1,6 @@
 # fabric-starter-rest
+[![FOSSA Status](https://app.fossa.io/api/projects/git%2Bgithub.com%2Folegabu%2Ffabric-starter-rest.svg?type=shield)](https://app.fossa.io/projects/git%2Bgithub.com%2Folegabu%2Ffabric-starter-rest?ref=badge_shield)
+
 REST API server and client for Hyperledger Fabric built with NodeJS SDK.
 
 See usage examples at 
@@ -64,3 +66,7 @@ GRPC_MIN_TIME_BETWEEN_PINGS_MS| 300000 (5 minutes)|_Fabric-starter-rest_ resets 
 
 `snapshot-0.1-1.4`:  
 - Tag stable version
+
+
+## License
+[![FOSSA Status](https://app.fossa.io/api/projects/git%2Bgithub.com%2Folegabu%2Ffabric-starter-rest.svg?type=large)](https://app.fossa.io/projects/git%2Bgithub.com%2Folegabu%2Ffabric-starter-rest?ref=badge_large)
