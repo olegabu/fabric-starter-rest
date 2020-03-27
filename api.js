@@ -21,6 +21,8 @@ module.exports = function(app, socketServer, fabricStarterClient, eventBus, osnM
     {name: 'args', maxCount: 1},{name: 'chaincodeType', maxCount: 1},{name: 'chaincodeId', maxCount: 1},
     {name: 'chaincodeVersion', maxCount: 1},{name: 'waitForTransactionEvent', maxCount: 1},{name: 'policy', maxCount: 1}]);
 
+  const appUpload = upload.fields([ {name: 'file', maxCount: 1}]);
+
   const webAppManager = require('./web-app-manager');
 
 // parse json payload and urlencoded params
@@ -539,7 +541,7 @@ module.exports = function(app, socketServer, fabricStarterClient, eventBus, osnM
    * @security JWT
    */
   app.post('/applications', fileUpload, asyncMiddleware(async (req, res, next) => {
-      let fileUploadObj = _.get(req, "files.file[0]");
+      let fileUploadObj = req.files && req.files.file[0];
       const fileBaseName = path.basename(fileUploadObj.originalname, path.extname(fileUploadObj.originalname));
       res.json(await webAppManager.provisionWebAppFromPackage(fileUploadObj)
           .then(extractParentPath => {
