@@ -488,6 +488,65 @@ module.exports = function(app, server) {
   }));
 
   /**
+   * Prepare unsigned chaincode invocation proposal request
+   * @route POST /channels/{channelId}/chaincodes/{chaincodeId}/unsigned/proposal
+   * @group chaincode - Invoke and query chaincode
+   * @param {string} channelId.path.required - channel - eg: common
+   * @param {string} chaincodeId.path.required - channel - eg: reference
+   * @param {Invoke.model} invoke.body.required - invoke request
+   * @returns {object} 200 - Transaction id
+   * @returns {Error}  default - Unexpected error
+   * @security JWT
+   */
+  app.post('/channels/:channelId/chaincodes/:chaincodeId/prepare/proposal', asyncMiddleware(async(req, res, next) => {
+    let result = await req.fabricStarterClient.getUnsignedInvokeProposal(req.params.channelId, req.params.chaincodeId,
+      req.body.fcn, req.body.args, extractTargets(req, "body"), req.body.transientMap, req.body.signerCertificate);
+    res.json(result);
+  }));
+
+  /**
+   * Send offline signed proposal and prepare unsigned transaction
+   * @route POST /channels/{channelId}/chaincodes/{chaincodeId}/unsigned/proposal
+   * @group chaincode - Invoke and query chaincode
+   * @param {string} channelId.path.required - channel - eg: common
+   * @param {string} chaincodeId.path.required - channel - eg: reference
+   * @param {Invoke.model} invoke.body.required - invoke request
+   * @returns {object} 200 - Transaction id
+   * @returns {Error}  default - Unexpected error
+   * @security JWT
+   */
+  app.post('/channels/:channelId/chaincodes/:chaincodeId/commit/transaction', asyncMiddleware(async(req, res, next) => {
+    let result = await req.fabricStarterClient.commitSignedTransaction(
+        req.params.channelId,
+        util.deserializeBuffers(req.body.commitRequest),
+        util.deserializeBuffers(req.body.signedCommitProposal)
+    );
+    res.json(result);
+  }));
+
+
+  /**
+   * Send offline signed invocatoion proposal request
+   * @route POST /channels/{channelId}/chaincodes/{chaincodeId}/unsigned/proposal
+   * @group chaincode - Invoke and query chaincode
+   * @param {string} channelId.path.required - channel - eg: common
+   * @param {string} chaincodeId.path.required - channel - eg: reference
+   * @param {Invoke.model} invoke.body.required - invoke request
+   * @returns {object} 200 - Transaction id
+   * @returns {Error}  default - Unexpected error
+   * @security JWT
+   */
+  app.post('/channels/:channelId/chaincodes/:chaincodeId/prepare/transaction', asyncMiddleware(async(req, res, next) => {
+    let result = await req.fabricStarterClient.sendSignedProposalGenerateTransaction(
+        req.params.channelId,
+        util.deserializeBuffers(req.body.proposal),
+        util.deserializeBuffers(req.body.signedProposal),
+        extractTargets(req, "body"),
+        req.body.txId);
+    res.json(result);
+  }));
+
+  /**
    * Query member organizations of current consortium
    * @route GET /consortium/members
    * @group consortium - view and control participants

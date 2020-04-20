@@ -456,35 +456,8 @@ class FabricStarterClient {
     }
 
     async invoke(channelId, chaincodeId, fcn, args, targets, waitForTransactionEvent, transientMap) {
-        const channel = await this.getChannel(channelId);
+        let {channel, proposal, badPeers} = await this.createProposalRequest(channelId, chaincodeId, fcn, args, transientMap, targets);
         let fsClient = this;
-
-        const proposal = {
-            chaincodeId: chaincodeId,
-            fcn: fcn,
-            args: args
-        };
-
-        if (transientMap) {
-            proposal.transientMap =
-                Object.assign(...
-                    Object.keys(transientMap).map((key) => {
-                        return {[key]: Buffer.from(JSON.stringify(transientMap[key]))}
-                    }))
-        }
-
-        let badPeers;
-
-        if (targets.targets || targets.peers) {
-            const targetsList = this.createTargetsList(channel, targets);
-            const foundPeers = targetsList.peers;
-            badPeers = targetsList.badPeers;
-            logger.trace('badPeers', badPeers);
-
-            proposal.targets = foundPeers;
-        } else {
-            proposal.targets = [this.peer];
-        }
 
         return util.retryOperation(cfg.INVOKE_RETRY_COUNT, async function () {
             const txId = fsClient.client.newTransactionID(/*true*/);
@@ -517,6 +490,82 @@ class FabricStarterClient {
                 return res;
             });
         });
+    }
+
+    async getUnsignedInvokeProposal(channelId, chaincodeId, fcn, args, targets, transientMap, signerCertificate) {
+        let {channel, proposal, badPeers} = await this.createProposalRequest(channelId, chaincodeId, fcn, args, transientMap, targets);
+        let unsignedResponse = channel.generateUnsignedProposal(proposal, this.client.getMspid(), signerCertificate);
+        return unsignedResponse; //{proposal, txId}
+    }
+
+    async sendSignedProposalGenerateTransaction(channelId, proposal, signedProposal, targets, txId) {
+        const channel = await this.getChannel(channelId);
+        let { targetPeers, badPeers} = this.findTargets(targets, channel);
+
+        let endorseResponses = await channel.sendSignedProposal({signedProposal, targets: targetPeers}, cfg.CHAINCODE_PROCESSING_TIMEOUT)
+
+        const commitRequest = {proposal, endorseResponses};
+        const commitProposal = await commitRequest.generateUnsignedTransaction(undefined);
+
+        return {commitRequest, commitProposal, PeersNotFound: badPeers};
+
+/*
+        const promise = txId ? this.waitForTransactionEvent(txId, channel) : Promise.resolve({txId: txId});
+        return promise.then(res => {
+            res.endorseResponses = endorseResponses;
+            res.chaincodeResult = _.get(endorseResponses, "[0].response.payload");
+            res.PeersNotFound = badPeers;
+            return res;
+        })
+*/
+    }
+
+    async commitSignedTransaction(channelId, commitRequest, signedCommitProposal) {
+        const channel = await this.getChannel(channelId);
+        const response = await channel.sendSignedTransaction({
+            signedProposal: signedCommitProposal,
+            request: commitRequest,
+        });
+        return response;
+    }
+
+    async createProposalRequest(channelId, chaincodeId, fcn, args, transientMap, targets) {
+        const channel = await this.getChannel(channelId);
+        const proposal = {chaincodeId, fcn, args};
+
+        if (transientMap) {
+            proposal.transientMap =
+                Object.assign(...
+                    Object.keys(transientMap).map((key) => {
+                        return {[key]: Buffer.from(JSON.stringify(transientMap[key]))}
+                    }))
+        }
+
+        let { targetPeers, badPeers} = this.findTargets(targets, channel);
+        proposal.targets = targetPeers;
+
+        return {channel, proposal, badPeers};
+    }
+
+
+    findTargets(targets, channel ) {
+        let targetPeers, badPeers;
+        if (targets.targets || targets.peers) {
+            const targetsList = this.createTargetsList(channel, targets);
+            targetPeers = targetsList.peers;
+            badPeers = targetsList.badPeers;
+            logger.trace('badPeers', badPeers);
+        } else {
+            targetPeers = [this.peer];
+        }
+        return {targetPeers, badPeers};
+    }
+
+    async invokeSigned(transactionRequest) {
+        const channel = await this.getChannel(channelId);
+        const broadcastResponse = await channel.sendTransaction(transactionRequest);
+
+
     }
 
     errorCheck(results) {

@@ -98,6 +98,24 @@ class Util {
         }
     }
 
+    deserializeBuffers(obj) {
+        let result = obj && Object.entries(obj).reduce((result, entry) => {
+            const key = entry[0];
+            let value = entry[1];
+            if (value && typeof value === 'object'){
+                if (value.type==="Buffer" && Array.isArray(value.data)) {
+                    value=Buffer.from(value.data);
+                    console.log(value);
+                } else {
+                    value = this.deserializeBuffers(value);
+                }
+            }
+            result[key]=value;
+            return result;
+        }, {});
+        return result;
+    }
+
 
 }
 
