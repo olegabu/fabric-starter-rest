@@ -49,6 +49,7 @@ module.exports = function(app, server) {
   app.use('/webapp', express.static(webappDir));
   logger.info(`serving webapp at /webapp from ${webappDir}`);
   app.use('/admin', express.static(cfg.WEBADMIN_DIR));
+  app.use('/admin/*', express.static(cfg.WEBADMIN_DIR));
   logger.info(`serving admin at /admin from ${cfg.WEBADMIN_DIR}`);
 
 // serve msp directory with certificates as static
@@ -78,7 +79,7 @@ module.exports = function(app, server) {
 
 // require presence of JWT in Authorization Bearer header
   const jwtSecret = fabricStarterClient.getSecret();
-  app.use(jwt({secret: jwtSecret}).unless({path: ['/', '/users', '/domain', '/mspid', '/config', new RegExp('/api-docs'), '/api-docs.json', /\/webapp/, /\/webapps\/.*/, '/admin/', '/msp/']}));
+  app.use(jwt({secret: jwtSecret}).unless({path: ['/', '/users', '/domain', '/mspid', '/config', new RegExp('/api-docs'), '/api-docs.json', /\/webapp/, /\/webapps\/.*/,'/admin/', /\/admin\/.*/, '/msp/']}));
 
 // use fabricStarterClient for every logged in user
   const mapFabricStarterClient = {};
