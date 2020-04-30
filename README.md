@@ -33,6 +33,25 @@ Build docker image.
 docker build -t olegabu/fabric-starter-rest .
 ```
 
+#### Custom admin dashboard.
+
+Prepare `tgz` file with the source codes of alternate admin webapp. 
+```bash
+cd ../custom-admin-webapp
+tar --exclude='.idea' --exclude='.git' --exclude='node_modules' -zcvf custom-sources.tgz .
+```
+Placed the tgz to current folder (fabric-starter-rest).
+```bash
+cp custom-sources.tgz ../fabric-starter-rest
+``` 
+
+Use `CUSTOM_SOURCES_TAR` build arg to specify the `tgz` name (default - `custom-sources.tgz`).   
+The image built on the previous step will be used as base on this step; 
+you can specify `FABRIC_STARTER_VERSION` build arg if using not the latest version.      
+```bash
+docker build -f custom-admin.dockerfile -t olegabu/fabric-starter-rest --build-arg FABRIC_STARTER_VERSION=latest --build-arg CUSTOM_SOURCES_TAR=custom-sources.tgz .
+```
+
 
 # Connection options
 
