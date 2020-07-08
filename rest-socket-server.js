@@ -75,7 +75,7 @@ class RestSocketServer {
       _.remove(self.listOfChannels, chId=>chId===channelId);
     }, this.opts);
     logger.debug(`registered for block event on ${channelId}`);
-      this.listOfChannels.push(channelId);
+    this.listOfChannels.push(channelId);
     return true;
   }
 

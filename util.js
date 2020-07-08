@@ -12,8 +12,8 @@ class Util {
                 let response = await fn();
                 resolve(response);
             } catch (err) {
-                logger.trace(`Error: `, err, `\nRe-trying invocation: ${nTimes}.`);
-                this.sleep(cfg.CHANNEL_LISTENER_UPDATE_TIMEOUT);
+                logger.trace(`Retry attempt: ${nTimes}. Error: `, err);
+                await this.sleep(cfg.CHANNEL_LISTENER_UPDATE_TIMEOUT);
                 return this.retryOperation(--nTimes, fn);
             }
         });

@@ -11,12 +11,11 @@ class ChannelManager {
     async joinChannel(channelId, fabricStarterClient, socketServer) {
         try {
             const ret = await fabricStarterClient.joinChannel(channelId);
-            await util.retryOperation(cfg.LISTENER_RETRY_COUNT, async function () {
-                await socketServer.registerChannelChainblockListener(channelId);
-            });
+            await socketServer.registerChannelChainblockListener(channelId);
+            logger.debug(`Joined to channel ${channelId}. Listener has been attached.`, ret);
             return ret;
         } catch(error) {
-            logger.error(error.message);
+            logger.error("Error joining channel", error.message);
             throw new Error(error.message);
         }
     }
