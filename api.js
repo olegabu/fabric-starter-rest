@@ -249,9 +249,9 @@ module.exports = function(app, server) {
   async function joinChannel(channelId, fabricStarterClient) {
     try {
       const ret = await fabricStarterClient.joinChannel(channelId);
-      util.retryOperation(cfg.LISTENER_RETRY_COUNT, async function () {
+      // util.retryOperation(cfg.LISTENER_RETRY_COUNT, async function () {
         await socket.registerChannelChainblockListener(channelId);
-      });
+      // });
       return ret;
     } catch(error) {
       logger.error(error.message);

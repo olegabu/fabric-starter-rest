@@ -13,7 +13,7 @@ class Util {
                 resolve(response);
             } catch (err) {
                 logger.trace(`Error: `, err, `\nRe-trying invocation: ${nTimes}.`);
-                this.sleep(cfg.CHANNEL_LISTENER_UPDATE_TIMEOUT);
+                await this.sleep(cfg.CHANNEL_LISTENER_UPDATE_TIMEOUT);
                 return this.retryOperation(--nTimes, fn);
             }
         });
