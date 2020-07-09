@@ -79,7 +79,7 @@ module.exports = function(app, server) {
 
 // require presence of JWT in Authorization Bearer header
   const jwtSecret = fabricStarterClient.getSecret();
-  app.use(jwt({secret: jwtSecret}).unless({path: ['/', '/users', '/domain', '/mspid', '/config', new RegExp('/api-docs'), '/api-docs.json', /\/webapp/, /\/webapps\/.*/,'/admin/', /\/admin\/.*/, '/msp/']}));
+  app.use(jwt({secret: jwtSecret}).unless({path: ['/', '/users', '/domain', '/mspid', '/config', new RegExp('/api-docs'), '/api-docs.json', /\/webapp/, /\/webapps\/.*/,'/admin/', /\/admin\/.*/, '/msp/', /\/integration\/.*/]}));
 
 // use fabricStarterClient for every logged in user
   const mapFabricStarterClient = {};
@@ -229,8 +229,9 @@ module.exports = function(app, server) {
    * @returns {Error}  default - Unexpected error
    * @security JWT
    */
-  app.post('/channels/:channelId', asyncMiddleware(async(req, res, next) => {
+  app.post('/channels/:channelId', asyncMiddleware(async (req, res, next) => {
     let ret = await channelManager.joinChannel(req.params.channelId, req.fabricStarterClient, socket);
+    await socket.awaitForChannel(req.params.channelId);
     res.json(ret);
   }));
 
@@ -333,6 +334,15 @@ module.exports = function(app, server) {
   app.post('/channels/:channelId/orgs', asyncMiddleware(async(req, res, next) => {
     res.json(await req.fabricStarterClient.addOrgToChannel(req.params.channelId, orgFromHttpBody(req.body)));
   }));
+
+  app.post('/integration/service/orgs', asyncMiddleware(async (req, res, next) => {
+    logger.info('Integration service request: ', req.body);
+    let client = new FabricStarterClient();
+    await client.init();
+    await client.loginOrRegister(cfg.enrollId, cfg.enrollSecret);
+    res.json(await client.addOrgToChannel(cfg.DNS_CHANNEL, orgFromHttpBody(req.body)));
+  }));
+
 
   function orgFromHttpBody(body){
     return {orgId: body.orgId, orgIp: body.orgIp, peer0Port: body.peerPort, wwwPort: body.wwwPort}
