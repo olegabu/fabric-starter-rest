@@ -1,7 +1,7 @@
 const fs = require('fs');
 const _ = require('lodash');
 const cfg = require('./config.js');
-const logger = cfg.log4js.getLogger('RestSocketServer');
+const logger = cfg.log4js.getLogger('util');
 
 class Util {
 
@@ -21,7 +21,8 @@ class Util {
 
     filterOrderersOut(organizations) {
         let ordererNames = [cfg.HARDCODED_ORDERER_NAME, `${cfg.HARDCODED_ORDERER_NAME}.${cfg.ORDERER_DOMAIN}`, `${cfg.ordererName}.${cfg.ORDERER_DOMAIN}`];
-        return _.differenceWith(organizations, ordererNames, (org, rejectOrg) => org.id === rejectOrg);
+        const differenceWith = _.differenceWith(organizations, ordererNames, (org, rejectOrg) => org.id === rejectOrg);
+        return _.filter(organizations, o=> ! (_.includes(_.get(o,'id'), 'orderer') || _.includes(_.get(o,'id'), 'osn')));
     }
 
     loadPemFromFile(pemFilePath) {
@@ -29,9 +30,75 @@ class Util {
         return Buffer.from(certData).toString()
     }
 
-    sleep(ms) {
+    async sleep(ms) {
         return new Promise(resolve => setTimeout(resolve, ms));
     }
+
+
+    convertStringValToMapVal(keyValueMap) {
+        return _.mapValues(keyValueMap, value=>_.keyBy(_.split(value, ' '), v=>v));
+    }
+
+    linesToKeyValueList(currHostsLines) {
+        let currHosts = _.map(currHostsLines, line => {
+            const ipsNames = _.split(_.trim(line), /[ \t]/);
+            let key = ipsNames[0];
+            let names = ipsNames.slice(1);
+
+            return {[key]: _.join(names, ' ')}
+        });
+        return _.reduce(currHosts, (result, h) => {
+            let key = _.keys(h)[0];
+            result[key] = h[key];
+            return result;
+        }, {});
+    }
+
+
+    mergeKeyValueLists(map1, map2) {
+        let hostsMap = this.convertStringValToMapVal(map1);
+        let listMap = this.convertStringValToMapVal(map2);
+
+        _.merge(hostsMap, listMap);
+        const result = _.mapValues(hostsMap, valKV=>_.join(_.keys(valKV), ' '));
+        return result;
+    }
+
+    writeFile(file, keyValueHostRecords) {
+        if (this.existsAndIsFile(file)) {
+            try {
+                const currHostsLines = fs.readFileSync(file, 'utf-8').split('\n');
+                const currHosts = this.linesToKeyValueList(currHostsLines);
+
+                let newHostsMap = this.mergeKeyValueLists(currHosts, keyValueHostRecords);
+
+                let hostsFileContent = `# replaced by writeFile  \n`;
+                _.forOwn(newHostsMap, (value, key) => {
+                    hostsFileContent = hostsFileContent + key + ' ' + value + '\n';
+                });
+
+                fs.writeFileSync(file, hostsFileContent);
+
+                logger.info(`written: ${file}\n`, hostsFileContent);
+            } catch (err) {
+                logger.error(`cannot writeFile ${file}`, err);
+            }
+        } else {
+            logger.debug(`Skipping ${file}`);
+        }
+    }
+
+
+    existsAndIsFile(file) {
+        try {
+            fs.accessSync(file, fs.constants.W_OK);
+            return fs.statSync(file).isFile()
+        } catch (e) {
+            logger.debug(`Cannot open file ${file}`, e);
+        }
+    }
+
+
 }
 
 module.exports = new Util();

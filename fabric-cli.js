@@ -79,6 +79,11 @@ class FabricCLI {
         return outputTxFile;
     }
 
+    createChannelByCli(channelName) {
+        let arg =` -c ${channelName} -f ${cfg.CRYPTO_CONFIG_DIR}/configtx/channel_${channelName}.tx `;
+        this.execPeerCommand('channel create', arg);
+    }
+
     getEnv() {
         return {
             DOMAIN: cfg.DOMAIN,
@@ -90,8 +95,8 @@ class FabricCLI {
             ORDERER_BATCH_TIMEOUT: cfg.ORDERER_BATCH_TIMEOUT,
             ORDERER_GENERAL_LISTENPORT: cfg.ordererPort,
             RAFT0_PORT: cfg.RAFT0_PORT,
-            RAFT1_PORT: cfg.RAFT0_PORT,
-            RAFT2_PORT: cfg.RAFT0_PORT
+            RAFT1_PORT: cfg.RAFT1_PORT,
+            RAFT2_PORT: cfg.RAFT2_PORT
         };
     }
 
@@ -177,11 +182,11 @@ class FabricCLI {
     }
 
     async prepareNewOrgConfig(newOrg) {
-        return this.prepareOrgConfigStruct(newOrg, 'NewOrg.json', {NEWORG_PEER0_PORT: newOrg.peer0Port || cfg.DEFAULT_PEER0PORT})
+        return this.prepareOrgConfigStruct(newOrg, 'NewOrg.json', {NEWORG_PEER0_PORT: newOrg.peer0Port || cfg.DEFAULT_PEER0PORT, SIGNATURE_HASH_FAMILY: cfg.SIGNATURE_HASH_FAMILY})
     }
 
     async prepareNewConsortiumConfig(newOrg, consortiumName) {
-        return this.prepareOrgConfigStruct(newOrg, 'Consortium.json', {CONSORTIUM_NAME: consortiumName || cfg.DEFAULT_CONSORTIUM})
+        return this.prepareOrgConfigStruct(newOrg, 'Consortium.json', {CONSORTIUM_NAME: consortiumName || cfg.DEFAULT_CONSORTIUM, SIGNATURE_HASH_FAMILY: cfg.SIGNATURE_HASH_FAMILY})
     }
 
     async prepareOrgConfigStruct(newOrg, configTemplateFile, extraEnv) {
@@ -205,7 +210,7 @@ class FabricCLI {
                 });
         */
 
-        const outputFile = `crypto-config/${newOrg.orgId}_OrgConfig.json`;
+        const outputFile = `${cfg.CRYPTO_CONFIG_DIR}/${newOrg.orgId}_OrgConfig.json`;
         let newOrgSubstitution = await this.envSubst(`${cfg.TEMPLATES_DIR}/${configTemplateFile}`, outputFile, env);
 
         return {outputFile, outputJson: JSON.parse(newOrgSubstitution.outputContents)};

@@ -1,0 +1,7 @@
+node_modules
+test
+hfc-cvs
+hfc-kvs
+.storage
+.idea
+.git
