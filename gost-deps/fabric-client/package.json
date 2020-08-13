@@ -33,7 +33,7 @@
     "ignore-walk": "^3.0.0",
     "js-sha3": "^0.7.0",
     "js-yaml": "^3.9.0",
-    "jsrsasign": "^7.2.2",
+    "jsrsasign": "^8.0.23",
     "jssha": "^2.1.0",
     "klaw": "^2.0.0",
     "long": "^4.0.0",
