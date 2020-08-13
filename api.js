@@ -10,6 +10,8 @@ module.exports = function(app, server) {
   const cfg = require('./config.js');
   const util = require('./util');
 
+  const channelManager = require('./channel-manager');
+
   // upload for chaincode and app installation
   const uploadDir = os.tmpdir() || './upload';
   const multer = require('multer');
@@ -227,7 +229,7 @@ module.exports = function(app, server) {
    * @security JWT
    */
   app.post('/channels/:channelId', asyncMiddleware(async(req, res, next) => {
-    let ret = await joinChannel(req.params.channelId, req.fabricStarterClient);
+    let ret = await channelManager.joinChannel(req.params.channelId, req.fabricStarterClient, socket);
     res.json(ret);
   }));
 
@@ -243,7 +245,7 @@ module.exports = function(app, server) {
    */
   app.post('/channels', asyncMiddleware(async(req, res, next) => {
     await req.fabricStarterClient.createChannel(req.body.channelId);
-    res.json(await joinChannel(req.body.channelId, req.fabricStarterClient));
+    res.json(await channelManager.joinChannel(req.body.channelId, req.fabricStarterClient, socket));
   }));
 
   async function joinChannel(channelId, fabricStarterClient) {

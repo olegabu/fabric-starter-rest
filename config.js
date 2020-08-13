@@ -1,11 +1,13 @@
 const fs=require('fs');
+const JSON5 = require('json5');
 const log4js = require('log4js');
 log4js.configure({appenders: {stdout: {type: 'stdout'}}, categories: {default: {appenders: ['stdout'], level: 'ALL'}}});
 const logger = log4js.getLogger('config.js');
 
+const gostConfig=require('./gost-deps/crypto-suit-config');
+
 const DEFAULT_PEER0PORT = '7051';
 const HARDCODED_ORDERER_NAME = process.env.HARDCODED_ORDERER_NAME || 'orderer';
-
 
 const DOMAIN = process.env.DOMAIN || 'example.com';
 const myorg = process.env.ORG || 'org1';
@@ -93,12 +95,16 @@ module.exports = {
     LISTENER_RETRY_COUNT: process.env.LISTENER_RETRY_COUNT || 20,
 
     RAFT0_PORT: process.env.RAFT0_PORT || ordererPort,
-    RAFT1_PORT: process.env.RAFT1_PORT || ordererPort,
-    RAFT2_PORT: process.env.RAFT2_PORT || ordererPort,
+    RAFT1_PORT: process.env.RAFT1_PORT || '7150',
+    RAFT2_PORT: process.env.RAFT2_PORT || '7250',
     ORDERER_NAME_PREFIX: ordererNamePrefix,
     ORDERER_BATCH_TIMEOUT: ordererBatchTimeout,
 
     DEFAULT_PEER0PORT: DEFAULT_PEER0PORT,
-    HARDCODED_ORDERER_NAME: HARDCODED_ORDERER_NAME
+    HARDCODED_ORDERER_NAME: HARDCODED_ORDERER_NAME,
+
+    AUTH_MODE: process.env.AUTH_MODE || (process.env.CRYPTO_ALGORITHM==='GOST' ? 'ADMIN' : 'CA'),
+    SIGNATURE_HASH_FAMILY: process.env.SIGNATURE_HASH_FAMILY || (process.env.CRYPTO_ALGORITHM ==='GOST' ? 'SM3' : 'SHA2'),
+    CRYPTO_SUIT_CONFIG: process.env.CRYPTO_ALGORITHM==='GOST' ? gostConfig : {}
 
 };
