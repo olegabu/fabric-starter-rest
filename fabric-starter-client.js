@@ -42,10 +42,6 @@ class FabricStarterClient {
         } )
     }
 
-    startOrderer() {
-        fabricCLI.prepareRaftOrderer();
-    }
-
     async init() {
         await this.client.initCredentialStores();
         this.fabricCaClient = cfg.AUTH_MODE === 'CA' ? this.client.getCertificateAuthority() : undefined;
@@ -255,7 +251,7 @@ class FabricStarterClient {
             return;
         const dns = await this.query(cfg.DNS_CHANNEL, "dns", "get", '["dns"]', {targets: []});
         try {
-            let dnsRecordsList = dns && dns.length && JSON.parse(dns[0]);
+            // let dnsRecordsList = dns && dns.length && JSON.parse(dns[0]);
 
             const orgId = _.get(orgObj, "orgId");
             const orgIp = _.get(orgObj, "orgIp");
@@ -475,7 +471,7 @@ class FabricStarterClient {
 
         let badPeers;
 
-        if (targets.targets || targets.peers) {
+        if (targets && (targets.targets || targets.peers)) {
             const targetsList = this.createTargetsList(channel, targets);
             const foundPeers = targetsList.peers;
             badPeers = targetsList.badPeers;
@@ -485,6 +481,7 @@ class FabricStarterClient {
         } else {
             proposal.targets = [this.peer];
         }
+        logger.debug("Proposal", proposal);
 
         return util.retryOperation(cfg.INVOKE_RETRY_COUNT, async function () {
             const txId = fsClient.client.newTransactionID(/*true*/);

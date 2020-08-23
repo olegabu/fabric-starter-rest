@@ -3,14 +3,15 @@ module.exports = function(app, server) {
   const fs = require("fs");
   const path = require('path');
   const os = require('os');
-  const logger = require('log4js').getLogger('api');
   const jsonwebtoken = require('jsonwebtoken');
   const jwt = require('express-jwt');
   const _ = require('lodash');
   const cfg = require('./config.js');
+  const logger = cfg.log4js.getLogger('api');
   const util = require('./util');
 
   const channelManager = require('./channel-manager');
+  const osnManager = require('./osn-manager');
 
   // upload for chaincode and app installation
   const uploadDir = os.tmpdir() || './upload';
@@ -335,17 +336,51 @@ module.exports = function(app, server) {
     res.json(await req.fabricStarterClient.addOrgToChannel(req.params.channelId, orgFromHttpBody(req.body)));
   }));
 
+  app.post('/service/accept/orgs', asyncMiddleware((req, res) => {
+    logger.info('Orgs to service request: ', req.body);
+    let orgMspIdsArray = _.isArray(req.body) ? req.body : [req.body];
+    this.orgsToAccept = orgMspIdsArray;
+    res.json("OK")
+  }));
+
   app.post('/integration/service/orgs', asyncMiddleware(async (req, res, next) => {
     logger.info('Integration service request: ', req.body);
+    let org = orgFromHttpBody(req.body)
+    if (!this.orgsToAccept || _.includes(this.orgsToAccept, org.orgId)) {
+      let client = await createDefaultFabricClient();
+      return res.json(await client.addOrgToChannel(cfg.DNS_CHANNEL, org));
+    }
+    res.status(301).json(`Org ${org.orgId} is not allowed`);
+  }));
+
+  app.post('/integration/service/raft', asyncMiddleware(async (req, res, next) => {
+    logger.info('Raft integration service request: ', req.body);
+    let orderer = ordererFromHttpBody(req.body);
+    if (!this.orgsToAccept || _.includes(this.orgsToAccept, orderer.ordererDomain)) {
+      let client = await createDefaultFabricClient();
+      return res.json(await osnManager.OsnManager.addRaftConsenter(orderer, client));
+    }
+    res.status(301).json(`Org ${org.orgId} is not allowed`);
+  }));
+
+  async function createDefaultFabricClient() {
     let client = new FabricStarterClient();
     await client.init();
     await client.loginOrRegister(cfg.enrollId, cfg.enrollSecret);
-    res.json(await client.addOrgToChannel(cfg.DNS_CHANNEL, orgFromHttpBody(req.body)));
-  }));
+    return client;
+  }
 
+  function orgFromHttpBody(body) {
+    let org = {orgId: body.orgId, orgIp: body.orgIp, peer0Port: body.peerPort, wwwPort: body.wwwPort};
+    logger.info('Org: ', org);
 
-  function orgFromHttpBody(body){
-    return {orgId: body.orgId, orgIp: body.orgIp, peer0Port: body.peerPort, wwwPort: body.wwwPort}
+    return org;
+  }
+
+  function ordererFromHttpBody(body) {
+    let orderer = {ordererName: body.ordererName, ordererDomain: body.ordererDomain, ordererPort: body.ordererPort, ip:body.ip, wwwPort: body.wwwPort};
+    logger.info('Orderer: ', orderer);
+    return orderer;
   }
 
   /**

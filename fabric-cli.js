@@ -40,16 +40,12 @@ class FabricCLI {
         this.downloadCerts(orgObj, domain, orgObj.wwwPort);
     }
 
-
-    prepareRaftOrderer(files) {
-        this.execShellCommand("docker-compose -f docker-compose-orderer-cli.yaml up -d", cfg.YAMLS_DIR,
-            _.assign(this.getEnv(), {ORDERER_GENESIS_PROFILE: 'RaftOrdererGenesis', DOMAIN: `osn-${cfg.org}.${cfg.domain}`}));
-    }
-
-
     execShellCommand(cmd, dir, extraEnv) {
         const env = _.assign({}, process.env, extraEnv || {});
         const opts = {env: env};
+        if (dir) {
+            cmd=`cd ${dir}; ${cmd}`;
+        }
         logger.debug(cmd);
         shell.exec(`${cmd} &2>1`, opts);
     }
@@ -80,12 +76,12 @@ class FabricCLI {
     }
 
     createChannelByCli(channelName) {
-        let arg =` -c ${channelName} -f ${cfg.CRYPTO_CONFIG_DIR}/configtx/channel_${channelName}.tx `;
+        let arg = ` -c ${channelName} -f ${cfg.CRYPTO_CONFIG_DIR}/configtx/channel_${channelName}.tx `;
         this.execPeerCommand('channel create', arg);
     }
 
-    getEnv() {
-        return {
+    getEnv(extraEnv) {
+        return _.assign({
             DOMAIN: cfg.DOMAIN,
             ORG: cfg.org,
             PEER0_PORT: cfg.peer0Port,
@@ -97,7 +93,7 @@ class FabricCLI {
             RAFT0_PORT: cfg.RAFT0_PORT,
             RAFT1_PORT: cfg.RAFT1_PORT,
             RAFT2_PORT: cfg.RAFT2_PORT
-        };
+        }, extraEnv);
     }
 
     async generateChannelConfigTxContent(channelId) {
