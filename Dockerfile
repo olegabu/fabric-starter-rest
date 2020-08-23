@@ -13,7 +13,7 @@ COPY gost-deps ./gost-deps
 COPY "package.json" .
 
 RUN apt-get update && apt-get install python make  \
-&& npm install && npm cache rm --force \
+&& npm install && npm rebuild && npm cache rm --force \
 && apt-get remove -y python make && apt-get purge
 
 
