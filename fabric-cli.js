@@ -7,6 +7,7 @@ const fs = require('fs'),
 
 
 const cfg = require('./config'),
+    util = require('./util'),
     certsManager = require('./certs-manager');
 
 const logger = cfg.log4js.getLogger('FabricCLI');
@@ -25,19 +26,23 @@ CONFIG_TYPE.initEnum(['common.Config', 'common.Block', 'common.ConfigUpdate', 'c
 
 class FabricCLI {
 
-    downloadCerts(orgObj, domain = cfg.domain, wwwPort = 80) {
+    async downloadCerts(orgObj, domain = cfg.domain, wwwPort) {
+        const orgDomain = orgObj ? `${orgObj.orgId}.${domain}` : domain;
+        let wwwHost = `www.${orgDomain}`;
+        wwwPort = wwwPort || 80;
+        // await util.checkRemotePort(wwwHost, wwwPort); TODO: same host orderer port is not available from docker
         certsManager.forEachCertificate(orgObj, domain, (certificateSubDir, fullCertificateDirectoryPath, certificateFileName, directoryPrefixConfig) => {
-            const orgDomain = orgObj ? `${orgObj.orgId}.${domain}` : domain;
-            shell.exec(`/usr/bin/wget ${WGET_OPTS} --directory-prefix ${fullCertificateDirectoryPath} http://www.${orgDomain}:${wwwPort||80}/msp/${certificateSubDir}/${certificateFileName}`);
+            shell.exec(`/usr/bin/wget ${WGET_OPTS} --directory-prefix ${fullCertificateDirectoryPath} http://${wwwHost}:${wwwPort || 80}/msp/${certificateSubDir}/${certificateFileName}`);
         });
     }
 
-    downloadOrdererMSP(wwwPort = cfg.ORDERER_WWW_PORT) {
-        this.downloadCerts(null, cfg.ORDERER_DOMAIN, wwwPort);
+    async downloadOrdererMSP(wwwPort = cfg.ORDERER_WWW_PORT) {
+        await this.downloadCerts(null, cfg.ORDERER_DOMAIN, wwwPort);
     }
 
-    downloadOrgMSP(orgObj, domain) {
-        this.downloadCerts(orgObj, domain, orgObj.wwwPort);
+    async downloadOrgMSP(orgObj, domain = cfg.domain) {
+        await util.checkRemotePort(`www.${orgObj.orgId}.${domain}`, orgObj.wwwPort || 80);
+        await this.downloadCerts(orgObj, domain, orgObj.wwwPort);
     }
 
     execShellCommand(cmd, dir, extraEnv) {
@@ -186,7 +191,7 @@ class FabricCLI {
     }
 
     async prepareOrgConfigStruct(newOrg, configTemplateFile, extraEnv) {
-        this.downloadOrgMSP(newOrg);
+        await this.downloadOrgMSP(newOrg);
 
         let env = _.assign({
             NEWORG: newOrg.orgId,

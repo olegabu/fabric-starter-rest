@@ -41,7 +41,7 @@ const ordererApiAddr = `api.${ordererDomain}:${ordererApiPort}`;
 
 const certificationDomain= /*isOrderer ? */ `${myorg}.${DOMAIN}`;
 
-const systemChannelId = "orderer-system-channel";
+const systemChannelId = process.env.SYSTEM_CHANNEL_ID || "orderer-system-channel";
 
 module.exports = {
     log4js: log4js,

@@ -158,7 +158,7 @@ class FabricStarterClient {
     async createChannel(channelId) {
         try {
             logger.info(`Creating channel ${channelId}`);
-            fabricCLI.downloadOrdererMSP();
+            await fabricCLI.downloadOrdererMSP();
 
             const tx_id = this.client.newTransactionID(true);
             let orderer = this.client.getOrderer(cfg.ORDERER_ADDR); //this.createOrderer();
@@ -186,7 +186,7 @@ class FabricStarterClient {
 
     async joinChannel(channelId) {
         logger.info(`Joining channel ${channelId}`);
-        fabricCLI.downloadOrdererMSP();
+        await fabricCLI.downloadOrdererMSP();
 
         const tx2_id = this.client.newTransactionID(true);
         let peers = await this.queryPeers();
@@ -207,10 +207,14 @@ class FabricStarterClient {
     async addOrgToChannel(channelId, orgObj) {
         await this.checkOrgDns(orgObj);
         try {
+            await util.checkRemotePort(`peer0.${orgObj.orgId}.${orgObj.domain || cfg.domain}`, orgObj.peer0Port);
             let currentChannelConfigFile = fabricCLI.fetchChannelConfig(channelId);
             let configUpdateRes = await fabricCLI.prepareNewOrgConfig(orgObj);
-            await channelManager.applyConfigToChannel(channelId, currentChannelConfigFile, configUpdateRes, this.client);
+            let res = await channelManager.applyConfigToChannel(channelId, currentChannelConfigFile, configUpdateRes, this.client);
             this.chmodCryptoFolder();
+            return res;
+        } catch (e) {
+            return e;
         } finally {
             this.invalidateChannelsCache(channelId);
         }

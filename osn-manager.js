@@ -14,17 +14,9 @@ class OsnManager {
     async addRaftConsenter(orderer, fabricStarterClient) {
         logger.debug("Register new orderer DNS info ", orderer);
         await this.registerOrdererInCommonChannel(orderer, fabricStarterClient);
-
-        logger.debug("Add new orderer MSP config to raft service", orderer);
-        let cmd = `container-scripts/orderer/raft-add-orderer-msp.sh ${orderer.ordererName} ${orderer.ordererDomain} ${orderer.wwwPort}`;
-        fabricCLI.execShellCommand(cmd, cfg.YAMLS_DIR, certsManager.getOrdererMSPEnv());
-
-        logger.debug("Add new orderer to consenters configuration ", orderer);
-        cmd = `container-scripts/orderer/raft-add-consenter.sh ${orderer.ordererName} ${orderer.ordererDomain} ${orderer.ordererPort} ${orderer.wwwPort}`;
-        fabricCLI.execShellCommand(cmd, cfg.YAMLS_DIR, certsManager.getOrdererMSPEnv())
-
+        this.updateConsenterConfig(orderer, cfg.systemChannelId);
+        this.updateConsenterConfig(orderer, cfg.DNS_CHANNEL);
     }
-
 
     async registerOrdererInCommonChannel(orderer, fabricStarterClient) {
         await fabricStarterClient.invoke(cfg.DNS_CHANNEL, 'dns', 'registerOrderer',
@@ -32,6 +24,19 @@ class OsnManager {
             .then(() => util.sleep(cfg.DNS_UPDATE_TIMEOUT));
     }
 
+    updateConsenterConfig(orderer, channel) {
+        logger.debug("Add new orderer MSP config to raft service", orderer);
+        let cmd = `container-scripts/orderer/raft-add-orderer-msp.sh ${orderer.ordererName} ${orderer.ordererDomain} ${orderer.wwwPort} ${channel}`;
+        fabricCLI.execShellCommand(cmd, cfg.YAMLS_DIR, certsManager.getOrdererMSPEnv());
+
+        logger.debug("Add new orderer to consenters configuration ", orderer);
+        cmd = `container-scripts/orderer/raft-add-consenter.sh ${orderer.ordererName} ${orderer.ordererDomain} ${orderer.ordererPort} ${orderer.wwwPort} ${channel}`;
+        fabricCLI.execShellCommand(cmd, cfg.YAMLS_DIR, certsManager.getOrdererMSPEnv())
+
+        logger.debug("Add new endpoint to endpoints configuration ", orderer);
+        cmd = `container-scripts/orderer/raft-add-endpoint.sh ${orderer.ordererName} ${orderer.ordererDomain} ${orderer.ordererPort} ${channel}`;
+        fabricCLI.execShellCommand(cmd, cfg.YAMLS_DIR, certsManager.getOrdererMSPEnv())
+    }
 
     init(fabricClient) {
         this.fabricStarterClient = fabricClient;

@@ -17,7 +17,7 @@ RUN apt-get update && apt-get install python make  \
 && apt-get remove -y python make && apt-get purge
 
 
-RUN git clone https://github.com/olegabu/fabric-starter-admin-web.git --branch stable --depth 1 admin && npm install aurelia-cli -g \
+RUN git clone https://github.com/olegabu/fabric-starter-admin-web.git --branch stable --depth 1 admin && npm install aurelia-cli@0.35.1 -g \
 && cd admin && npm install && au build --env prod && rm -rf node_modules
 
 # add project files (see .dockerignore for a list of excluded files)
