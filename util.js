@@ -7,16 +7,16 @@ const logger = cfg.log4js.getLogger('util');
 class Util {
 
     async checkRemotePort(server, port) {
+        logger.debug(`Check remote port is accessible for: ${server}:${port}`);
         return new Promise(async (resolve, reject) => {
             let client = net.createConnection({host: server, port: port, timeout: 1000}, ()=>{
-                logger.debug(`Remote port is available: ${server}:${port}`);
+                logger.debug(`Remote port is accessible: ${server}:${port}`);
                 client.end();
                 resolve();
             });
             client.on("error", e => {
                 reject(`Endpoint is unreachable: ${server}:${port}. ${e && e.message}`)
             });
-
         });
     }
 

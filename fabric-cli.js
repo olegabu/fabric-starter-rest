@@ -30,14 +30,15 @@ class FabricCLI {
         const orgDomain = orgObj ? `${orgObj.orgId}.${domain}` : domain;
         let wwwHost = `www.${orgDomain}`;
         wwwPort = wwwPort || 80;
-        // await util.checkRemotePort(wwwHost, wwwPort); TODO: same host orderer port is not available from docker
-        certsManager.forEachCertificate(orgObj, domain, (certificateSubDir, fullCertificateDirectoryPath, certificateFileName, directoryPrefixConfig) => {
+        // await util.checkRemotePort(wwwHost, wwwPort); TODO: same host orderer port is not available when in docker
+        certsManager.forEachCertificate(orgObj, domain,
+            (certificateSubDir, fullCertificateDirectoryPath, certificateFileName, directoryPrefixConfig) => {
             shell.exec(`/usr/bin/wget ${WGET_OPTS} --directory-prefix ${fullCertificateDirectoryPath} http://${wwwHost}:${wwwPort || 80}/msp/${certificateSubDir}/${certificateFileName}`);
         });
     }
 
-    async downloadOrdererMSP(wwwPort = cfg.ORDERER_WWW_PORT) {
-        await this.downloadCerts(null, cfg.ORDERER_DOMAIN, wwwPort);
+    async downloadOrdererMSP(wwwPort = cfg.ORDERER_WWW_PORT, ordererDomain=cfg.ORDERER_DOMAIN) {
+        await this.downloadCerts(null, ordererDomain, wwwPort);
     }
 
     async downloadOrgMSP(orgObj, domain = cfg.domain) {

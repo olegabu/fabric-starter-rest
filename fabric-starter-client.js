@@ -253,7 +253,7 @@ class FabricStarterClient {
         let chaincodeList = await this.queryInstantiatedChaincodes(cfg.DNS_CHANNEL);
         if (!chaincodeList || !chaincodeList.chaincodes.find(i => i.name === "dns"))
             return;
-        const dns = await this.query(cfg.DNS_CHANNEL, "dns", "get", '["dns"]', {targets: []});
+        const dns = await this.query(cfg.DNS_CHANNEL, cfg.DNS_CHAINCODE, "get", '["dns"]', {targets: []});
         try {
             // let dnsRecordsList = dns && dns.length && JSON.parse(dns[0]);
 
@@ -261,7 +261,7 @@ class FabricStarterClient {
             const orgIp = _.get(orgObj, "orgIp");
 
             if (orgIp){
-                await this.invoke(cfg.DNS_CHANNEL, "dns", "registerOrg", [`${orgId}.${cfg.domain}`, orgIp], {targets: []}, true)
+                await this.invoke(cfg.DNS_CHANNEL, cfg.DNS_CHAINCODE, "registerOrg", [`${orgId}.${cfg.domain}`, JSON.stringify(orgObj)], {targets: []}, true)
                     .then(() => util.sleep(cfg.DNS_UPDATE_TIMEOUT));
             }
         } catch (e) {

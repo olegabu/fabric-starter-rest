@@ -336,14 +336,34 @@ module.exports = function(app, server) {
     res.json(await req.fabricStarterClient.addOrgToChannel(req.params.channelId, orgFromHttpBody(req.body)));
   }));
 
+
+  /**
+   * Get all organizations registered in DNS service (currently matches with common channel orgs, but not necessary in future)
+   * @route GET /network/orgs
+   * @group orgs - Organizations registered in the blockchain network
+   * @returns {object} 200 - Array of organization objects
+   * @returns {Error}  default - Unexpected error
+   * @security JWT
+   */
+  app.get('/network/orgs', asyncMiddleware(async(req, res, next) => {
+    let storedOrgs = await req.fabricStarterClient.query(cfg.DNS_CHANNEL, cfg.DNS_CHAINCODE, "get", '["orgs"]');
+    let orgsArray =_.map(storedOrgs)
+    res.json(orgsArray);
+  }));
+
+
   app.post('/service/accept/orgs', asyncMiddleware((req, res) => {
     logger.info('Orgs to service request: ', req.body);
     let orgMspIdsArray = _.isArray(req.body) ? req.body : [req.body];
-    this.orgsToAccept = orgMspIdsArray;
+    this.orgsToAccept = _.concat(this.orgsToAccept, orgMspIdsArray);
     res.json("OK")
   }));
 
-  app.post('/integration/service/orgs', asyncMiddleware(async (req, res, next) => {
+  app.get('/service/accepted/orgs', asyncMiddleware((req, res) =>{
+    res.json(this.orgsToAccept || []);
+  }));
+
+  app.post('/integration/service/orgs', asyncMiddleware(async (req, res) => {
     logger.info('Integration service request: ', req.body);
     let org = orgFromHttpBody(req.body)
     if (!this.orgsToAccept || _.includes(this.orgsToAccept, org.orgId)) {
@@ -378,7 +398,10 @@ module.exports = function(app, server) {
   }
 
   function ordererFromHttpBody(body) {
-    let orderer = {ordererName: body.ordererName, ordererDomain: body.ordererDomain, ordererPort: body.ordererPort, ip:body.ip, wwwPort: body.wwwPort};
+    let orderer = {
+      ordererName: body.ordererName, ordererDomain: body.ordererDomain, ordererPort: body.ordererPort,
+      ordererIp: body.ordererIp, wwwPort: body.wwwPort
+    };
     logger.info('Orderer: ', orderer);
     return orderer;
   }
