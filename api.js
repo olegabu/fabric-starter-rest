@@ -355,7 +355,7 @@ module.exports = function(app, server) {
   app.post('/service/accept/orgs', asyncMiddleware((req, res) => {
     logger.info('Orgs to service request: ', req.body);
     let orgMspIdsArray = _.isArray(req.body) ? req.body : [req.body];
-    this.orgsToAccept = _.concat(this.orgsToAccept, orgMspIdsArray);
+    this.orgsToAccept = _.concat(this.orgsToAccept || [], orgMspIdsArray);
     res.json("OK")
   }));
 
@@ -391,7 +391,7 @@ module.exports = function(app, server) {
   }
 
   function orgFromHttpBody(body) {
-    let org = {orgId: body.orgId, orgIp: body.orgIp, peer0Port: body.peerPort, wwwPort: body.wwwPort};
+    let org = {orgId: body.orgId, domain: body.domain, orgIp: body.orgIp, peer0Port: body.peerPort, wwwPort: body.wwwPort};
     logger.info('Org: ', org);
 
     return org;
@@ -399,7 +399,7 @@ module.exports = function(app, server) {
 
   function ordererFromHttpBody(body) {
     let orderer = {
-      ordererName: body.ordererName, ordererDomain: body.ordererDomain, ordererPort: body.ordererPort,
+      ordererName: body.ordererName, domain: body.domain, ordererPort: body.ordererPort,
       ordererIp: body.ordererIp, wwwPort: body.wwwPort
     };
     logger.info('Orderer: ', orderer);

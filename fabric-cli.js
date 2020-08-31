@@ -42,7 +42,7 @@ class FabricCLI {
     }
 
     async downloadOrgMSP(orgObj, domain = cfg.domain) {
-        await util.checkRemotePort(`www.${orgObj.orgId}.${domain}`, orgObj.wwwPort || 80);
+        //TODO:await util.checkRemotePort(`www.${orgObj.orgId}.${domain}`, orgObj.wwwPort || 80);
         await this.downloadCerts(orgObj, domain, orgObj.wwwPort);
     }
 

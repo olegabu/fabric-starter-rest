@@ -261,7 +261,7 @@ class FabricStarterClient {
             const orgIp = _.get(orgObj, "orgIp");
 
             if (orgIp){
-                await this.invoke(cfg.DNS_CHANNEL, cfg.DNS_CHAINCODE, "registerOrg", [`${orgId}.${cfg.domain}`, JSON.stringify(orgObj)], {targets: []}, true)
+                await this.invoke(cfg.DNS_CHANNEL, cfg.DNS_CHAINCODE, "registerOrg", [JSON.stringify(orgObj)], {targets: []}, true)
                     .then(() => util.sleep(cfg.DNS_UPDATE_TIMEOUT));
             }
         } catch (e) {

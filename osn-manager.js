@@ -19,22 +19,21 @@ class OsnManager {
     }
 
     async registerOrdererInCommonChannel(orderer, fabricStarterClient) {
-        await fabricStarterClient.invoke(cfg.DNS_CHANNEL, 'dns', 'registerOrderer',
-            [orderer.ordererName, orderer.ordererDomain, orderer.ordererPort, orderer.ip || ''], null, true)
+        await fabricStarterClient.invoke(cfg.DNS_CHANNEL, 'dns', 'registerOrderer', [JSON.stringify(orderer)], null, true)
             .then(() => util.sleep(cfg.DNS_UPDATE_TIMEOUT));
     }
 
     updateConsenterConfig(orderer, channel) {
         logger.debug("Add new orderer MSP config to raft service", orderer);
-        let cmd = `container-scripts/orderer/raft-add-orderer-msp.sh ${orderer.ordererName} ${orderer.ordererDomain} ${orderer.wwwPort} ${channel}`;
+        let cmd = `container-scripts/orderer/raft-add-orderer-msp.sh ${orderer.ordererName} ${orderer.domain} ${orderer.wwwPort} ${channel}`;
         fabricCLI.execShellCommand(cmd, cfg.YAMLS_DIR, certsManager.getOrdererMSPEnv());
 
         logger.debug("Add new orderer to consenters configuration ", orderer);
-        cmd = `container-scripts/orderer/raft-add-consenter.sh ${orderer.ordererName} ${orderer.ordererDomain} ${orderer.ordererPort} ${orderer.wwwPort} ${channel}`;
+        cmd = `container-scripts/orderer/raft-add-consenter.sh ${orderer.ordererName} ${orderer.domain} ${orderer.ordererPort} ${orderer.wwwPort} ${channel}`;
         fabricCLI.execShellCommand(cmd, cfg.YAMLS_DIR, certsManager.getOrdererMSPEnv())
 
         logger.debug("Add new endpoint to endpoints configuration ", orderer);
-        cmd = `container-scripts/orderer/raft-add-endpoint.sh ${orderer.ordererName} ${orderer.ordererDomain} ${orderer.ordererPort} ${channel}`;
+        cmd = `container-scripts/orderer/raft-add-endpoint.sh ${orderer.ordererName} ${orderer.domain} ${orderer.ordererPort} ${channel}`;
         fabricCLI.execShellCommand(cmd, cfg.YAMLS_DIR, certsManager.getOrdererMSPEnv())
     }
 
@@ -42,7 +41,7 @@ class OsnManager {
         this.fabricStarterClient = fabricClient;
         this.registerOSN('default', {
             ordererName: cfg.ordererName,
-            ordererDomain: cfg.ORDERER_DOMAIN,
+            domain: cfg.ORDERER_DOMAIN,
             ordererPort: cfg.ordererPort
         });
     }
