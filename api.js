@@ -376,7 +376,7 @@ module.exports = function(app, server) {
   app.post('/integration/service/raft', asyncMiddleware(async (req, res, next) => {
     logger.info('Raft integration service request: ', req.body);
     let orderer = ordererFromHttpBody(req.body);
-    if (!this.orgsToAccept || _.includes(this.orgsToAccept, orderer.ordererDomain)) {
+    if (!this.orgsToAccept || _.find(this.orgsToAccept, o=>o.domain===orderer.domain)) {
       let client = await createDefaultFabricClient();
       return res.json(await osnManager.OsnManager.addRaftConsenter(orderer, client));
     }
