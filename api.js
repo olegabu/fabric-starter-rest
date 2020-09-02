@@ -347,7 +347,7 @@ module.exports = function(app, server) {
    */
   app.get('/network/orgs', asyncMiddleware(async(req, res, next) => {
     let storedOrgs = await req.fabricStarterClient.query(cfg.DNS_CHANNEL, cfg.DNS_CHAINCODE, "get", '["orgs"]');
-    let orgsArray =_.map(storedOrgs)
+    let orgsArray =_.values(JSON.parse(_.get(storedOrgs,"[0]")));
     res.json(orgsArray);
   }));
 
@@ -366,7 +366,7 @@ module.exports = function(app, server) {
   app.post('/integration/service/orgs', asyncMiddleware(async (req, res) => {
     logger.info('Integration service request: ', req.body);
     let org = orgFromHttpBody(req.body)
-    if (!this.orgsToAccept || _.includes(this.orgsToAccept, org.orgId)) {
+    if (!this.orgsToAccept || _.find(this.orgsToAccept, o => o.orgId === org.orgId)) {
       let client = await createDefaultFabricClient();
       return res.json(await client.addOrgToChannel(cfg.DNS_CHANNEL, org));
     }
@@ -380,7 +380,7 @@ module.exports = function(app, server) {
       let client = await createDefaultFabricClient();
       return res.json(await osnManager.OsnManager.addRaftConsenter(orderer, client));
     }
-    res.status(301).json(`Org ${org.orgId} is not allowed`);
+    res.status(301).json(`Orderer domain ${orderer.domain} is not allowed`);
   }));
 
   async function createDefaultFabricClient() {

@@ -596,7 +596,7 @@ class FabricStarterClient {
             proposal.targets = foundPeers;
         }
         // else {
-        //     proposal.targets = [this.peer];
+        //     proposal.targets = [this.peer]; //TODO: define option for single target
         // }
 
         logger.trace('query proposal', proposal);
