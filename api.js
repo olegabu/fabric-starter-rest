@@ -365,7 +365,7 @@ module.exports = function(app, server) {
 
   app.post('/integration/service/orgs', asyncMiddleware(async (req, res) => {
     logger.info('Integration service request: ', req.body);
-    let org = orgFromHttpBody(req.body)
+    let org = orgFromHttpBody(req.body);
     if (!this.orgsToAccept || _.find(this.orgsToAccept, o => o.orgId === org.orgId)) {
       let client = await createDefaultFabricClient();
       return res.json(await client.addOrgToChannel(cfg.DNS_CHANNEL, org));

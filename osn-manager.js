@@ -30,11 +30,11 @@ class OsnManager {
 
         logger.debug("Add new orderer to consenters configuration ", orderer);
         cmd = `container-scripts/orderer/raft-add-consenter.sh ${orderer.ordererName} ${orderer.domain} ${orderer.ordererPort} ${orderer.wwwPort} ${channel}`;
-        fabricCLI.execShellCommand(cmd, cfg.YAMLS_DIR, certsManager.getOrdererMSPEnv())
+        fabricCLI.execShellCommand(cmd, cfg.YAMLS_DIR, certsManager.getOrdererMSPEnv());
 
         logger.debug("Add new endpoint to endpoints configuration ", orderer);
         cmd = `container-scripts/orderer/raft-add-endpoint.sh ${orderer.ordererName} ${orderer.domain} ${orderer.ordererPort} ${channel}`;
-        fabricCLI.execShellCommand(cmd, cfg.YAMLS_DIR, certsManager.getOrdererMSPEnv())
+        fabricCLI.execShellCommand(cmd, cfg.YAMLS_DIR, certsManager.getOrdererMSPEnv());
     }
 
     init(fabricClient) {
