@@ -11,18 +11,16 @@ class ChannelManager {
     async joinChannel(channelId, fabricStarterClient, socketServer) {
         try {
             const ret = await fabricStarterClient.joinChannel(channelId);
-            await util.retryOperation(cfg.LISTENER_RETRY_COUNT, async function () {
-                await socketServer.registerChannelChainblockListener(channelId);
-            });
+            // await socketServer.registerChannelChainblockListener(channelId);
             return ret;
         } catch(error) {
-            logger.error(error.message);
+            logger.error("Error joining channel", error.message);
             throw new Error(error.message);
         }
     }
 
     async applyConfigToChannel(channelId, currentChannelConfigFile, configUpdateRes, fabricClient, admin) {
-        fabricCLI.downloadOrdererMSP();
+        await fabricCLI.downloadOrdererMSP();
         let channelGroupConfig = await fabricCLI.translateChannelConfig(currentChannelConfigFile);
         logger.debug(`Got channel config ${channelId}:`, channelGroupConfig);
 

@@ -42,10 +42,6 @@ class FabricStarterClient {
         } )
     }
 
-    startOrderer() {
-        fabricCLI.prepareRaftOrderer();
-    }
-
     async init() {
         await this.client.initCredentialStores();
         this.fabricCaClient = cfg.AUTH_MODE === 'CA' ? this.client.getCertificateAuthority() : undefined;
@@ -162,7 +158,7 @@ class FabricStarterClient {
     async createChannel(channelId) {
         try {
             logger.info(`Creating channel ${channelId}`);
-            fabricCLI.downloadOrdererMSP();
+            await fabricCLI.downloadOrdererMSP();
 
             const tx_id = this.client.newTransactionID(true);
             let orderer = this.client.getOrderer(cfg.ORDERER_ADDR); //this.createOrderer();
@@ -190,7 +186,7 @@ class FabricStarterClient {
 
     async joinChannel(channelId) {
         logger.info(`Joining channel ${channelId}`);
-        fabricCLI.downloadOrdererMSP();
+        await fabricCLI.downloadOrdererMSP();
 
         const tx2_id = this.client.newTransactionID(true);
         let peers = await this.queryPeers();
@@ -211,10 +207,14 @@ class FabricStarterClient {
     async addOrgToChannel(channelId, orgObj) {
         await this.checkOrgDns(orgObj);
         try {
+            await util.checkRemotePort(`peer0.${orgObj.orgId}.${orgObj.domain || cfg.domain}`, orgObj.peer0Port);
             let currentChannelConfigFile = fabricCLI.fetchChannelConfig(channelId);
             let configUpdateRes = await fabricCLI.prepareNewOrgConfig(orgObj);
-            await channelManager.applyConfigToChannel(channelId, currentChannelConfigFile, configUpdateRes, this.client);
+            let res = await channelManager.applyConfigToChannel(channelId, currentChannelConfigFile, configUpdateRes, this.client);
             this.chmodCryptoFolder();
+            return res;
+        } catch (e) {
+            return e;
         } finally {
             this.invalidateChannelsCache(channelId);
         }
@@ -253,15 +253,15 @@ class FabricStarterClient {
         let chaincodeList = await this.queryInstantiatedChaincodes(cfg.DNS_CHANNEL);
         if (!chaincodeList || !chaincodeList.chaincodes.find(i => i.name === "dns"))
             return;
-        const dns = await this.query(cfg.DNS_CHANNEL, "dns", "get", '["dns"]', {targets: []});
+        const dns = await this.query(cfg.DNS_CHANNEL, cfg.DNS_CHAINCODE, "get", '["dns"]', {targets: []});
         try {
-            let dnsRecordsList = dns && dns.length && JSON.parse(dns[0]);
+            // let dnsRecordsList = dns && dns.length && JSON.parse(dns[0]);
 
             const orgId = _.get(orgObj, "orgId");
             const orgIp = _.get(orgObj, "orgIp");
 
             if (orgIp){
-                await this.invoke(cfg.DNS_CHANNEL, "dns", "registerOrg", [`${orgId}.${cfg.domain}`, orgIp], {targets: []}, true)
+                await this.invoke(cfg.DNS_CHANNEL, cfg.DNS_CHAINCODE, "registerOrg", [JSON.stringify(orgObj)], {targets: []}, true)
                     .then(() => util.sleep(cfg.DNS_UPDATE_TIMEOUT));
             }
         } catch (e) {
@@ -475,7 +475,7 @@ class FabricStarterClient {
 
         let badPeers;
 
-        if (targets.targets || targets.peers) {
+        if (targets && (targets.targets || targets.peers)) {
             const targetsList = this.createTargetsList(channel, targets);
             const foundPeers = targetsList.peers;
             badPeers = targetsList.badPeers;
@@ -485,6 +485,7 @@ class FabricStarterClient {
         } else {
             proposal.targets = [this.peer];
         }
+        logger.debug("Proposal", proposal);
 
         return util.retryOperation(cfg.INVOKE_RETRY_COUNT, async function () {
             const txId = fsClient.client.newTransactionID(/*true*/);
@@ -595,7 +596,7 @@ class FabricStarterClient {
             proposal.targets = foundPeers;
         }
         // else {
-        //     proposal.targets = [this.peer];
+        //     proposal.targets = [this.peer]; //TODO: define option for single target
         // }
 
         logger.trace('query proposal', proposal);

@@ -3,14 +3,15 @@ module.exports = function(app, server) {
   const fs = require("fs");
   const path = require('path');
   const os = require('os');
-  const logger = require('log4js').getLogger('api');
   const jsonwebtoken = require('jsonwebtoken');
   const jwt = require('express-jwt');
   const _ = require('lodash');
   const cfg = require('./config.js');
+  const logger = cfg.log4js.getLogger('api');
   const util = require('./util');
 
   const channelManager = require('./channel-manager');
+  const osnManager = require('./osn-manager');
 
   // upload for chaincode and app installation
   const uploadDir = os.tmpdir() || './upload';
@@ -49,6 +50,7 @@ module.exports = function(app, server) {
   app.use('/webapp', express.static(webappDir));
   logger.info(`serving webapp at /webapp from ${webappDir}`);
   app.use('/admin', express.static(cfg.WEBADMIN_DIR));
+  app.use('/admin/*', express.static(cfg.WEBADMIN_DIR));
   logger.info(`serving admin at /admin from ${cfg.WEBADMIN_DIR}`);
 
 // serve msp directory with certificates as static
@@ -78,7 +80,7 @@ module.exports = function(app, server) {
 
 // require presence of JWT in Authorization Bearer header
   const jwtSecret = fabricStarterClient.getSecret();
-  app.use(jwt({secret: jwtSecret}).unless({path: ['/', '/users', '/domain', '/mspid', '/config', new RegExp('/api-docs'), '/api-docs.json', /\/webapp/, /\/webapps\/.*/, '/admin/', '/msp/']}));
+  app.use(jwt({secret: jwtSecret}).unless({path: ['/', '/users', '/domain', '/mspid', '/config', new RegExp('/api-docs'), '/api-docs.json', /\/webapp/, /\/webapps\/.*/,'/admin/', /\/admin\/.*/, '/msp/', /\/integration\/.*/]}));
 
 // use fabricStarterClient for every logged in user
   const mapFabricStarterClient = {};
@@ -228,8 +230,9 @@ module.exports = function(app, server) {
    * @returns {Error}  default - Unexpected error
    * @security JWT
    */
-  app.post('/channels/:channelId', asyncMiddleware(async(req, res, next) => {
+  app.post('/channels/:channelId', asyncMiddleware(async (req, res, next) => {
     let ret = await channelManager.joinChannel(req.params.channelId, req.fabricStarterClient, socket);
+    await socket.awaitForChannel(req.params.channelId);
     res.json(ret);
   }));
 
@@ -251,9 +254,9 @@ module.exports = function(app, server) {
   async function joinChannel(channelId, fabricStarterClient) {
     try {
       const ret = await fabricStarterClient.joinChannel(channelId);
-      // util.retryOperation(cfg.LISTENER_RETRY_COUNT, async function () {
+      util.retryOperation(cfg.LISTENER_RETRY_COUNT, async function () {
         await socket.registerChannelChainblockListener(channelId);
-      // });
+      });
       return ret;
     } catch(error) {
       logger.error(error.message);
@@ -333,8 +336,74 @@ module.exports = function(app, server) {
     res.json(await req.fabricStarterClient.addOrgToChannel(req.params.channelId, orgFromHttpBody(req.body)));
   }));
 
-  function orgFromHttpBody(body){
-    return {orgId: body.orgId, orgIp: body.orgIp, peer0Port: body.peerPort, wwwPort: body.wwwPort}
+
+  /**
+   * Get all organizations registered in DNS service (currently matches with common channel orgs, but not necessary in future)
+   * @route GET /network/orgs
+   * @group orgs - Organizations registered in the blockchain network
+   * @returns {object} 200 - Array of organization objects
+   * @returns {Error}  default - Unexpected error
+   * @security JWT
+   */
+  app.get('/network/orgs', asyncMiddleware(async(req, res, next) => {
+    let storedOrgs = await req.fabricStarterClient.query(cfg.DNS_CHANNEL, cfg.DNS_CHAINCODE, "get", '["orgs"]');
+    let orgsArray =_.values(JSON.parse(_.get(storedOrgs,"[0]")));
+    res.json(orgsArray);
+  }));
+
+
+  app.post('/service/accept/orgs', asyncMiddleware((req, res) => {
+    logger.info('Orgs to service request: ', req.body);
+    let orgMspIdsArray = _.isArray(req.body) ? req.body : [req.body];
+    this.orgsToAccept = _.concat(this.orgsToAccept || [], orgMspIdsArray);
+    res.json("OK")
+  }));
+
+  app.get('/service/accepted/orgs', asyncMiddleware((req, res) =>{
+    res.json(this.orgsToAccept || []);
+  }));
+
+  app.post('/integration/service/orgs', asyncMiddleware(async (req, res) => {
+    logger.info('Integration service request: ', req.body);
+    let org = orgFromHttpBody(req.body);
+    if (!this.orgsToAccept || _.find(this.orgsToAccept, o => o.orgId === org.orgId)) {
+      let client = await createDefaultFabricClient();
+      return res.json(await client.addOrgToChannel(cfg.DNS_CHANNEL, org));
+    }
+    res.status(301).json(`Org ${org.orgId} is not allowed`);
+  }));
+
+  app.post('/integration/service/raft', asyncMiddleware(async (req, res, next) => {
+    logger.info('Raft integration service request: ', req.body);
+    let orderer = ordererFromHttpBody(req.body);
+    if (!this.orgsToAccept || _.find(this.orgsToAccept, o=>o.domain===orderer.domain)) {
+      let client = await createDefaultFabricClient();
+      return res.json(await osnManager.OsnManager.addRaftConsenter(orderer, client));
+    }
+    res.status(301).json(`Orderer domain ${orderer.domain} is not allowed`);
+  }));
+
+  async function createDefaultFabricClient() {
+    let client = new FabricStarterClient();
+    await client.init();
+    await client.loginOrRegister(cfg.enrollId, cfg.enrollSecret);
+    return client;
+  }
+
+  function orgFromHttpBody(body) {
+    let org = {orgId: body.orgId, domain: body.domain, orgIp: body.orgIp, peer0Port: body.peerPort, wwwPort: body.wwwPort};
+    logger.info('Org: ', org);
+
+    return org;
+  }
+
+  function ordererFromHttpBody(body) {
+    let orderer = {
+      ordererName: body.ordererName, domain: body.domain, ordererPort: body.ordererPort,
+      ordererIp: body.ordererIp, wwwPort: body.wwwPort
+    };
+    logger.info('Orderer: ', orderer);
+    return orderer;
   }
 
   /**

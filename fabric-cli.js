@@ -7,6 +7,7 @@ const fs = require('fs'),
 
 
 const cfg = require('./config'),
+    util = require('./util'),
     certsManager = require('./certs-manager');
 
 const logger = cfg.log4js.getLogger('FabricCLI');
@@ -25,31 +26,32 @@ CONFIG_TYPE.initEnum(['common.Config', 'common.Block', 'common.ConfigUpdate', 'c
 
 class FabricCLI {
 
-    downloadCerts(orgObj, domain = cfg.domain, wwwPort = 80) {
-        certsManager.forEachCertificate(orgObj, domain, (certificateSubDir, fullCertificateDirectoryPath, certificateFileName, directoryPrefixConfig) => {
-            const orgDomain = orgObj ? `${orgObj.orgId}.${domain}` : domain;
-            shell.exec(`/usr/bin/wget ${WGET_OPTS} --directory-prefix ${fullCertificateDirectoryPath} http://www.${orgDomain}:${wwwPort||80}/msp/${certificateSubDir}/${certificateFileName}`);
+    async downloadCerts(orgObj, domain = cfg.domain, wwwPort) {
+        const orgDomain = orgObj ? `${orgObj.orgId}.${domain}` : domain;
+        let wwwHost = `www.${orgDomain}`;
+        wwwPort = wwwPort || 80;
+        // await util.checkRemotePort(wwwHost, wwwPort); TODO: same host orderer port is not available when in docker
+        certsManager.forEachCertificate(orgObj, domain,
+            (certificateSubDir, fullCertificateDirectoryPath, certificateFileName, directoryPrefixConfig) => {
+            shell.exec(`/usr/bin/wget ${WGET_OPTS} --directory-prefix ${fullCertificateDirectoryPath} http://${wwwHost}:${wwwPort || 80}/msp/${certificateSubDir}/${certificateFileName}`);
         });
     }
 
-    downloadOrdererMSP(wwwPort = cfg.ORDERER_WWW_PORT) {
-        this.downloadCerts(null, cfg.ORDERER_DOMAIN, wwwPort);
+    async downloadOrdererMSP(wwwPort = cfg.ORDERER_WWW_PORT, ordererDomain=cfg.ORDERER_DOMAIN) {
+        await this.downloadCerts(null, ordererDomain, wwwPort);
     }
 
-    downloadOrgMSP(orgObj, domain) {
-        this.downloadCerts(orgObj, domain, orgObj.wwwPort);
+    async downloadOrgMSP(orgObj, domain = cfg.domain) {
+        //TODO:await util.checkRemotePort(`www.${orgObj.orgId}.${domain}`, orgObj.wwwPort || 80);
+        await this.downloadCerts(orgObj, domain, orgObj.wwwPort);
     }
-
-
-    prepareRaftOrderer(files) {
-        this.execShellCommand("docker-compose -f docker-compose-orderer-cli.yaml up -d", cfg.YAMLS_DIR,
-            _.assign(this.getEnv(), {ORDERER_GENESIS_PROFILE: 'RaftOrdererGenesis', DOMAIN: `osn-${cfg.org}.${cfg.domain}`}));
-    }
-
 
     execShellCommand(cmd, dir, extraEnv) {
         const env = _.assign({}, process.env, extraEnv || {});
         const opts = {env: env};
+        if (dir) {
+            cmd=`cd ${dir}; ${cmd}`;
+        }
         logger.debug(cmd);
         shell.exec(`${cmd} &2>1`, opts);
     }
@@ -80,12 +82,12 @@ class FabricCLI {
     }
 
     createChannelByCli(channelName) {
-        let arg =` -c ${channelName} -f ${cfg.CRYPTO_CONFIG_DIR}/configtx/channel_${channelName}.tx `;
+        let arg = ` -c ${channelName} -f ${cfg.CRYPTO_CONFIG_DIR}/configtx/channel_${channelName}.tx `;
         this.execPeerCommand('channel create', arg);
     }
 
-    getEnv() {
-        return {
+    getEnv(extraEnv) {
+        return _.assign({
             DOMAIN: cfg.DOMAIN,
             ORG: cfg.org,
             PEER0_PORT: cfg.peer0Port,
@@ -97,7 +99,7 @@ class FabricCLI {
             RAFT0_PORT: cfg.RAFT0_PORT,
             RAFT1_PORT: cfg.RAFT1_PORT,
             RAFT2_PORT: cfg.RAFT2_PORT
-        };
+        }, extraEnv);
     }
 
     async generateChannelConfigTxContent(channelId) {
@@ -190,7 +192,7 @@ class FabricCLI {
     }
 
     async prepareOrgConfigStruct(newOrg, configTemplateFile, extraEnv) {
-        this.downloadOrgMSP(newOrg);
+        await this.downloadOrgMSP(newOrg);
 
         let env = _.assign({
             NEWORG: newOrg.orgId,

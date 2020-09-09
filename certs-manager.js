@@ -39,7 +39,7 @@ class CertificateManager {
     getOrgBaseCertificationDirectory(orgId, domain) {
         return orgId ?
             `${cfg.CRYPTO_CONFIG_DIR}/peerOrganizations/${orgId}.${domain || cfg.domain}`
-            : ORDERER_BASE_CRYPTO_DIR;
+            : `${cfg.CRYPTO_CONFIG_DIR}/ordererOrganizations/${domain || cfg.ORDERER_DOMAIN}`;
     }
 
     getMSPConfigDirectory(orgId) {

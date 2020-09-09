@@ -2,6 +2,7 @@ const SocketServer = require('socket.io');
 const logger = require('log4js').getLogger('RestSocketServer');
 const _ = require('lodash');
 const cfg = require('./config.js');
+const util = require('./util.js');
 
 class RestSocketServer {
 
@@ -53,7 +54,7 @@ class RestSocketServer {
               if (newPeersFound && self.listOfChannels.find(i => i === channelId)) {
                   await self.sendRepeatingBlockNotification(channelId);
               }
-              if (!self.listOfChannels.find(i => i === channelId)) {
+              if (!self.channelRegistered(channelId)) {
                   logger.debug(`Found new channel ${channelId}`);
                   await self.registerChannelChainblockListener(channelId);
               }
@@ -61,6 +62,9 @@ class RestSocketServer {
       }, cfg.CHANNEL_LISTENER_UPDATE_TIMEOUT);
   }
 
+    channelRegistered(channelId) {
+        return this.listOfChannels.find(i => i === channelId);
+    }
 
   async registerChannelChainblockListener(channelId) {
     const self = this;
@@ -75,7 +79,7 @@ class RestSocketServer {
       _.remove(self.listOfChannels, chId=>chId===channelId);
     }, this.opts);
     logger.debug(`registered for block event on ${channelId}`);
-      this.listOfChannels.push(channelId);
+    this.listOfChannels.push(channelId);
     return true;
   }
 
@@ -85,6 +89,14 @@ class RestSocketServer {
       let block = await this.fabricStarterClient.queryBlock(channel, number, true);
       this.io.emit('chainblock', block)
   }
+
+    async awaitForChannel(channelId) {
+        let count = 0;
+        while (!this.channelRegistered(channelId) && count < cfg.JOIN_RETRY_COUNT)
+            await util.sleep(1000);
+        count++;
+    }
+
 }
 
 module.exports = RestSocketServer;

@@ -31,6 +31,26 @@ npm start
 Build docker image.
 ```bash
 docker build -t olegabu/fabric-starter-rest .
+# or
+docker build -t olegabu/fabric-starter-rest --build-arg FABRIC_STARTER_VERSION=latest .
+```
+
+#### Custom admin dashboard.
+
+Prepare `tgz` file with the source codes of alternate admin webapp, and copy it to `fabric-starter-rest` folder 
+```bash
+cd ../custom-admin-webapp
+tar --exclude='.idea' --exclude='.git' --exclude='node_modules' -zcvf custom-sources.tgz .
+cp custom-sources.tgz ../fabric-starter-rest
+```
+
+Use `CUSTOM_SOURCES_TAR` build arg to specify the `tgz` name (default - `custom-sources.tgz`).   
+Build an intermediate image with default build command;
+then build the final `fabric-starter-rest` image with both admin dashboards (old one, and the custom one) included:
+      
+```bash
+docker build -t olegabu/fabric-starter-rest:intermediate --build-arg FABRIC_STARTER_VERSION=latest --no-cache .
+docker build -f custom-admin.dockerfile -t olegabu/fabric-starter-rest --build-arg FABRIC_STARTER_VERSION=intermediate --build-arg CUSTOM_SOURCES_TAR=custom-sources.tgz .
 ```
 
 

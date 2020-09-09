@@ -1,9 +1,24 @@
 const fs = require('fs');
+const net = require('net');
 const _ = require('lodash');
 const cfg = require('./config.js');
 const logger = cfg.log4js.getLogger('util');
 
 class Util {
+
+    async checkRemotePort(server, port) {
+        logger.debug(`Check remote port is accessible for: ${server}:${port}`);
+        return new Promise(async (resolve, reject) => {
+            let client = net.createConnection({host: server, port: port, timeout: 1000}, ()=>{
+                logger.debug(`Remote port is accessible: ${server}:${port}`);
+                client.end();
+                resolve();
+            });
+            client.on("error", e => {
+                reject(`Endpoint is unreachable: ${server}:${port}. ${e && e.message}`)
+            });
+        });
+    }
 
     async retryOperation(nTimes, fn) {
         return new Promise(async (resolve, reject) => {
@@ -12,7 +27,7 @@ class Util {
                 let response = await fn();
                 resolve(response);
             } catch (err) {
-                logger.trace(`Error: `, err, `\nRe-trying invocation: ${nTimes}.`);
+                logger.trace(`Retry attempt: ${nTimes}. Error: `, err);
                 await this.sleep(cfg.CHANNEL_LISTENER_UPDATE_TIMEOUT);
                 return this.retryOperation(--nTimes, fn);
             }
@@ -22,7 +37,10 @@ class Util {
     filterOrderersOut(organizations) {
         let ordererNames = [cfg.HARDCODED_ORDERER_NAME, `${cfg.HARDCODED_ORDERER_NAME}.${cfg.ORDERER_DOMAIN}`, `${cfg.ordererName}.${cfg.ORDERER_DOMAIN}`];
         const differenceWith = _.differenceWith(organizations, ordererNames, (org, rejectOrg) => org.id === rejectOrg);
-        return _.filter(organizations, o=> ! (_.includes(_.get(o,'id'), 'orderer') || _.includes(_.get(o,'id'), 'osn')));
+        return _.filter(organizations,
+                o=> !_.includes(_.get(o,'id'), 'orderer')
+                              && !_.includes(_.get(o,'id'), 'osn')
+                              && !_.includes(_.get(o,'id'), 'raft'));
     }
 
     loadPemFromFile(pemFilePath) {
