@@ -40,7 +40,7 @@ docker build -t olegabu/fabric-starter-rest --build-arg FABRIC_STARTER_VERSION=l
 Prepare `tgz` file with the source codes of alternate admin webapp, and copy it to `fabric-starter-rest` folder 
 ```bash
 cd ../custom-admin-webapp
-tar --exclude='.idea' --exclude='.git' --exclude='node_modules' -zcvf custom-sources.tgz .
+tar --exclude='.idea' --exclude='.git' --exclude='node_modules' --exclude='custom-sources.tgz' -zcvf custom-sources.tgz .
 cp custom-sources.tgz ../fabric-starter-rest
 ```
 
