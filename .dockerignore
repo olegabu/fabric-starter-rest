@@ -7,3 +7,6 @@ hfc-kvs
 .idea
 .git
 crypto-config
+appstore/*
+examples/
+package-lock.json

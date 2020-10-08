@@ -26,6 +26,7 @@
     "fabric-client": "file:./gost-deps/fabric-client",
     "fabric-cryptosuite-gost": "file:./gost-deps/fabric-cryptosuite-gost",
     "ffi": "^2.3.0",
+    "fs-extra": "^8.1.0",
     "glob": "^7.1.4",
     "json5": "^2.1.1",
     "jsonwebtoken": "^8.5.1",
@@ -43,6 +44,7 @@
     "socket.io": "^2.3.0",
     "tape": "^4.11.0",
     "tape-promise": "^4.0.0",
+    "tar": "^6.0.5",
     "unzipper": "^0.10.5",
     "url-parse-lax": "^3.0.0",
     "x509": "^0.3.4"

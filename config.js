@@ -82,6 +82,7 @@ module.exports = {
 
     WEBAPPS_DIR: process.env.WEBAPPS_DIR || "webapps",
     MIDDLWARE_DIR: process.env.MIDDLWARE_DIR || "./routes",
+    APPSTORE_DIR: process.env.APPSTORE || "./appstore",
 
     UI_LISTEN_BLOCK_OPTS: process.env.UI_LISTEN_BLOCK_OPTS === "true" || process.env.UI_LISTEN_BLOCK_OPTS,
 
@@ -101,6 +102,7 @@ module.exports = {
     ORDERER_NAME_PREFIX: ordererNamePrefix,
     ORDERER_BATCH_TIMEOUT: ordererBatchTimeout,
 
+    CUSTOM_APP_PORTS: process.env.CUSTOM_APP_PORTS || '8080-8089',
     DEFAULT_PEER0PORT: DEFAULT_PEER0PORT,
     HARDCODED_ORDERER_NAME: HARDCODED_ORDERER_NAME,
     AUTH_MODE: process.env.AUTH_MODE || (process.env.CRYPTO_ALGORITHM==='GOST' ? 'ADMIN' : 'CA'),

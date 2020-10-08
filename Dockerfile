@@ -7,13 +7,15 @@ MAINTAINER olegabu
 # Create app directory
 WORKDIR /usr/src/app
 
+RUN apt-get update && apt-get install python make
+
 ## install dependencies
 # COPY ["package.json", "package-lock.json"] .
 COPY gost-deps ./gost-deps
 COPY "package.json" .
 
-RUN apt-get update && apt-get install python make  \
-&& npm install && npm rebuild && npm cache rm --force \
+#RUN apt-get update && apt-get install python make  \
+RUN npm install && npm rebuild && npm cache rm --force \
 && apt-get remove -y python make && apt-get purge
 
 

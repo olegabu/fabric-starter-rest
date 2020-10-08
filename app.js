@@ -1,7 +1,7 @@
 const logger = require('log4js').getLogger('app');
 
 const express = require('express');
-const webAppManager = require('./web-app-manager');
+const webAppManager = require('./app-manager');
 
 const app = express();
 app.disable('etag');

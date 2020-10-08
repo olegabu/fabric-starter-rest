@@ -41,26 +41,26 @@ class GostCryptoSuite extends api.CryptoSuite {
      * @throws Will throw an error if not implemented
      */
     generateKey(opts) {
-        throw Error("Not implemented yet!")
-        // logger.debug(`Generating new key, options:\n${opts}\n`);
-        // let store = opts ? (opts.ephemeral === false ? this._cryptoKeyStore : undefined) : undefined;
-        // return gostCrypto.subtle.generateKey(GOST_R_34_10, true, ['sign', 'verify'])
-        //     .then(keyPair => {
-        //         logger.debug(`Generated keyPair: ${JSON.stringify(keyPair)}`);
-        //         return gostCrypto.subtle.exportKey('raw', keyPair.privateKey);
-        //     })
-        //     .then(privateKey => {
-        //         logger.debug(`Extracted private key: ${JSON.stringify(privateKey)}`);
-        //         let theKey = new GOSTKey(privateKey);
-        //         if (store) {
-        //             return store._getKeyStore()
-        //                 .then(ks => {
-        //                     ks.putKey(theKey);
-        //                     return theKey;
-        //                 });
-        //         }
-        //         return theKey;
-        //     });
+        //throw Error("Not implemented yet!")
+        logger.debug(`Generating new key, options:\n${opts}\n`);
+        let store = opts ? (opts.ephemeral === false ? this._cryptoKeyStore : undefined) : undefined;
+        return gostCrypto.subtle.generateKey(GOST_R_34_10, true, ['sign', 'verify'])
+            .then(keyPair => {
+                logger.debug(`Generated keyPair: ${JSON.stringify(keyPair)}`);
+                return gostCrypto.subtle.exportKey('raw', keyPair.privateKey);
+            })
+            .then(privateKey => {
+                logger.debug(`Extracted private key: ${JSON.stringify(privateKey)}`);
+               let theKey = new GOSTKey(privateKey, "private");
+                if (store) {
+                    return store._getKeyStore()
+                        .then(ks => {
+                            ks.putKey(theKey);
+                            return theKey;
+                        });
+                }
+                return theKey;
+            });
     }
 
     /**
