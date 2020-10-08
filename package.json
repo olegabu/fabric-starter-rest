@@ -17,7 +17,6 @@
     "channel.js": "0.0.2",
     "chmod-plus": "0.0.3",
     "cors": "^2.8.5",
-    "crypto-gost": "^1.0.14",
     "enumify": "^1.0.4",
     "envsub": "^3.1.0",
     "express": "^4.17.1",

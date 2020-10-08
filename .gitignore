@@ -71,3 +71,4 @@ webapp/src
 appstore/*
 !appstore/.keep
 custom-sources.tgz
+/webapps/
