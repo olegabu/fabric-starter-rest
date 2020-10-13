@@ -487,7 +487,7 @@ class FabricStarterClient {
         }
         logger.debug("Proposal", proposal);
 
-        return util.retryOperation(cfg.INVOKE_RETRY_COUNT, async function () {
+//        return util.retryOperation(cfg.INVOKE_RETRY_COUNT, async function () {
             const txId = fsClient.client.newTransactionID(/*true*/);
 
             proposal.txId = txId;
@@ -517,7 +517,7 @@ class FabricStarterClient {
                 res.chaincodeResult = _.get(proposalResponse, "[0].response.payload");
                 return res;
             });
-        });
+//        });
     }
 
     errorCheck(results) {
