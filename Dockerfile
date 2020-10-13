@@ -1,8 +1,10 @@
 ARG DOCKER_REGISTRY
 ARG FABRIC_STARTER_VERSION
-FROM ${DOCKER_REGISTRY:-docker.io}/olegabu/fabric-tools-extended:${FABRIC_STARTER_VERSION:-latest}
+ARG FABRIC_STARTER_REPOSITORY
 
-MAINTAINER olegabu
+FROM ${DOCKER_REGISTRY:-docker.io}/${FABRIC_STARTER_REPOSITORY:-olegabu}/fabric-tools-extended:${FABRIC_STARTER_VERSION:-latest}
+
+MAINTAINER ${FABRIC_STARTER_REPOSITORY:-olegabu}
 
 # Create app directory
 WORKDIR /usr/src/app
