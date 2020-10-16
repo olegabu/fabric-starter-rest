@@ -2,6 +2,8 @@ const fse = require('fs-extra');
 const path = require('path');
 const unzip = require('unzipper');
 const tar = require('tar');
+const cfg = require('../config.js');
+const logger = cfg.log4js.getLogger('UnzipExtractor');
 
 function unlinkFile(path) {
     try {
@@ -13,12 +15,14 @@ function unlinkFile(path) {
 
 class UnzipExtractor {
     extractionOutStream(extractPath) {
+        logger.debug("Unzip to ", extractPath);
         return unzip.Extract({path: extractPath})
     }
 }
 
 class TarExtractor {
     extractionOutStream(extractPath) {
+        logger.debug("Untar to ", extractPath);
         return tar.x({ // or tar.extract(
                 strip: 1,
                 cwd: extractPath
@@ -29,6 +33,7 @@ class TarExtractor {
 
 class TarGzExtractor {
     extractionOutStream(extractPath) {
+        logger.debug("Untargz to ", extractPath);
         return tar.x({ // or tar.extract(
                 strip: 1,
                 cwd: extractPath,
@@ -42,19 +47,19 @@ class TarGzExtractor {
 const ARCHIVES_EXTRACTOR = {
     '.zip': new UnzipExtractor(),
     '.tar': new TarExtractor(),
-    '.gz': new TarGzExtractor(),
+    '.tgz': new TarGzExtractor(),
 };
 
 
 class ArchiveManager {
 
     async extract(sourcePath, sourceFileName, extractPath) {
-        try {
-            let archiveType = path.extname(sourceFileName) || ".zip";
-            let extractor = ARCHIVES_EXTRACTOR[archiveType];
-
-            return new Promise((resolve, reject) => {
-                return fse.ensureDir(extractPath).then(()=> {
+        let archiveType = path.extname(sourceFileName) || ".zip";
+        let extractor = ARCHIVES_EXTRACTOR[archiveType];
+        const fileBaseName = path.basename(sourceFileName, path.extname(sourceFileName));
+        return new Promise((resolve, reject) => {
+            return fse.emptyDir(path.join(extractPath, fileBaseName)).then(() => {
+                try {
                     const readStream = fse.createReadStream(sourcePath);
                     let outStream = extractor.extractionOutStream(extractPath);
 
@@ -67,14 +72,14 @@ class ArchiveManager {
                         unlinkFile(sourcePath);
                         reject();
                     })
-                })
+                } catch (e) {
+                    reject(e);
+                }
             })
-        } catch (e) {
-            return Promise.reject(e);
-        }
+        })
     }
 }
 
 
-module.exports=new ArchiveManager();
+module.exports = new ArchiveManager();
 

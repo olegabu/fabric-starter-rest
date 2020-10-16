@@ -52,7 +52,7 @@ class FabricCLI {
         if (dir) {
             cmd=`cd ${dir}; ${cmd}`;
         }
-        logger.debug(cmd);
+        logger.info(cmd);
         return shell.exec(`${cmd} 2>&1`, opts);
     }
 

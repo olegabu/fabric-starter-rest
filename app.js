@@ -1,7 +1,7 @@
 const logger = require('log4js').getLogger('app');
 
 const express = require('express');
-const webAppManager = require('./app-manager');
+const appManager = require('./app-manager');
 
 const app = express();
 app.disable('etag');
@@ -25,6 +25,8 @@ glob.sync('./routes/**/*.js').forEach(file => {
 glob.sync('./webapps/*').forEach(dir => {
     const appFolder = path.resolve(dir);
     const context = path.basename(dir);
-    webAppManager.redeployWebapp(app, context, appFolder);
+    appManager.redeployWebapp(app, context, appFolder);
     logger.info('static webapp', dir);
 });
+
+appManager.redeployAllAppstoreApps(app);

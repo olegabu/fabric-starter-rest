@@ -3,22 +3,25 @@
 #
 version: '3.7'
 
-networks:
-  fabric_service:
-    external: true
+#networks:
+#  fabric_starter_default:
+#    external: true
+
+volumes:
+  appstore:
 
 services:
   jar-app:
-    container_name: jar-app.$ORG.$DOMAIN
+    container_name: demo-jar-app.$ORG.$DOMAIN
     image: openjdk:8-jre
     environment:
       - ORG=$ORG
-      - ORDERER_HOST=$ORDERER_NAME.$ORDERER_DOMAIN
-      - ORDERER_PORT=${ORDERER_PORT}
+      - ORDERER_HOST=${ORDERER_NAME}.${ORDERER_DOMAIN}
+      - ORDERER_PORT=${ORDERER_GENERAL_LISTENPORT}
       - ORDERER_KEY_CRT=/opt/crypto-config/orderers/osn1.$ORG.$DOMAIN/tls/server.crt
       - PEER_HOST=peer0.$ORG.$DOMAIN
-      - PEER_PORT=${PEER_PORT_1}
-      - PEER_KEY_CRT=/opt/crypto-config/peers/peer0.$ORG.$DOMAIN/tls/server.crt
+      - PEER_PORT=${PEER0_PORT}
+#      - PEER_KEY_CRT=/opt/crypto-config/peers/peer0.$ORG.$DOMAIN/tls/server.crt
       - PEER_DISCOVERY=true
       - USER_CRT_PATH=/opt/crypto-config/users/admin/admin.crt
       - USER_KEY_PATH=/opt/crypto-config/users/admin/admin.key
@@ -29,9 +32,9 @@ services:
       - CHANNEL_NAME=service
       - CNFT_CHAINCODE=cnft
     volumes:
-      - ./app/:/opt/app/
-      - ${FABRIC_STARTER_HOME:-.}/crypto-config/:/opt/crypto-config/
-      - ./wallet/:/opt/cnft/wallet/
+      - ${FABRIC_STARTER_HOME:-./}/appstore/demo-jar-app/app:/opt/app
+      - ${FABRIC_STARTER_HOME:-./}/crypto-config/:/opt/crypto-config/
+      - ${FABRIC_STARTER_HOME:-./}/appstore/demo-jar-app/wallet:/opt/cnft/wallet/
       - /etc/hosts:/etc/hosts
     logging:
       driver: "json-file"

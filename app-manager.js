@@ -2,17 +2,16 @@
     const fse = require('fs-extra');
     const path = require('path');
     const express = require('express');
-    const unzip = require('unzipper');
     const _ = require('lodash');
     require('json5/lib/register');
     const cfg = require('./config.js');
-    const logger = cfg.log4js.getLogger('FabricStarterClient');
-    const archives = require('./archive/archive-manager');
+    const logger = cfg.log4js.getLogger('AppManager');
+    const archives = require('./service/archive-manager');
     const fabricCLI = require('./fabric-cli');
 
     class AppManager {
 
-        async provisionWebAppFromPackage(fileObj) {
+        async provisionWebApp(fileObj) {
 
             return archives.extract(fileObj.path, fileObj.originalname, cfg.WEBAPPS_DIR)
                 .then(() => {
@@ -54,29 +53,51 @@
             })
         }
 
-        redeployWebapp(app, appContext, appFolder) {
-            app.use(`/${cfg.WEBAPPS_DIR}/${appContext}`, express.static(appFolder));
+        redeployWebapp(expressApp, appContext, appFolder) {
+            expressApp.use(`/${cfg.WEBAPPS_DIR}/${appContext}`, express.static(appFolder));
         }
 
-        async provisionAppstoreApp(app, fileObj) {
+        async redeployAllAppstoreApps(expressApp){
+            let appsCfgs = await this.loadAppStoreConfig();
+            _.each(appsCfgs, cfg=>{
+                this.deployAppstoreApp(cfg.name, cfg.folder, cfg.port);
+            })
+        }
+
+
+        async provisionAppstoreApp(expressApp, fileObj) {
             let baseFileName = this.getFileBaseName(fileObj);
             const appFolderPath = path.join(cfg.APPSTORE_DIR, baseFileName);
+            logger.debug("Provisioning Appstore app", appFolderPath, fileObj);
             let extractPath = await archives.extract(fileObj.path, fileObj.originalname, appFolderPath);
+            let port = await this.assignPortAndSave(baseFileName, extractPath);
+            return await this.deployAppstoreApp(baseFileName, extractPath, port, expressApp);
+        }
+
+        async deployAppstoreApp(appName, extractPath, port, app) {
+            let result = fabricCLI.execShellCommand("docker-compose up -d --force-recreate", extractPath, {
+                PORT: port
+            });
+            logger.debug(result);
+            if (_.get(result, "code") === 0) {
+                await this.deployWebappIfPresent(extractPath, appName, app);
+                return {error: result.code, output: _.split(result.stdout, '\n')};
+            }
+            throw new Error(`Docker-compose up error. Return code: ${result.code}, Console output: ${result.stdout}`);
+        }
+
+        async assignPortAndSave(appName, extractPath) {
             let appsCfgs = await this.loadAppStoreConfig();
-            let port = PortAssigner.assignAppOnPort(appsCfgs, baseFileName);
+            let port = PortAssigner.assignAppOnPort(appsCfgs, appName);
+            logger.debug("Port assigned:", port);
             await this.saveAppStoreConfig(_.assign(appsCfgs, {
-                [baseFileName]: {
-                    name: baseFileName,
+                [appName]: {
+                    name: appName,
                     folder: extractPath,
                     port: port
                 }
             }));
-            let result = fabricCLI.execShellCommand("docker-compose up -d --force-recreate", extractPath, {PORT: port});
-            if (_.get(result, "code")===0) {
-                await this.deployWebappIfPresent(extractPath, baseFileName, app);
-                return {error: result.code, output: _.replace(result.stdout, '\n', '\r')};
-            }
-            throw new Error(`Docker-compose up error. Return code: ${result.code}, Console output: ${result.stdout}`);
+            return port;
         }
 
         async deployWebappIfPresent(extractPath, baseFileName, app) {
@@ -91,9 +112,12 @@
         async getAppstoreList() {
             return this.loadAppStoreConfig()
                 .then(appsCfgs => _.map(appsCfgs, e => e));
-
         }
 
+        async getAppStatus(appName) {
+            let result = fabricCLI.execShellCommand(`docker logs --tail 1000 ${appName}.${cfg.org}.${cfg.domain}`);
+            return {output: _.split(result.stdout, '\n')};
+        }
 
         async loadAppStoreConfig() {
             const appCfgFile = this.getAppCfgFile();

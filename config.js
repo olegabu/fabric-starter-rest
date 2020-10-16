@@ -102,6 +102,8 @@ module.exports = {
     ORDERER_NAME_PREFIX: ordererNamePrefix,
     ORDERER_BATCH_TIMEOUT: ordererBatchTimeout,
 
+    ACCEPT_ALL_ORGS: process.env.ACCEPT_ALL_ORGS==='false' || true,
+
     CUSTOM_APP_PORTS: process.env.CUSTOM_APP_PORTS || '8080-8089',
     DEFAULT_PEER0PORT: DEFAULT_PEER0PORT,
     HARDCODED_ORDERER_NAME: HARDCODED_ORDERER_NAME,
