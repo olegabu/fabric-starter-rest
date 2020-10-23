@@ -7,9 +7,6 @@ version: '3.7'
 #  fabric_starter_default:
 #    external: true
 
-volumes:
-  appstore:
-
 services:
   jar-app:
     container_name: demo-jar-app.$ORG.$DOMAIN
