@@ -33,10 +33,16 @@ class IntegrationService {
 
     async integrateOrg(org) {
         const allowedOrg = await this.checkOrgIsAllowed(org);
-        const defaultClient = await this.getDefaultClient()
+        const defaultClient = await this.getDefaultClient();
         const result = defaultClient.addOrgToChannel(cfg.DNS_CHANNEL, org);
         allowedOrg.joined = true;
         return result;
+    }
+
+    async registerOrgInDns(org) {
+        await this.checkOrgIsAllowed(org);
+        const defaultClient = await this.getDefaultClient();
+        await defaultClient.checkOrgDns(org);
     }
 
     async integrateOrderer(orderer) {

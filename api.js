@@ -368,6 +368,15 @@ module.exports = function(app, server) {
     }
   }));
 
+  app.post('/integration/dns/org', asyncMiddleware(async (req, res) => {
+    logger.info('Dns integration service request: ', req.body);
+    try {
+      res.json(await integrationService.registerOrgInDns(orgFromHttpBody(req.body)))
+    } catch (e) {
+      res.status(401).json(e);
+    }
+  }));
+
   app.post('/integration/service/raft', asyncMiddleware(async (req, res, next) => {
     logger.info('Raft integration service request: ', req.body);
     try {
