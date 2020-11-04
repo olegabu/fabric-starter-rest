@@ -387,7 +387,7 @@ module.exports = function(app, server) {
   }));
 
   function orgFromHttpBody(body) {
-    let org = {orgId: body.orgId, domain: body.domain, orgIp: body.orgIp, peer0Port: body.peerPort, wwwPort: body.wwwPort};
+    let org = {orgId: body.orgId, domain: body.domain || cfg.domain, orgIp: body.orgIp, peer0Port: body.peerPort, wwwPort: body.wwwPort};
     logger.info('Org: ', org);
 
     return org;
