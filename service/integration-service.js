@@ -35,7 +35,7 @@ class IntegrationService {
         const allowedOrg = await this.checkOrgIsAllowed(org);
         const defaultClient = await this.getDefaultClient();
         const result = defaultClient.addOrgToChannel(cfg.DNS_CHANNEL, org);
-        allowedOrg.joined = true;
+        _.set(allowedOrg, "joined", true);
         return result;
     }
 
@@ -49,7 +49,7 @@ class IntegrationService {
         const allowedOrg = await this.checkOrgIsAllowed(orderer);
         const defaultClient = await this.getDefaultClient();
         const result = await osnManager.OsnManager.addRaftConsenter(orderer, defaultClient);
-        allowedOrg.ordereJoined = true;
+        _.set(allowedOrg, "ordererJoined", true);
         return result;
     }
 
@@ -57,11 +57,11 @@ class IntegrationService {
         const allowedOrg = this.orgsToAccept[org.orgId];
         logger.info("Check for org presents in the accept list:", allowedOrg);
         if (cfg.ACCEPT_ALL_ORGS ||
-                (allowedOrg && !allowedOrg.joined
-                    && org.orgIp == allowedOrg.orgIp
-                    && org.domain==allowedOrg.domain
-                    && org.tlsCert == allowedOrg.tlsCert)) {
-            return allowedOrg;
+            (allowedOrg && !allowedOrg.joined
+                && org.orgIp == allowedOrg.orgIp
+                && org.domain == allowedOrg.domain
+                && org.tlsCert == allowedOrg.tlsCert)) {
+            return allowedOrg || org;
         }
         const errMessage = `Org ${org.orgId} is not allowed`;
         log.error(errMessage);
