@@ -364,6 +364,7 @@ module.exports = function(app, server) {
     try {
       res.json(await integrationService.integrateOrg(orgFromHttpBody(req.body)))
     } catch (e) {
+      logger.error(e);
       res.status(401).json(e);
     }
   }));
@@ -373,6 +374,7 @@ module.exports = function(app, server) {
     try {
       res.json(await integrationService.registerOrgInDns(orgFromHttpBody(req.body)))
     } catch (e) {
+      logger.error(e);
       res.status(401).json(e);
     }
   }));
@@ -382,6 +384,7 @@ module.exports = function(app, server) {
     try {
       res.json(await integrationService.integrateOrderer(ordererFromHttpBody(req.body)))
     } catch (e) {
+      logger.error(e);
       res.status(401).json(e);
     }
   }));

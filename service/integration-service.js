@@ -31,11 +31,22 @@ class IntegrationService {
         return _.map(this.orgsToAccept, e => e);
     }
 
+    async integrateOrderer(orderer) {
+        const allowedOrg = await this.checkOrgIsAllowed(orderer);
+        logger.debug("integrateOrderer accepting:", allowedOrg);
+        const defaultClient = await this.getDefaultClient();
+        const result = await osnManager.OsnManager.addRaftConsenter(orderer, defaultClient);
+        allowedOrg.ordererJoined = true;
+        return result;
+    }
+
     async integrateOrg(org) {
         const allowedOrg = await this.checkOrgIsAllowed(org);
+        logger.debug("integrateOrg accepting:", allowedOrg);
         const defaultClient = await this.getDefaultClient();
+        logger.debug("integrateOrg defaultClient:", defaultClient);
         const result = defaultClient.addOrgToChannel(cfg.DNS_CHANNEL, org);
-        allowedOrg.joined=true;
+        allowedOrg.joined = true;
         return result;
     }
 
@@ -43,15 +54,6 @@ class IntegrationService {
         await this.checkOrgIsAllowed(org);
         const defaultClient = await this.getDefaultClient();
         await defaultClient.checkOrgDns(org);
-    }
-
-    async integrateOrderer(orderer) {
-        const allowedOrg = await this.checkOrgIsAllowed(orderer);
-        logger.debug("integrateOrderer accepting:", allowedOrg);
-        const defaultClient = await this.getDefaultClient();
-        const result = await osnManager.OsnManager.addRaftConsenter(orderer, defaultClient);
-        _.set(allowedOrg, "ordererJoined", true);
-        return result;
     }
 
     async checkOrgIsAllowed(org) {
