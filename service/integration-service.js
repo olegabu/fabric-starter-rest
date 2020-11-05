@@ -64,11 +64,11 @@ class IntegrationService {
                 && org.orgIp == allowedOrg.orgIp
                 && org.domain == allowedOrg.domain
                 && org.tlsCert == allowedOrg.tlsCert)) {
-            log.debug("checkOrgIsAllowed: accepting ", allowedOrg);
+            logger.debug("checkOrgIsAllowed: accepting ", allowedOrg);
             return allowedOrg || org;
         }
         const errMessage = `Org ${org.orgId} is not allowed`;
-        log.error(errMessage);
+        logger.error(errMessage);
         throw new Error(errMessage);
     }
 
