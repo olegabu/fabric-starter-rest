@@ -44,7 +44,6 @@ class IntegrationService {
         const allowedOrg = await this.checkOrgIsAllowed(org);
         logger.debug("integrateOrg accepting:", allowedOrg);
         const defaultClient = await this.getDefaultClient();
-        logger.debug("integrateOrg defaultClient:", defaultClient);
         const result = defaultClient.addOrgToChannel(cfg.DNS_CHANNEL, org);
         allowedOrg.joined = true;
         return result;
