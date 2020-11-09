@@ -47,7 +47,7 @@ class FabricCLI {
     }
 
     execShellCommand(cmd, dir, extraEnv) {
-        const env = _.assign({}, process.env, extraEnv || {});
+        const env = _.assign({}, process.env, {ORDERER_DOMAIN: cfg.ORDERER_DOMAIN}, extraEnv || {});
         const opts = {env: env};
         if (dir) {
             cmd=`cd ${dir}; ${cmd}`;
