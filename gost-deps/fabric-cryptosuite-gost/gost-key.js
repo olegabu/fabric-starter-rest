@@ -11,9 +11,9 @@ const libGost = require('./lib-fabric-gost.js');
  */
 class GOSTKey extends api.Key {
 
-    constructor(pem, type) {
+    constructor(buffer, type) {
         super();
-        this.pem = pem;
+        this.buffer = buffer;
         this.type = type;
     }
 
@@ -55,7 +55,7 @@ class GOSTKey extends api.Key {
             id: "id-GostR3410-2001",
             name: "GOST R 34.10-2001",
             namedCurve: "S-256-A",
-            ukm: this.pem
+            ukm: this.buffer
         };
         // let algorithm = {
         //     name: a.name,
@@ -79,13 +79,14 @@ class GOSTKey extends api.Key {
         let gostsign = GostEngine.getGostSign(algorithm);
         const keypair = gostsign.generateKey();
 
-        return new GOSTKey({
+        /*return new GOSTKey({
             type: 'public',
             extractable: 'true',
             algorithm: algorithm,
             usages: 'VERIFY',
             buffer: Buffer.from(keypair.publicKey)
-        });
+        });*/
+        return new GOSTKey(Buffer.from(keypair.publicKey), "public");
     }
 
     /**
@@ -94,11 +95,13 @@ class GOSTKey extends api.Key {
      * @returns {string} The subject key identifier of this key as a hexidecial encoded string
      */
     getSKI() {
-        let hash = libGost.digest(this.pem);
-        return gostCrypto.coding.Hex.encode(hash);
-        // let key = this.isPrivate() ? this.getPublicKey() : this;
-        // if (!key || !key.theKey || !key.theKey.buffer) throw new Error('getSKI Error: key data is missing');
-        // return Hash.SHA2_256(key.theKey.buffer);
+        //let hash = libGost.digest(this.pem);
+        //return gostCrypto.coding.Hex.encode(hash);
+        let pubKey = this.getPublicKey();
+        if (!pubKey || !pubKey.buffer)
+            throw new Error('getSKI Error: key data is missing');
+
+        return Hash.SHA2_256(pubKey.buffer);
     }
 
     /**
@@ -107,12 +110,24 @@ class GOSTKey extends api.Key {
      * @returns {string} the PEM string representation of the key
      */
     toBytes() {
-        return this.pem;
-        // // throw new Error("Not supported");
-        //  if (this.isPrivate())
-        //     return gostCrypto.asn1.GostPrivateKeyInfo.encode(this.pem);
-        //
-        //  return gostCrypto.asn1.GostSubjectPublicKeyInfo.encode(this.pem);
+        if (this.isPrivate()) {
+            var algorithm = {
+                id: "id-GostR3410-2001",
+                name: "GOST R 34.10-2001",
+                namedCurve: "S-256-A",
+                ukm: this.buffer
+            };
+            var pkasn1 = gostCrypto.asn1.GostPrivateKeyInfo.encode({
+                algorithm: algorithm,
+                buffer: this.buffer
+            });
+            return "-----BEGIN PRIVATE KEY-----\n" +
+                Buffer.from(pkasn1).toString('base64').match(/.{0,92}/g).join('\n') +
+                "-----END PRIVATE KEY-----";
+        }
+        //return gostCrypto.asn1.GostPrivateKeyInfo.encode(this.pem);
+
+        return gostCrypto.asn1.GostSubjectPublicKeyInfo.encode(this.buffer);
     }
 
 
@@ -137,11 +152,11 @@ class GOSTKey extends api.Key {
             id: "id-GostR3410-2001",
             name: "GOST R 34.10-2001",
             namedCurve: "S-256-A",
-            ukm: this.pem
+            ukm: this.buffer
         };
         var pkasn1 = gostCrypto.asn1.GostPrivateKeyInfo.encode({
             algorithm: algorithm,
-            buffer: this.pem
+            buffer: this.buffer
         });
         var pkpem = "-----BEGIN PRIVATE KEY-----\n" +
             Buffer.from(pkasn1).toString('base64').match(/.{0,92}/g).join('\n') +
