@@ -10,9 +10,9 @@ RUN mv admin/ webapps/admin-old
 
 ADD ${CUSTOM_SOURCES_TAR:-custom-sources.tgz} /custom-admin
 
-RUN cd /custom-admin && npm install \
-&& PUBLIC_URL=/admin npm run build --mode=production \
-&& npm cache clean -f
+#RUN cd /custom-admin && npm install \
+#&& PUBLIC_URL=/admin npm run build --mode=production \
+#&& npm cache clean -f
 
 RUN cd /custom-admin && cp -r build /usr/src/app/admin && rm -rf /custom-admin;
 

@@ -34,6 +34,7 @@ docker build -t olegabu/fabric-starter-rest .
 # or
 docker build -t olegabu/fabric-starter-rest --build-arg FABRIC_STARTER_VERSION=latest .
 ```
+or use the `build.sh` script in the `docker-images` folder
 
 #### Custom admin dashboard.
 
