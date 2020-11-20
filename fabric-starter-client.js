@@ -487,7 +487,7 @@ class FabricStarterClient {
         }
         logger.debug("Proposal", proposal);
 
-        return util.retryOperation(cfg.INVOKE_RETRY_COUNT, async function () {
+        return await util.retryOperation(cfg.INVOKE_RETRY_COUNT, async function () {
             const txId = fsClient.client.newTransactionID(/*true*/);
 
             proposal.txId = txId;
