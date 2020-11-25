@@ -42,4 +42,4 @@ services:
       - ${PORT:-8080}:8080
     tty: true
     networks:
-      - fabric_starter_default
+      - fabric-starter_default
