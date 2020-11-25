@@ -109,5 +109,7 @@ module.exports = {
     HARDCODED_ORDERER_NAME: HARDCODED_ORDERER_NAME,
     AUTH_MODE: process.env.AUTH_MODE || (process.env.CRYPTO_ALGORITHM==='GOST' ? 'ADMIN' : 'CA'),
     SIGNATURE_HASH_FAMILY: process.env.SIGNATURE_HASH_FAMILY || (process.env.CRYPTO_ALGORITHM ==='GOST' ? 'SM3' : 'SHA2'),
-    CRYPTO_SUIT_CONFIG: process.env.CRYPTO_ALGORITHM==='GOST' ? gostConfig : {}
+    CRYPTO_SUIT_CONFIG: process.env.CRYPTO_ALGORITHM==='GOST' ? gostConfig : {},
+
+    AUTH_JWT_EXPIRES_IN: ( /^\d+$/.test(process.env.AUTH_JWT_EXPIRES_IN) ? parseInt(process.env.AUTH_JWT_EXPIRES_IN) : process.env.AUTH_JWT_EXPIRES_IN) || '8h'
 };

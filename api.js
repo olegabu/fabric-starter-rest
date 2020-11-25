@@ -9,6 +9,7 @@ module.exports = function(app, server) {
   const cfg = require('./config.js');
   const logger = cfg.log4js.getLogger('api');
   const util = require('./util');
+  const x509util = require('./util/x509-util');
 
   const channelManager = require('./channel-manager');
   const integrationService = require('./service/integration-service');
@@ -80,7 +81,7 @@ module.exports = function(app, server) {
 
 // require presence of JWT in Authorization Bearer header
   const jwtSecret = fabricStarterClient.getSecret();
-  app.use(jwt({secret: jwtSecret}).unless({path: ['/', '/users', '/domain', '/mspid', '/config', new RegExp('/api-docs'), '/api-docs.json', /\/webapp/, /\/webapps\/.*/,'/admin/', /\/admin\/.*/, '/msp/', /\/integration\/.*/]}));
+  app.use(jwt({secret: jwtSecret}).unless({path: ['/', '/users', /\/jwt\/.*/, '/domain', '/mspid', '/config', new RegExp('/api-docs'), '/api-docs.json', /\/webapp/, /\/webapps\/.*/,'/admin/', /\/admin\/.*/, '/msp/', /\/integration\/.*/]}));
 
 // use fabricStarterClient for every logged in user
   const mapFabricStarterClient = {};
@@ -104,7 +105,7 @@ module.exports = function(app, server) {
   });
 
   app.post('/cert', (req, res) => {
-    res.json(fabricStarterClient.decodeCert(req.body.cert));
+    res.json(x509util.decodeCert(req.body.cert));
   });
 
   /**
@@ -187,23 +188,40 @@ module.exports = function(app, server) {
    * @returns {object} 200 - User logged in and his JWT returned
    * @returns {Error}  default - Unexpected error
    */
-  app.post('/users', asyncMiddleware(async(req, res, next) => {
+  app.post('/users', asyncMiddleware(async (req, res, next) => {
     // let namePasswordKey=`${req.body.username}.${req.body.password}`;
     // if(!mapFabricStarterClient[namePasswordKey]) {
     // }
     mapFabricStarterClient[req.body.username] && mapFabricStarterClient[req.body.username].logoutUser(req.body.username);
-    mapFabricStarterClient[req.body.username]=new FabricStarterClient();
+    mapFabricStarterClient[req.body.username] = new FabricStarterClient();
     req.fabricStarterClient = mapFabricStarterClient[req.body.username];
     await req.fabricStarterClient.init();
 
     await req.fabricStarterClient.loginOrRegister(req.body.username, req.body.password || req.body.username);
 
-    const token = jsonwebtoken.sign({sub: req.fabricStarterClient.user.getName()}, jwtSecret);
+    let certSubject = x509util.getSubject(req.fabricStarterClient.user.getIdentity()._certificate);
+    let jwtPayload = _.assign({sub: req.fabricStarterClient.user.getName()}, certSubject);
+    const token = jsonwebtoken.sign(jwtPayload, jwtSecret, {expiresIn: cfg.AUTH_JWT_EXPIRES_IN});
     logger.debug('token', token);
     res.json(token);
   }));
 
   /**
+   * Verify JWT token.
+   * @route POST /jwt/verify
+   * @group auth - Authentication and verification
+   * @param {jwt} jwt.body.required
+   * @returns {object} 200 - JWT is correct
+   * @returns {Error}  500  - JWT is malformed or expired
+   */
+  app.post('/jwt/verify', asyncMiddleware(async (req, res, next) => {
+    logger.debug("Verifying JWT Token", req.body);
+    jsonwebtoken.verify(_.get(req,'body.jwt'), jwtSecret);
+    res.status(200);
+    res.json("OK");
+  }));
+
+    /**
    * Query channels joined by the first peer of my organization
    * @route GET /channels
    * @group channels - Queries and operations on channels
