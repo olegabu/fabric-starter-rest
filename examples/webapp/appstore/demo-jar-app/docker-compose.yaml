@@ -41,5 +41,9 @@ services:
     ports:
       - ${PORT:-8080}:8080
     tty: true
-    networks:
-      - fabric-starter_default
+
+
+networks:
+  default:
+    external: false
+    name: fabric-starter_default
