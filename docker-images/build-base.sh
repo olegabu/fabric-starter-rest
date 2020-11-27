@@ -1,3 +1,8 @@
+#!/usr/bin/env bash
+
+# use one time for new Hyperledger Fabric release
+# first build fabric-tools-extended image then use this ./build-base.sh for building base image,
+# and then ./build.sh for building final fabric-starter-rest image
 
 FABRIC_STARTER_VERSION=${1:-${FABRIC_STARTER_VERSION:-latest}}
 FABRIC_STARTER_REPOSITORY=${2:-olegabu}
