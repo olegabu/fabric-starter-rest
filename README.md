@@ -98,3 +98,12 @@ GRPC_MIN_TIME_BETWEEN_PINGS_MS| 300000 (5 minutes)|_Fabric-starter-rest_ resets 
 
 `snapshot-0.1-1.4`:  
 - Tag stable version
+
+
+curl -i --connect-timeout 30 --max-time 120 --retry 1 -k http://api.org1.example.com:3000/integration/service/orgs -H 'Content-Type: application/json' -d '{"orgId":"oprg2","domain":"example.com","orgIp":"","peerPort":"8051","wwwPort":"82"}'
+
+
+
+
+
+peer chaincode package -n reference -v 3.0 -l node -p crypto-config/reference -i "AND('org1.admin')" -s -S crypto-config/pack.cc

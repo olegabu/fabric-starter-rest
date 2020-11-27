@@ -7,7 +7,6 @@ const fs = require('fs'),
 
 
 const cfg = require('./config'),
-    util = require('./util'),
     certsManager = require('./certs-manager');
 
 const logger = cfg.log4js.getLogger('FabricCLI');
@@ -122,7 +121,6 @@ class FabricCLI {
 
     computeConfigUpdate(channelId, originalFileName, updatedFileName, outputFileName) {
         this.execShellCommand(`configtxlator compute_update --channel_id=${channelId} --original=${originalFileName} --updated=${updatedFileName} --output=${outputFileName}`);
-
     }
 
     translateProtobufConfig(translateOp, configType, inputFilename, outputFileName) {
@@ -242,6 +240,14 @@ class FabricCLI {
 
     loadFileContentSync(fileName) {
         return fs.readFileSync(fileName);
+    }
+
+    packageChaincodeWithInstantiationPolicy(chaincodeId, chaincodePath, version, language, instantiationPolicy) {
+        const instantiationPolicyParam = instantiationPolicy ? `-i ${instantiationPolicy}` : `-i "AND('org1.admin')"`;
+        let packageFileName = `${cfg.CRYPTO_CONFIG_DIR}/chaincode-${cfg.org}_${chaincodeId}.package`;
+        const peerPackageCommandArgs = ` -n ${chaincodeId} -p ${chaincodePath} -v ${version} -l ${language} ${instantiationPolicyParam} -s -S ${packageFileName}`
+        this.execPeerCommand('chaincode package', peerPackageCommandArgs);
+        return packageFileName;
     }
 }
 

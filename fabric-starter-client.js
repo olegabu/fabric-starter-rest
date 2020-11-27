@@ -325,26 +325,33 @@ class FabricStarterClient {
         return channelEventHub;
     }
 
-    async installChaincode(chaincodeId, chaincodePath, version, language, storage) {
+    async installChaincode(chaincodeId, chaincodePath, version, language, baseDir) {
         const peer = this.peer;
         const client = this.client;
         let fsClient = this;
         return new Promise((resolve, reject) => {
-            fs.createReadStream(chaincodePath).pipe(unzip.Extract({path: language === 'golang' ? '/opt/gopath/src' : storage}))
+            fs.createReadStream(chaincodePath).pipe(unzip.Extract({path: language === 'golang' ? '/opt/gopath/src' : baseDir}))
                 .on('close', async function () {
                     try {
                         fs.unlinkSync(chaincodePath);
                     } catch (e) {
                         logger.warn("Deleting temp file failed: ", e)
                     }
-                    let fullChaincodePath = path.resolve(__dirname, `${storage}/${chaincodeId}`);
-                    const proposal = {
+                    let fullChaincodePath = path.resolve(__dirname, `${baseDir}/${chaincodeId}`);
+                    const chaincodePackageFile = fabricCLI.packageChaincodeWithInstantiationPolicy(chaincodeId, fullChaincodePath, version, language)
+/*
+                    let proposal = {
                         targets: peer,
                         chaincodeId: chaincodeId,
                         chaincodePath: language === 'golang' ? chaincodeId : fullChaincodePath,
                         chaincodeVersion: version || '1.0',
                         chaincodeType: language || 'node',
                     };
+*/
+                    const proposal = {
+                        targets: peer,
+                        chaincodePackage: fs.readFileSync(chaincodePackageFile)
+                    }
                     try {
                         const result = await client.installChaincode(proposal);
                         fsClient.errorCheck(result);
