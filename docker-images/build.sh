@@ -1,3 +1,4 @@
+#!/usr/bin/env bash
 
 FABRIC_STARTER_VERSION=${1:-${FABRIC_STARTER_VERSION:-latest}}
 FABRIC_STARTER_REPOSITORY=${2:-olegabu}
