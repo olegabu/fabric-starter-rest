@@ -36,12 +36,11 @@ class JettyServer {
         SecureRequestCustomizer secureRequestCustomizer = new SecureRequestCustomizer();
         httpsConfiguration.addCustomizer(secureRequestCustomizer);
 
+//        ServerConnector connector = new ServerConnector(server);
         ServerConnector connector = new ServerConnector(server,
                 new SslConnectionFactory(sslContextFactory, HttpVersion.HTTP_1_1.asString()),
                 new HttpConnectionFactory(httpsConfiguration));
 
-
-//        ServerConnector connector = new ServerConnector(server);
         connector.setPort(8080);
         server.setConnectors(new Connector[] { connector });
 
