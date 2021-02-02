@@ -6,15 +6,15 @@ const util = require('./util.js');
 
 class RestSocketServer {
 
-  constructor(fabricStarterClient) {
-    if(!fabricStarterClient) {
-      const FabricStarterClient = require('./fabric-starter-client');
-      fabricStarterClient = new FabricStarterClient();
-      fabricStarterClient.init();
+    constructor(fabricStarterClient) {
+        /*    if(!fabricStarterClient) {
+              const FabricStarterClient = require('./fabric-starter-client');
+              fabricStarterClient = new FabricStarterClient();
+              fabricStarterClient.init();
+            }*/
+        this.listOfChannels = [];
+        this.fabricStarterClient = fabricStarterClient;
     }
-    this.listOfChannels = [];
-    this.fabricStarterClient = fabricStarterClient;
-  }
 
   async startSocketServer(server, opts) {
       this.io = new SocketServer(server, {origins: '*:*'});
@@ -56,7 +56,7 @@ class RestSocketServer {
               }
               if (!self.channelRegistered(channelId)) {
                   logger.debug(`Found new channel ${channelId}`);
-                  await self.registerChannelChainblockListener(channelId);
+                  await self.registerChannelBlockListener(channelId);
               }
           });
       }, cfg.CHANNEL_LISTENER_UPDATE_TIMEOUT);
@@ -66,7 +66,7 @@ class RestSocketServer {
         return this.listOfChannels.find(i => i === channelId);
     }
 
-  async registerChannelChainblockListener(channelId) {
+  async registerChannelBlockListener(channelId) {
     const self = this;
 
     await this.fabricStarterClient.registerBlockEvent(channelId, block => {

@@ -1,4 +1,4 @@
-module.exports = function(app, server) {
+module.exports = async function(app, server) {
 
   const fs = require("fs");
   const path = require('path');
@@ -13,6 +13,9 @@ module.exports = function(app, server) {
 
   const channelManager = require('./channel-manager');
   const integrationService = require('./service/integration-service');
+  const appManager = require('./app-manager');
+
+  const DltNodeContext = require('./service/context/DLTNodeContext');
 
   // upload for chaincode and app installation
   const uploadDir = os.tmpdir() || './upload';
@@ -23,17 +26,19 @@ module.exports = function(app, server) {
     {name: 'args', maxCount: 1},{name: 'chaincodeType', maxCount: 1},{name: 'chaincodeId', maxCount: 1},
     {name: 'chaincodeVersion', maxCount: 1},{name: 'waitForTransactionEvent', maxCount: 1},{name: 'policy', maxCount: 1}]);
 
-  // fabric client
-  const FabricStarterClient = require('./fabric-starter-client');
-  const fabricStarterClient = new FabricStarterClient();
-  const appManager = require('./app-manager');
+  const dltNodeContext=new DltNodeContext(server)
+  await dltNodeContext.initNode(cfg.org)
 
-  // socket.io server to pass blocks to webapps
-  const Socket = require('./rest-socket-server');
-  const socket = new Socket(fabricStarterClient);
-  socket.startSocketServer(server, cfg.UI_LISTEN_BLOCK_OPTS).then(() => {
-    logger.info('started socket server');
-  });
+  // // fabric client
+  // const FabricStarterClient = require('./fabric-starter-client');
+  // const fabricStarterClient = new FabricStarterClient();
+
+  // // socket.io server to pass blocks to webapps
+  // const Socket = require('./rest-socket-server');
+  // const socket = new Socket(fabricStarterClient);
+  // socket.startSocketServer(server, cfg.UI_LISTEN_BLOCK_OPTS).then(() => {
+  //   logger.info('started socket server');
+  // });
 
 // parse json payload and urlencoded params
   const bodyParser = require("body-parser");
@@ -80,7 +85,8 @@ module.exports = function(app, server) {
     };
 
 // require presence of JWT in Authorization Bearer header
-  const jwtSecret = fabricStarterClient.getSecret();
+//   const jwtSecret = fabricStarterClient.getSecret();
+  const jwtSecret = dltNodeContext.getJwtSecret();
   app.use(jwt({secret: jwtSecret}).unless({path: ['/', '/users', /\/jwt\/.*/, '/domain', '/mspid', '/config', new RegExp('/api-docs'), '/api-docs.json', /\/webapp/, /\/webapps\/.*/,'/admin/', /\/admin\/.*/, '/msp/', /\/integration\/.*/]}));
 
 // use fabricStarterClient for every logged in user
@@ -249,8 +255,9 @@ module.exports = function(app, server) {
    * @security JWT
    */
   app.post('/channels/:channelId', asyncMiddleware(async (req, res, next) => {
-    let ret = await channelManager.joinChannel(req.params.channelId, req.fabricStarterClient, socket);
-    await socket.awaitForChannel(req.params.channelId);
+    let ret = await channelManager.joinChannel(req.params.channelId, req.fabricStarterClient);
+    // await socket.awaitForChannel(req.params.channelId);
+    await dltNodeContext.awaitForChannel(req.params.channelId);
     res.json(ret);
   }));
 
@@ -266,21 +273,22 @@ module.exports = function(app, server) {
    */
   app.post('/channels', asyncMiddleware(async(req, res, next) => {
     await req.fabricStarterClient.createChannel(req.body.channelId);
-    res.json(await channelManager.joinChannel(req.body.channelId, req.fabricStarterClient, socket));
+    res.json(await channelManager.joinChannel(req.body.channelId, req.fabricStarterClient));
   }));
 
-  async function joinChannel(channelId, fabricStarterClient) {
+/*  async function joinChannel(channelId, fabricStarterClient) {
     try {
       const ret = await fabricStarterClient.joinChannel(channelId);
       util.retryOperation(cfg.LISTENER_RETRY_COUNT, async function () {
-        await socket.registerChannelChainblockListener(channelId);
+        // await socket.registerChannelChainblockListener(channelId);
+        await dltNodeContext.registerChannelBlockListener(channelId);
       });
       return ret;
     } catch(error) {
       logger.error(error.message);
       throw new Error(error.message);
     }
-  }
+  }*/
 
   /**
    * Query channel info

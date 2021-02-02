@@ -69,6 +69,6 @@ webapp/scripts
 webapp/src
 ./upload
 appstore/*
-!appstore/.keep
+appstore/.keep
 custom-sources.tgz
 /webapps/

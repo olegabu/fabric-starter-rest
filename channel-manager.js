@@ -8,10 +8,9 @@ const logger = cfg.log4js.getLogger('ChannelManager');
 
 class ChannelManager {
 
-    async joinChannel(channelId, fabricStarterClient, socketServer) {
+    async joinChannel(channelId, fabricStarterClient) {
         try {
             const ret = await fabricStarterClient.joinChannel(channelId);
-            // await socketServer.registerChannelChainblockListener(channelId);
             return ret;
         } catch(error) {
             logger.error("Error joining channel", error.message);
