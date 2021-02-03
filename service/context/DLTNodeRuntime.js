@@ -1,9 +1,9 @@
 const FabricStarterClient = require('$/fabric-starter-client');
-const Socket = require('$/rest-socket-server');
+const RestSocketServer = require('$/rest-socket-server');
 const cfg = require('$/config');
-const logger = cfg.log4js.getLogger('DLTNodeContext');
+const logger = cfg.log4js.getLogger('DLTNodeRuntime');
 
-class DLTNodeContext {
+class DLTNodeRuntime {
 
     constructor(httpServerInstance) {
         this.networkList = {};
@@ -16,9 +16,10 @@ class DLTNodeContext {
 
         // fabric client
         this.defaultFabricStarterClient = new FabricStarterClient();
+        await this.defaultFabricStarterClient.loginOrRegister(cfg.enrollId, cfg.enrollSecret);
 
         // socket.io server to pass blocks to webapps
-        this.socket = new Socket(this.defaultFabricStarterClient);
+        this.socket = new RestSocketServer(this.defaultFabricStarterClient);
         await this.socket.startSocketServer(this.httpServerInstance, cfg.UI_LISTEN_BLOCK_OPTS).then(() => {
             logger.info('started socket server');
         });
@@ -46,7 +47,7 @@ class DLTNodeContext {
         await this.socket.registerChannelBlockListener(channelId);
     }
 
-    async awaitForChannel(channelId) {
+    async subscribeToChannelEvents(channelId) {
         await this.socket.awaitForChannel(channelId)
     }
 
@@ -61,6 +62,10 @@ class DLTNodeContext {
     getJwtSecret() {
         return this.defaultFabricStarterClient.getSecret()
     }
+
+    getDefaultFabricStarterClient() {
+        return this.defaultFabricStarterClient
+    }
 }
 
-module.exports = DLTNodeContext
+module.exports = DLTNodeRuntime

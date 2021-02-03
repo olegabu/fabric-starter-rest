@@ -1,23 +1,12 @@
 const _ = require('lodash');
 const cfg = require('../config');
-const FabricStarterClient = require('../fabric-starter-client');
 const osnManager = require('../osn-manager');
 const logger = cfg.log4js.getLogger('IntegrationManager');
 
-
-async function createDefaultFabricClient() {
-    let client = new FabricStarterClient();
-    await client.init();
-    await client.loginOrRegister(cfg.enrollId, cfg.enrollSecret);
-    return client;
-}
-
-const defaultClientPromise = createDefaultFabricClient();
-
 class IntegrationService {
 
-
-    constructor() {
+    constructor(dltNodeRuntime) {
+        this.dltNodeRuntime = dltNodeRuntime
         this.orgsToAccept = {};
     }
 
@@ -72,11 +61,10 @@ class IntegrationService {
     }
 
     async getDefaultClient() {
-        return await defaultClientPromise;
+        return this.dltNodeRuntime.getDefaultFabricStarterClient()
     }
 }
 
-
-module.exports = new IntegrationService();
+module.exports = IntegrationService
 
 

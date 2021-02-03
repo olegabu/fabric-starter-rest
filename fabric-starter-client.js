@@ -1,5 +1,4 @@
 const fs = require('fs');
-const axios = require('axios');
 const _ = require('lodash');
 const cfg = require('./config.js');
 const logger = cfg.log4js.getLogger('FabricStarterClient');
@@ -22,42 +21,42 @@ logger.debug(`invokeTimeout=${cfg.CHAINCODE_PROCESSING_TIMEOUT} asLocalhost=${as
 
 class FabricStarterClient {
     constructor(networkConfig) {
-        FabricStarterClient.setConfigObject(cfg.CRYPTO_SUIT_CONFIG);
+        FabricStarterClient.setDefaultConfigSettings(cfg.CRYPTO_SUIT_CONFIG);
 
         this.networkConfig = networkConfig || require('./network')();
         logger.info('constructing with network config:', JSON.stringify(this.networkConfig));
         this.client = Client.loadFromConfig(this.networkConfig); // or networkConfigFile
-        this.ordererClient = Client.loadFromConfig(this.networkConfig); // or networkConfigFile
         this.peer = this.client.getPeersForOrg()[0];
-        this.org = this.networkConfig.client.organization;
-        this.affiliation = this.org;
+        // this.org = this.networkConfig.client.organization; //todo:?
         this.channelsInitializationMap = new Map();
         this.registerQueue = new Map();
+        this.clients = new Map()
     }
 
-    static setConfigObject(config) {
+    static setDefaultConfigSettings(config) {
         _.forEach(config, (value, key)=>{
             Client.setConfigSetting(key, value);
         } )
     }
 
-    async init() {
-        await this.client.initCredentialStores();
-        this.fabricCaClient = cfg.AUTH_MODE === 'CA' ? this.client.getCertificateAuthority() : undefined;
-        await this.ordererClient.initCredentialStores();
-        try {
-            this.ordererClient.setAdminSigningIdentity(
-                util.loadPemFromFile(certsManager.getPrivateKeyFilePath()),
-                util.loadPemFromFile(certsManager.getSignCertPath()),
-                cfg.ORDERER_MSPID
-            );
-        } catch (err) {
-            logger.debug("Not orderer host")
-        }
+    async init() { //todo: remove after removing from dns.js
+    //     // await this.client.initCredentialStores();
+    //     await this.ordererClient.initCredentialStores();
+    //     this.fabricCaClient = cfg.AUTH_MODE === 'CA' ? this.ordererClient.getCertificateAuthority() : undefined;
+    //     try {
+    //         this.ordererClient.setAdminSigningIdentity(
+    //             util.loadPemFromFile(certsManager.getPrivateKeyFilePath()),
+    //             util.loadPemFromFile(certsManager.getSignCertPath()),
+    //             cfg.ORDERER_MSPID
+    //         );
+    //     } catch (err) {
+    //         logger.debug("Not orderer host")
+    //     }
     }
 
     async login(username, password) {
         if (cfg.AUTH_MODE === 'CA') {
+            await this.checkClientInitialized();
             this.user = await this.client.setUserContext({username: username, password: password}, true);
         } else if (cfg.AUTH_MODE === 'ADMIN') {
             if (cfg.enrollId != username || cfg.enrollSecret != password) {
@@ -69,8 +68,14 @@ class FabricStarterClient {
         }
     }
 
+    async checkClientInitialized() {
+        if (!this.client.getStateStore()) {
+            await this.client.initCredentialStores();
+        }
+    }
+
     async createUserWithAdminRights(username) {
-        let mspId = this.org;
+        let mspId = cfg.org;// this.org;
         return await this.client.createUser({
             username: username,
             mspid: mspId,
@@ -96,15 +101,17 @@ class FabricStarterClient {
 
     async register(username, password, affiliation) {
         if (cfg.AUTH_MODE === 'CA') {
-            const registrar = this.fabricCaClient.getRegistrar()[0];
+            await this.checkClientInitialized();
+            let fabricCaClient = this.client.getCertificateAuthority()
+            const registrar = fabricCaClient.getRegistrar()[0];
             const admin = await this.client.setUserContext({
                 username: registrar.enrollId,
                 password: registrar.enrollSecret
             });
-            await this.fabricCaClient.register({
+            await fabricCaClient.register({
                 enrollmentID: username,
                 enrollmentSecret: password,
-                affiliation: affiliation || this.affiliation,
+                affiliation: affiliation || cfg.org,
                 maxEnrollments: -1
             }, admin);
         }
@@ -132,7 +139,7 @@ class FabricStarterClient {
 
     getSecret() {
         const signingIdentity = this.client._getSigningIdentity(true);
-        const signedBytes = signingIdentity.sign(this.org);
+        const signedBytes = signingIdentity.sign(cfg.org);
         return String.fromCharCode.apply(null, signedBytes);
     }
 
@@ -142,7 +149,7 @@ class FabricStarterClient {
     }
 
     async queryPeers(orgName, peer) {
-        orgName = orgName || this.org;
+        orgName = orgName || cfg.org;
         peer = peer || this.peer;
         const peerQueryResponse = await this.client.queryPeers({target: peer, useAdmin: true});
         let peers = _.get(peerQueryResponse, `local_peers.${orgName}.peers`);
@@ -223,7 +230,28 @@ class FabricStarterClient {
         await this.checkOrgDns(orgObj);
         let currentChannelConfigFile = fabricCLI.fetchChannelConfig(cfg.systemChannelId, certsManager.getOrdererMSPEnv());
         let configUpdateRes = await fabricCLI.prepareNewConsortiumConfig(orgObj, consortiumName);
-        return channelManager.applyConfigToChannel(cfg.systemChannelId, currentChannelConfigFile, configUpdateRes, this.ordererClient, IS_ADMIN);
+        try {
+            let ordererClient = await this.initOrdererClient();
+            return channelManager.applyConfigToChannel(cfg.systemChannelId, currentChannelConfigFile, configUpdateRes, ordererClient, IS_ADMIN);
+        } catch (err) {
+            throw new Error("There is no Orderer on this node. Consortium cannot be updated.")
+        }
+
+    }
+
+    async initOrdererClient() {
+        try {
+            const ordererClient = Client.loadFromConfig(this.networkConfig);
+            await ordererClient.initCredentialStores();
+            ordererClient.setAdminSigningIdentity(
+                util.loadPemFromFile(certsManager.getPrivateKeyFilePath()),
+                util.loadPemFromFile(certsManager.getSignCertPath()),
+                cfg.ORDERER_MSPID
+            );
+            return ordererClient
+        } catch (err) {
+            logger.debug("Not orderer on host")
+        }
     }
 
     async getConsortiumMemberList(consortiumName = 'SampleConsortium') {

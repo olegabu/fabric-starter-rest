@@ -11,11 +11,6 @@ module.exports = async function(app, server) {
   const util = require('./util');
   const x509util = require('./util/x509-util');
 
-  const channelManager = require('./channel-manager');
-  const integrationService = require('./service/integration-service');
-  const appManager = require('./app-manager');
-
-  const DltNodeContext = require('./service/context/DLTNodeContext');
 
   // upload for chaincode and app installation
   const uploadDir = os.tmpdir() || './upload';
@@ -26,19 +21,19 @@ module.exports = async function(app, server) {
     {name: 'args', maxCount: 1},{name: 'chaincodeType', maxCount: 1},{name: 'chaincodeId', maxCount: 1},
     {name: 'chaincodeVersion', maxCount: 1},{name: 'waitForTransactionEvent', maxCount: 1},{name: 'policy', maxCount: 1}]);
 
-  const dltNodeContext=new DltNodeContext(server)
-  await dltNodeContext.initNode(cfg.org)
+
+  const channelManager = require('./channel-manager');
+  const IntegrationService = require('./service/integration-service');
+  const appManager = require('./app-manager');
+
+  const DltNodeRuntime = require('./service/context/DLTNodeRuntime');
+  const dltNodeRuntime = new DltNodeRuntime(server)
+  await dltNodeRuntime.initNode(cfg.org)
+  const integrationService = new IntegrationService(dltNodeRuntime)
+
 
   // // fabric client
-  // const FabricStarterClient = require('./fabric-starter-client');
-  // const fabricStarterClient = new FabricStarterClient();
-
-  // // socket.io server to pass blocks to webapps
-  // const Socket = require('./rest-socket-server');
-  // const socket = new Socket(fabricStarterClient);
-  // socket.startSocketServer(server, cfg.UI_LISTEN_BLOCK_OPTS).then(() => {
-  //   logger.info('started socket server');
-  // });
+  const FabricStarterClient = require('./fabric-starter-client'); //todo: move to dltContext
 
 // parse json payload and urlencoded params
   const bodyParser = require("body-parser");
@@ -86,7 +81,7 @@ module.exports = async function(app, server) {
 
 // require presence of JWT in Authorization Bearer header
 //   const jwtSecret = fabricStarterClient.getSecret();
-  const jwtSecret = dltNodeContext.getJwtSecret();
+  const jwtSecret = dltNodeRuntime.getJwtSecret();
   app.use(jwt({secret: jwtSecret}).unless({path: ['/', '/users', /\/jwt\/.*/, '/domain', '/mspid', '/config', new RegExp('/api-docs'), '/api-docs.json', /\/webapp/, /\/webapps\/.*/,'/admin/', /\/admin\/.*/, '/msp/', /\/integration\/.*/]}));
 
 // use fabricStarterClient for every logged in user
@@ -133,7 +128,7 @@ module.exports = async function(app, server) {
    * @returns {Error}  default - Unexpected error
    */
   app.get('/mspid', (req, res) => {
-    res.json(fabricStarterClient.getMspid());
+    res.json(cfg.org/*fabricStarterClient.getMspid()*/); //todo: check
   });
 
   //TODO use for development only as it may expose sensitive data
@@ -201,7 +196,6 @@ module.exports = async function(app, server) {
     mapFabricStarterClient[req.body.username] && mapFabricStarterClient[req.body.username].logoutUser(req.body.username);
     mapFabricStarterClient[req.body.username] = new FabricStarterClient();
     req.fabricStarterClient = mapFabricStarterClient[req.body.username];
-    await req.fabricStarterClient.init();
 
     await req.fabricStarterClient.loginOrRegister(req.body.username, req.body.password || req.body.username);
 
@@ -256,8 +250,7 @@ module.exports = async function(app, server) {
    */
   app.post('/channels/:channelId', asyncMiddleware(async (req, res, next) => {
     let ret = await channelManager.joinChannel(req.params.channelId, req.fabricStarterClient);
-    // await socket.awaitForChannel(req.params.channelId);
-    await dltNodeContext.awaitForChannel(req.params.channelId);
+    await dltNodeRuntime.subscribeToChannelEvents(req.params.channelId); //TODO: shouldn't be moved to channelManager.joinChannel ?
     res.json(ret);
   }));
 
@@ -281,7 +274,7 @@ module.exports = async function(app, server) {
       const ret = await fabricStarterClient.joinChannel(channelId);
       util.retryOperation(cfg.LISTENER_RETRY_COUNT, async function () {
         // await socket.registerChannelChainblockListener(channelId);
-        await dltNodeContext.registerChannelBlockListener(channelId);
+        await dltNodeRuntime.registerChannelBlockListener(channelId);
       });
       return ret;
     } catch(error) {

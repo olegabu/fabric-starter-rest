@@ -7,11 +7,6 @@ const util = require('./util.js');
 class RestSocketServer {
 
     constructor(fabricStarterClient) {
-        /*    if(!fabricStarterClient) {
-              const FabricStarterClient = require('./fabric-starter-client');
-              fabricStarterClient = new FabricStarterClient();
-              fabricStarterClient.init();
-            }*/
         this.listOfChannels = [];
         this.fabricStarterClient = fabricStarterClient;
     }
@@ -20,13 +15,6 @@ class RestSocketServer {
       this.io = new SocketServer(server, {origins: '*:*'});
       this.opts = opts;
       this.startSocketServerTimer();
-
-
-      /*   const channels = await this.fabricStarterClient.queryChannels();
-         await channels.map(async c => {
-              await this.registerChannelChainblockListener(c.channelId);
-            });
-      */
   }
 
   startSocketServerTimer() {
