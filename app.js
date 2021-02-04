@@ -11,7 +11,9 @@ const server = app.listen(process.env.PORT || 3000, () => {
 });
 
 const api = require('./api');
+const apiNode = require('./api/api-node');
 api(app, server);
+apiNode(app, server);
 
 // serve
 const glob = require('glob');

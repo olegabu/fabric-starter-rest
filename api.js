@@ -28,7 +28,7 @@ module.exports = async function(app, server) {
 
   const DltNodeRuntime = require('./service/context/DLTNodeRuntime');
   const dltNodeRuntime = new DltNodeRuntime(server)
-  await dltNodeRuntime.initNode(cfg.org)
+  await dltNodeRuntime.initNodeRuntime(cfg.org)
   const integrationService = new IntegrationService(dltNodeRuntime)
 
 

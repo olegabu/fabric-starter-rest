@@ -1,6 +1,6 @@
 const _ = require('lodash');
 const cfg = require('./config.js');
-const logger = cfg.log4js.getLogger('osn-manager');
+const logger = cfg.log4js.getLogger('OsmManager');
 const certsManager = require('./certs-manager');
 const fabricCLI = require('./fabric-cli');
 const util = require('./util');

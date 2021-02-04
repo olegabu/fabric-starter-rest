@@ -11,7 +11,7 @@ class DLTNodeRuntime {
         this.httpServerInstance = httpServerInstance;
     }
 
-    async initNode(orgName) {
+    async initNodeRuntime(orgName) {
         if (!orgName) return;
 
         // fabric client
