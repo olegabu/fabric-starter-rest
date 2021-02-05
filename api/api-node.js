@@ -7,7 +7,7 @@ module.exports = async function (app, server) {
     })
 
 
-    app.post('/node/control/start', (req, res) => {
-        res.json(nodeManager.startupNode(req.body))
+    app.post('/node/control', async (req, res) => {
+        res.json(await nodeManager.startupNode(req.body))
     })
 }
