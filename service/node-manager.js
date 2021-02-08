@@ -10,7 +10,9 @@ class NodeManager {
     async startupNode(env) {
         let fullEnv = _.assign({COMPOSE_PROJECT_NAME: env.ORG}, env)
         logger.debug("Start node with env:", fullEnv);
-        let resultOrderer = fabricCLI.execShellCommand("docker-compose -f docker-compose-orderer.yaml -f docker-compose-orderer-ports.yaml up -d --force-recreate",
+        // let resultOrderer = fabricCLI.execShellCommand("docker-compose -f docker-compose-orderer.yaml -f docker-compose-orderer-ports.yaml up -d --force-recreate",
+        //     cfg.YAMLS_DIR, fullEnv);
+        let resultOrderer = fabricCLI.execShellCommand("./ordering-start.sh",
             cfg.YAMLS_DIR, fullEnv);
         logger.debug('docker-compose -f docker-compose-orderer.yaml:', resultOrderer);
         if (_.get(resultOrderer, "code") !== 0) {
