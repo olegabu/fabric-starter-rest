@@ -15,7 +15,7 @@ COPY gost-deps/crypto-gost/package.json ./gost-deps/crypto-gost/
 COPY gost-deps/fabric-client/package.json ./gost-deps/fabric-client/
 COPY gost-deps/fabric-cryptosuite-gost/package.json ./gost-deps/fabric-cryptosuite-gost/
 
-RUN npm install  && npm cache rm --force && apt-get remove -y make python && apt-get purge
+RUN npm install && npm run postinstall && npm cache rm --force && apt-get remove -y make python && apt-get purge
 #&& npm rebuild
 
 # add project files (see .dockerignore for a list of excluded files)
@@ -41,7 +41,8 @@ RUN if [ -d "/external-admin" ]; then \
 
 COPY --from=fabrictools /etc/hyperledger/templates /usr/src/app/templates
 COPY --from=fabrictools /etc/hyperledger/container-scripts /usr/src/app/container-scripts
-COPY --from=fabrictools /etc/hyperledger/docker-compose*.yaml /usr/src/app/
+#COPY --from=fabrictools /etc/hyperledger/docker-compose*.yaml /usr/src/app/
+COPY --from=fabrictools /etc/hyperledger/docker-compose*.yaml /etc/hyperledger/
 
 
 EXPOSE 3000
