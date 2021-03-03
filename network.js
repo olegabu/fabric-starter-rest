@@ -67,7 +67,7 @@ function addCA(t, org, caAddress) {
     },
     registrar: [
       {
-        enrollId: cfg.enrollId,
+        ENROLL_ID: cfg.ENROLL_ID,
         enrollSecret: cfg.enrollSecret
       }
     ],
@@ -131,14 +131,14 @@ module.exports = function () {
 
   Object.keys(orgs).forEach(k => {
     addOrg(t, k);
-    if (!cfg.isOrderer) {
+    // if (!cfg.isOrderer) {
       addPeer(t, k, 0, orgs[k]);
-    }
+    // }
   });
 
-  if (cfg.isOrderer) {
-    addOrg(t, cfg.ordererName)
-  }
+  // if (cfg.isOrderer) {
+  //   addOrg(t, cfg.ordererName)
+  // }
 
   Object.keys(cas).forEach(k => {
     addCA(t, k, cas[k]);

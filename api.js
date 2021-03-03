@@ -1,16 +1,13 @@
-module.exports = async function(app, server) {
+module.exports = async function(app, server, defaultFabricStarterClient) {
 
   const fs = require("fs");
   const path = require('path');
   const os = require('os');
-  const jsonwebtoken = require('jsonwebtoken');
-  const jwt = require('express-jwt');
   const _ = require('lodash');
   const cfg = require('./config.js');
   const logger = cfg.log4js.getLogger('api');
-  const util = require('./util');
   const x509util = require('./util/x509-util');
-
+  const asyncMiddleware = require('$/api/async-middleware-error-handler');
 
   // upload for chaincode and app installation
   const uploadDir = os.tmpdir() || './upload';
@@ -23,27 +20,7 @@ module.exports = async function(app, server) {
 
 
   const channelManager = require('./channel-manager');
-  const IntegrationService = require('./service/integration-service');
   const appManager = require('./app-manager');
-
-  const DltNodeRuntime = require('./service/context/DLTNodeRuntime');
-  const dltNodeRuntime = new DltNodeRuntime(server)
-  await dltNodeRuntime.initNodeRuntime(cfg.org)
-  const integrationService = new IntegrationService(dltNodeRuntime)
-
-
-  // // fabric client
-  const FabricStarterClient = require('./fabric-starter-client'); //todo: move to dltContext
-
-// parse json payload and urlencoded params
-  const bodyParser = require("body-parser");
-  app.use(bodyParser.json({limit: '100MB', type: 'application/json'}));
-  app.use(bodyParser.urlencoded({extended: true, limit: '100MB'}));
-
-// allow CORS from all urls
-  const cors = require('cors');
-  app.use(cors());
-  app.options('*', cors());
 
 // serve admin and custom web apps as static
   const express = require("express");
@@ -66,40 +43,6 @@ module.exports = async function(app, server) {
   if(fs.existsSync(path.join(webappDir, 'favicon.ico'))) {
     app.use(favicon(path.join(webappDir, 'favicon.ico')));
   }
-
-// catch promise rejections and return 500 errors
-  const asyncMiddleware = fn =>
-    (req, res, next) => {
-      // logger.debug('asyncMiddleware');
-      Promise.resolve(fn(req, res, next))
-        .catch(e => {
-          logger.error('asyncMiddleware', e);
-          res.status((e && e.status) || 500).json(e && e.message);
-          next();
-        });
-    };
-
-// require presence of JWT in Authorization Bearer header
-//   const jwtSecret = fabricStarterClient.getSecret();
-  const jwtSecret = dltNodeRuntime.getJwtSecret();
-  app.use(jwt({secret: jwtSecret}).unless({path: ['/', '/users', /\/jwt\/.*/, '/domain', '/mspid', '/config', new RegExp('/api-docs'), '/api-docs.json', /\/webapp/, /\/webapps\/.*/,'/admin/', /\/admin\/.*/, '/msp/', /\/integration\/.*/]}));
-
-// use fabricStarterClient for every logged in user
-  const mapFabricStarterClient = {};
-
-  app.use((req, res, next) => {
-    if (req.user) {
-      const login = req.user.sub;
-      let client = mapFabricStarterClient[login];
-      if (client) {
-        logger.debug('cached client for', login);
-        req.fabricStarterClient = client;
-      } else {
-        throw (new jwt.UnauthorizedError("No client context", {message: 'User is not logged in.'}));
-      }
-    }
-    next();
-  });
 
   app.get('/', (req, res) => {
     res.status(200).send('Welcome to fabric-starter REST server');
@@ -139,7 +82,7 @@ module.exports = async function(app, server) {
    * @returns {object} 200 - Network config
    * @returns {Error}  default - Unexpected error
    */
-  app.get('/config', (req, res) => {
+  app.get('/config', (req, res) => {//todo: remove
     res.json(fabricStarterClient.getNetworkConfig());
   });
 
@@ -175,52 +118,6 @@ module.exports = async function(app, server) {
       req.files['file'][0].path, req.body.version, req.body.language, uploadDir));
   }));
 
-  /**
-   * @typedef User
-   * @property {string} username.required - username - eg: oleg
-   * @property {string} password.required - password - eg: pass
-   */
-
-  /**
-   * Login or register user.
-   * @route POST /users
-   * @group users - Authentication and operations about users
-   * @param {User.model} user.body.required
-   * @returns {object} 200 - User logged in and his JWT returned
-   * @returns {Error}  default - Unexpected error
-   */
-  app.post('/users', asyncMiddleware(async (req, res, next) => {
-    // let namePasswordKey=`${req.body.username}.${req.body.password}`;
-    // if(!mapFabricStarterClient[namePasswordKey]) {
-    // }
-    mapFabricStarterClient[req.body.username] && mapFabricStarterClient[req.body.username].logoutUser(req.body.username);
-    mapFabricStarterClient[req.body.username] = new FabricStarterClient();
-    req.fabricStarterClient = mapFabricStarterClient[req.body.username];
-
-    await req.fabricStarterClient.loginOrRegister(req.body.username, req.body.password || req.body.username);
-
-    let certSubject = x509util.getSubject(req.fabricStarterClient.user.getIdentity()._certificate);
-    let jwtPayload = _.assign({sub: req.fabricStarterClient.user.getName()}, certSubject);
-    const token = jsonwebtoken.sign(jwtPayload, jwtSecret, {expiresIn: cfg.AUTH_JWT_EXPIRES_IN});
-    logger.debug('token', token);
-    res.json(token);
-  }));
-
-  /**
-   * Verify JWT token.
-   * @route POST /jwt/verify
-   * @group auth - Authentication and verification
-   * @param {jwt} jwt.body.required
-   * @returns {object} 200 - JWT is correct
-   * @returns {Error}  500  - JWT is malformed or expired
-   */
-  app.post('/jwt/verify', asyncMiddleware(async (req, res, next) => {
-    logger.debug("Verifying JWT Token", req.body);
-    jsonwebtoken.verify(_.get(req,'body.jwt'), jwtSecret);
-    res.status(200);
-    res.json("OK");
-  }));
-
     /**
    * Query channels joined by the first peer of my organization
    * @route GET /channels
@@ -250,7 +147,7 @@ module.exports = async function(app, server) {
    */
   app.post('/channels/:channelId', asyncMiddleware(async (req, res, next) => {
     let ret = await channelManager.joinChannel(req.params.channelId, req.fabricStarterClient);
-    await dltNodeRuntime.subscribeToChannelEvents(req.params.channelId); //TODO: shouldn't be moved to channelManager.joinChannel ?
+    await defaultFabricStarterClient.subscribeToChannelEvents(req.params.channelId); //TODO: shouldn't be moved to channelManager.joinChannel ?
     res.json(ret);
   }));
 
@@ -268,20 +165,6 @@ module.exports = async function(app, server) {
     await req.fabricStarterClient.createChannel(req.body.channelId);
     res.json(await channelManager.joinChannel(req.body.channelId, req.fabricStarterClient));
   }));
-
-/*  async function joinChannel(channelId, fabricStarterClient) {
-    try {
-      const ret = await fabricStarterClient.joinChannel(channelId);
-      util.retryOperation(cfg.LISTENER_RETRY_COUNT, async function () {
-        // await socket.registerChannelChainblockListener(channelId);
-        await dltNodeRuntime.registerChannelBlockListener(channelId);
-      });
-      return ret;
-    } catch(error) {
-      logger.error(error.message);
-      throw new Error(error.message);
-    }
-  }*/
 
   /**
    * Query channel info
@@ -370,52 +253,14 @@ module.exports = async function(app, server) {
     res.json(orgsArray);
   }));
 
-  app.post('/service/accept/orgs', asyncMiddleware(async (req, res) => {
-    res.json(integrationService.acceptOrg(req.body))
-  }));
-
-  app.get('/service/accepted/orgs', asyncMiddleware((req, res) =>{
-    res.json(integrationService.acceptedOrgsList());
-  }));
-
-  app.post('/integration/service/orgs', asyncMiddleware(async (req, res) => {
-    logger.info('Org integration service request: ', req.body);
-    try {
-      res.json(await integrationService.integrateOrg(orgFromHttpBody(req.body)))
-    } catch (e) {
-      logger.error(e);
-      res.status(401).json(e);
-    }
-  }));
-
-  app.post('/integration/dns/org', asyncMiddleware(async (req, res) => {
-    logger.info('Dns integration service request: ', req.body);
-    try {
-      res.json(await integrationService.registerOrgInDns(orgFromHttpBody(req.body)))
-    } catch (e) {
-      logger.error(e);
-      res.status(401).json(e);
-    }
-  }));
-
-  app.post('/integration/service/raft', asyncMiddleware(async (req, res, next) => {
-    logger.info('Raft integration service request: ', req.body);
-    try {
-      res.json(await integrationService.integrateOrderer(ordererFromHttpBody(req.body)))
-    } catch (e) {
-      logger.error(e);
-      res.status(401).json(e);
-    }
-  }));
-
-  function orgFromHttpBody(body) {
+  function orgFromHttpBody(body) {//TODO: move to model
     let org = {orgId: body.orgId, domain: body.domain || cfg.domain, orgIp: body.orgIp, peer0Port: body.peerPort, wwwPort: body.wwwPort};
     logger.info('Org: ', org);
 
     return org;
   }
 
-  function ordererFromHttpBody(body) {
+  function ordererFromHttpBody(body) {//TODO: move to model
     let orderer = {
       ordererName: body.ordererName, domain: body.domain, ordererPort: body.ordererPort,
       ordererIp: body.ordererIp, wwwPort: body.wwwPort, orgId: body.orgId, orgIp: body.ordererIp

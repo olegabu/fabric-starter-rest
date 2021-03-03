@@ -1,35 +1,47 @@
-const logger = require('log4js').getLogger('app');
-
 const express = require('express');
-const appManager = require('./app-manager');
+const bodyParser = require("body-parser");
+const cors = require('cors');
 
-const app = express();
-app.disable('etag');
+const cfg = require('$/config');
+const logger = cfg.log4js.getLogger('app');
+const FabricStarterRuntime = require('./service/context/fabric-starter-runtime');
 
-const server = app.listen(process.env.PORT || 3000, () => {
-    logger.info('started fabric-starter rest server on port', server.address().port);
-});
+(async function() {
 
-const api = require('./api');
-const apiNode = require('./api/api-node');
+    const app = initAppExpress();
+    const server = startHttpAppServer(app);
 
-api(app, server)
-    .then(()=>apiNode(app, server));
+    initManagementApi(app, server);
+    await tryInitRuntime(app, server);
 
-// serve
-const glob = require('glob');
-const path = require('path');
-glob.sync('./routes/**/*.js').forEach(file => {
-    const route = require(path.resolve(file));
-    route(app);
-    logger.info('started route', file);
-});
+    function startHttpAppServer(app) {
+        app.disable('etag');
+        const server = app.listen(process.env.PORT || 3000, () => {
+            logger.info('started fabric-starter rest server on port', server.address().port);
+        });
 
-glob.sync('./webapps/*').forEach(dir => {
-    const appFolder = path.resolve(dir);
-    const context = path.basename(dir);
-    appManager.redeployWebapp(app, context, appFolder);
-    logger.info('static webapp', dir);
-});
+        return server;
+    }
 
-appManager.redeployAllAppstoreApps(app);
+
+    function initAppExpress() {
+        const app = express();
+        app.use(bodyParser.json({limit: '100MB', type: 'application/json'}));
+        app.use(bodyParser.urlencoded({extended: true, limit: '100MB'}));
+
+        // allow CORS from all urls
+        app.use(cors());
+        app.options('*', cors());
+
+        return app;
+    }
+
+    function initManagementApi(app, server) {
+        require('./api/node-components-management-api')(app, server);
+    }
+
+    async function tryInitRuntime(app, server) {
+        const fabricStarterRuntime = new FabricStarterRuntime(app, server)
+        await fabricStarterRuntime.tryInitRuntime(cfg.org)
+    }
+})()

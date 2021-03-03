@@ -41,7 +41,7 @@ class OsnManager {
         this.fabricStarterClient = fabricClient;
         this.registerOSN('default', {
             ordererName: cfg.ordererName,
-            domain: cfg.ORDERER_DOMAIN,
+            domain: cfg.ordererDomain,
             ordererPort: cfg.ordererPort
         });
     }

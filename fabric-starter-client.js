@@ -59,7 +59,7 @@ class FabricStarterClient {
             await this.checkClientInitialized();
             this.user = await this.client.setUserContext({username: username, password: password}, true);
         } else if (cfg.AUTH_MODE === 'ADMIN') {
-            if (cfg.enrollId != username || cfg.enrollSecret != password) {
+            if (cfg.ENROLL_ID !== username || cfg.enrollSecret !== password) {
                 throw Error("Invalid credentials");
             }
             this.user = await this.createUserWithAdminRights(username, password);

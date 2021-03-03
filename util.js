@@ -38,7 +38,7 @@ class Util {
     }
 
     filterOrderersOut(organizations) {
-        let ordererNames = [cfg.HARDCODED_ORDERER_NAME, `${cfg.HARDCODED_ORDERER_NAME}.${cfg.ORDERER_DOMAIN}`, `${cfg.ordererName}.${cfg.ORDERER_DOMAIN}`];
+        let ordererNames = [cfg.HARDCODED_ORDERER_NAME, `${cfg.HARDCODED_ORDERER_NAME}.${cfg.ordererDomain}`, `${cfg.ordererName}.${cfg.ordererDomain}`];
         const differenceWith = _.differenceWith(organizations, ordererNames, (org, rejectOrg) => org.id === rejectOrg);
         return _.filter(organizations,
                 o=> !_.includes(_.get(o,'id'), 'orderer')

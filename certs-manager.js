@@ -13,7 +13,7 @@ const CERT_FOLDERS_PREFIXES = {
 };
 
 
-const ORDERER_BASE_CRYPTO_DIR = `${cfg.CRYPTO_CONFIG_DIR}/ordererOrganizations/${cfg.ORDERER_DOMAIN}`;
+const ORDERER_BASE_CRYPTO_DIR = `${cfg.CRYPTO_CONFIG_DIR}/ordererOrganizations/${cfg.ordererDomain}`;
 const PEER_BASE_CRYPTO_DIR = `${cfg.CRYPTO_CONFIG_DIR}/peerOrganizations/${cfg.org}.${cfg.domain}`;
 
 
@@ -22,7 +22,7 @@ class CertificateManager {
 
     constructor() {
         this.ordererMSPEnv = {
-            CORE_PEER_LOCALMSPID: `${cfg.ordererName}.${cfg.ORDERER_DOMAIN}`,
+            CORE_PEER_LOCALMSPID: `${cfg.ordererName}.${cfg.ordererDomain}`,
             CORE_PEER_MSPCONFIGPATH: this.getMSPConfigDirectory(),
             CORE_PEER_TLS_ROOTCERT_FILE: this.getOrdererRootTLSFile()
         };
@@ -32,18 +32,14 @@ class CertificateManager {
         return this.ordererMSPEnv;
     }
 
-    getMyBaseCertificatesDirectory() {
-        return cfg.isOrderer ? ORDERER_BASE_CRYPTO_DIR : PEER_BASE_CRYPTO_DIR;
-    }
-
     getOrgBaseCertificationDirectory(orgId, domain) {
         return orgId ?
             `${cfg.CRYPTO_CONFIG_DIR}/peerOrganizations/${orgId}.${domain || cfg.domain}`
-            : `${cfg.CRYPTO_CONFIG_DIR}/ordererOrganizations/${domain || cfg.ORDERER_DOMAIN}`;
+            : `${cfg.CRYPTO_CONFIG_DIR}/ordererOrganizations/${domain || cfg.ordererDomain}`;
     }
 
     getMSPConfigDirectory(orgId) {
-        const certDomain = orgId ? `${orgId}.${cfg.domain}` : cfg.ORDERER_DOMAIN;
+        const certDomain = orgId ? `${orgId}.${cfg.domain}` : cfg.ordererDomain;
         return path.join(this.getOrgBaseCertificationDirectory(orgId), 'users', `Admin@${certDomain}`, 'msp');
     }
 
@@ -62,8 +58,8 @@ class CertificateManager {
         return certFileName;
     }
 
-    getOrdererRootTLSFile(ordererName = cfg.ordererName, ordererDomain = cfg.ORDERER_DOMAIN) {
-        return `${this.getOrgBaseCertificationDirectory()}/msp/tlscacerts/tlsca.${cfg.ORDERER_DOMAIN}-cert.pem`
+    getOrdererRootTLSFile(ordererName = cfg.ordererName, ordererDomain = cfg.ordererDomain) {
+        return `${this.getOrgBaseCertificationDirectory()}/msp/tlscacerts/tlsca.${cfg.ordererDomain}-cert.pem`
         // return `${this.getOrgBaseCertificationDirectory()}/orderers/${ordererName}.${ordererDomain}/tls/ca.crt`
     }
 
@@ -83,7 +79,7 @@ class CertificateManager {
     }
 
     getCertificationDomain(orgId, domain) {
-        let domainCertPath = orgId ? `${orgId}.${domain || cfg.domain}` : domain || cfg.ORDERER_DOMAIN;
+        let domainCertPath = orgId ? `${orgId}.${domain || cfg.domain}` : domain || cfg.ordererDomain;
         return domainCertPath;
     }
 

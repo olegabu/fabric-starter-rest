@@ -1,11 +1,12 @@
 const _ = require('lodash');
 const cfg = require('$/config.js');
-const logger = cfg.log4js.getLogger('NodeManager');
+const logger = cfg.log4js.getLogger('NodeComponentsManager');
 const util = require('$/util');
 const fabricCLI = require('$/fabric-cli');
 
 
-class NodeManager {
+
+class NodeComponentsManager {
 
     async startupNode(env) {
         let fullEnv = _.assign({COMPOSE_PROJECT_NAME: env.ORG}, env)
@@ -32,7 +33,6 @@ class NodeManager {
         }
         throw new Error(`Docker-compose up error. Result code: ${result.code}, Console output: \n${result.stdout}`);
     }
-
 }
 
-module.exports = new NodeManager()
+module.exports = new NodeComponentsManager()

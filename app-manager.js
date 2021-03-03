@@ -30,14 +30,13 @@
         }
 
         async provisionMiddleware(fileObj) {
-            const readStream = fse.createReadStream(fileObj.path);
             const extractPath = cfg.MIDDLWARE_DIR;
-            if (!fse.existsSync(cfg.MIDDLWARE_DIR)) {
-                fse.mkdir(cfg.MIDDLWARE_DIR);
+            if (!fse.existsSync(extractPath)) {
+                fse.mkdir(extractPath);
             }
 
             return new Promise((resolve, reject) => {
-                const destFile = path.resolve(cfg.MIDDLWARE_DIR, fileObj.originalname);
+                const destFile = path.resolve(extractPath, fileObj.originalname);
                 fse.copyFile(fileObj.path, destFile, err => {
                     return err ? reject(err) : resolve(destFile);
                 });

@@ -1,12 +1,12 @@
 const _ = require('lodash');
 const cfg = require('../config');
 const osnManager = require('../osn-manager');
-const logger = cfg.log4js.getLogger('IntegrationManager');
+const logger = cfg.log4js.getLogger('IntegrationService');
 
 class IntegrationService {
 
-    constructor(dltNodeRuntime) {
-        this.dltNodeRuntime = dltNodeRuntime
+    constructor(fabricStarterRuntime, app) {
+        this.fabricStarterRuntime = fabricStarterRuntime
         this.orgsToAccept = {};
     }
 
@@ -61,7 +61,7 @@ class IntegrationService {
     }
 
     async getDefaultClient() {
-        return this.dltNodeRuntime.getDefaultFabricStarterClient()
+        return this.fabricStarterRuntime.getDefaultFabricStarterClient()
     }
 }
 

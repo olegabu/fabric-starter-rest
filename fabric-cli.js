@@ -36,7 +36,7 @@ class FabricCLI {
         });
     }
 
-    async downloadOrdererMSP(wwwPort = cfg.ORDERER_WWW_PORT, ordererDomain=cfg.ORDERER_DOMAIN) {
+    async downloadOrdererMSP(wwwPort = cfg.ORDERER_WWW_PORT, ordererDomain=cfg.ordererDomain) {
         await this.downloadCerts(null, ordererDomain, wwwPort);
     }
 
@@ -46,7 +46,7 @@ class FabricCLI {
     }
 
     execShellCommand(cmd, dir, extraEnv) {
-        const env = _.assign({}, process.env, {ORDERER_DOMAIN: cfg.ORDERER_DOMAIN}, extraEnv || {});
+        const env = _.assign({}, process.env, {ORDERER_DOMAIN: cfg.ordererDomain}, extraEnv || {});
         const opts = {env: env};
         if (dir) {
             cmd=`cd ${dir}; ${cmd}`;
@@ -91,7 +91,7 @@ class FabricCLI {
             ORG: cfg.org,
             PEER0_PORT: cfg.peer0Port,
             ORDERER_NAME: cfg.ordererName,
-            ORDERER_DOMAIN: cfg.ORDERER_DOMAIN,
+            ORDERER_DOMAIN: cfg.ordererDomain,
             ORDERER_NAME_PREFIX: cfg.ORDERER_NAME_PREFIX,
             ORDERER_BATCH_TIMEOUT: cfg.ORDERER_BATCH_TIMEOUT,
             ORDERER_GENERAL_LISTENPORT: cfg.ordererPort,
