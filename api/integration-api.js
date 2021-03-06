@@ -1,6 +1,7 @@
 const asyncMiddleware = require('$/api/async-middleware-error-handler');
 const cfg = require('$/config');
 const logger = cfg.log4js.getLogger('IntegrationApi');
+const Org = require('$/model/Org')
 
 module.exports = function (app, server, integrationService) {
 
@@ -15,7 +16,7 @@ module.exports = function (app, server, integrationService) {
     app.post('/integration/service/orgs', asyncMiddleware(async (req, res) => {
         logger.info('Org integration service request: ', req.body);
         try {
-            res.json(await integrationService.integrateOrg(orgFromHttpBody(req.body)))
+            res.json(await integrationService.integrateOrg(Org.fromHttpBody(req.body)))
         } catch (e) {
             logger.error(e);
             res.status(401).json(e);
@@ -25,7 +26,7 @@ module.exports = function (app, server, integrationService) {
     app.post('/integration/dns/org', asyncMiddleware(async (req, res) => {
         logger.info('Dns integration service request: ', req.body);
         try {
-            res.json(await integrationService.registerOrgInDns(orgFromHttpBody(req.body)))
+            res.json(await integrationService.registerOrgInDns(Org.fromHttpBody(req.body)))
         } catch (e) {
             logger.error(e);
             res.status(401).json(e);
@@ -44,13 +45,6 @@ module.exports = function (app, server, integrationService) {
 
 }
 
-
-function orgFromHttpBody(body) {//TODO: move to model
-    let org = {orgId: body.orgId, domain: body.domain || cfg.domain, orgIp: body.orgIp, peer0Port: body.peerPort, wwwPort: body.wwwPort};
-    logger.info('Org: ', org);
-
-    return org;
-}
 
 function ordererFromHttpBody(body) {//TODO: move to model
     let orderer = {

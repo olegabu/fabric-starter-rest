@@ -77,10 +77,9 @@
             let result = fabricCLI.execShellCommand("docker-compose up -d --force-recreate", extractPath, {
                 PORT: port
             });
-            logger.debug(result);
-            if (_.get(result, "code") === 0) {
+            if (!result.isError()) {
                 await this.deployWebappIfPresent(extractPath, appName, app);
-                return {error: result.code, output: _.split(result.stdout, '\n')};
+                return result;
             }
             throw new Error(`Docker-compose up error. Return code: ${result.code}, Console output: ${result.stdout}`);
         }

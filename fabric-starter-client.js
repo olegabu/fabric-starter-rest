@@ -213,7 +213,7 @@ class FabricStarterClient {
     async addOrgToChannel(channelId, orgObj) {
         await this.checkOrgDns(orgObj);
         try {
-            await util.checkRemotePort(`peer0.${orgObj.orgId}.${orgObj.domain || cfg.domain}`, orgObj.peer0Port);
+            await util.checkRemotePort(`peer0.${orgObj.orgId}.${orgObj.domain}`, orgObj.peer0Port);
             let currentChannelConfigFile = fabricCLI.fetchChannelConfig(channelId);
             let configUpdateRes = await fabricCLI.prepareNewOrgConfig(orgObj);
             let res = await channelManager.applyConfigToChannel(channelId, currentChannelConfigFile, configUpdateRes, this.client);

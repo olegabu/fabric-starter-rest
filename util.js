@@ -6,16 +6,18 @@ const logger = cfg.log4js.getLogger('util');
 
 class Util {
 
-    async checkRemotePort(server, port) {
+    async checkRemotePort(server, port, options) {
         logger.debug(`Check remote port is accessible for: ${server}:${port}`);
         return new Promise(async (resolve, reject) => {
-            let client = net.createConnection({host: server, port: port, timeout: 1000}, ()=>{
+            let client = net.createConnection({host: server, port: port, timeout: 1000}, () => {
                 logger.debug(`Remote port is accessible: ${server}:${port}`);
                 client.end();
-                resolve();
+                resolve(true);
             });
             client.on("error", e => {
-                reject(`Endpoint is unreachable: ${server}:${port}. ${e && e.message}`)
+                return _.get(options, 'throws', true)
+                    ? reject(`Endpoint is unreachable: ${server}:${port}. ${e && e.message}`)
+                    : resolve(false)
             });
         });
     }
@@ -41,9 +43,9 @@ class Util {
         let ordererNames = [cfg.HARDCODED_ORDERER_NAME, `${cfg.HARDCODED_ORDERER_NAME}.${cfg.ordererDomain}`, `${cfg.ordererName}.${cfg.ordererDomain}`];
         const differenceWith = _.differenceWith(organizations, ordererNames, (org, rejectOrg) => org.id === rejectOrg);
         return _.filter(organizations,
-                o=> !_.includes(_.get(o,'id'), 'orderer')
-                              && !_.includes(_.get(o,'id'), 'osn')
-                              && !_.includes(_.get(o,'id'), 'raft'));
+            o => !_.includes(_.get(o, 'id'), 'orderer')
+                && !_.includes(_.get(o, 'id'), 'osn')
+                && !_.includes(_.get(o, 'id'), 'raft'));
     }
 
     loadPemFromFile(pemFilePath) {
@@ -57,7 +59,7 @@ class Util {
 
 
     convertStringValToMapVal(keyValueMap) {
-        return _.mapValues(keyValueMap, value=>_.keyBy(_.split(value, ' '), v=>v));
+        return _.mapValues(keyValueMap, value => _.keyBy(_.split(value, ' '), v => v));
     }
 
     linesToKeyValueList(currHostsLines) {
@@ -81,7 +83,7 @@ class Util {
         let listMap = this.convertStringValToMapVal(map2);
 
         _.merge(hostsMap, listMap);
-        const result = _.mapValues(hostsMap, valKV=>_.join(_.keys(valKV), ' '));
+        const result = _.mapValues(hostsMap, valKV => _.join(_.keys(valKV), ' '));
         return result;
     }
 
@@ -119,6 +121,19 @@ class Util {
         }
     }
 
+    splitOutputToMultiline(str) {
+        return _.split(str, '\n')
+    }
+
+    sortAndFilterObjectProps(obj, filterFunc = () => true) {
+        return _.reduce(_.entries(obj).filter(filterFunc).sort(),
+            (res, entry) => {
+                res[entry[0]] = entry[1];
+                return res
+            },
+            {}
+        );
+    }
 
 }
 

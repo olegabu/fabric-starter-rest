@@ -8,6 +8,7 @@ module.exports = async function(app, server, defaultFabricStarterClient) {
   const logger = cfg.log4js.getLogger('api');
   const x509util = require('./util/x509-util');
   const asyncMiddleware = require('$/api/async-middleware-error-handler');
+  const Org = require('$/model/Org')
 
   // upload for chaincode and app installation
   const uploadDir = os.tmpdir() || './upload';
@@ -235,7 +236,7 @@ module.exports = async function(app, server, defaultFabricStarterClient) {
    * @security JWT
    */
   app.post('/channels/:channelId/orgs', asyncMiddleware(async(req, res, next) => {
-    res.json(await req.fabricStarterClient.addOrgToChannel(req.params.channelId, orgFromHttpBody(req.body)));
+    res.json(await req.fabricStarterClient.addOrgToChannel(req.params.channelId, Org.fromHttpBody(req.body)));
   }));
 
 
@@ -252,13 +253,6 @@ module.exports = async function(app, server, defaultFabricStarterClient) {
     let orgsArray =_.values(JSON.parse(_.get(storedOrgs,'[0]')||'[]'));
     res.json(orgsArray);
   }));
-
-  function orgFromHttpBody(body) {//TODO: move to model
-    let org = {orgId: body.orgId, domain: body.domain || cfg.domain, orgIp: body.orgIp, peer0Port: body.peerPort, wwwPort: body.wwwPort};
-    logger.info('Org: ', org);
-
-    return org;
-  }
 
   function ordererFromHttpBody(body) {//TODO: move to model
     let orderer = {
@@ -441,7 +435,7 @@ module.exports = async function(app, server, defaultFabricStarterClient) {
    * @security JWT
    */
   app.post('/consortium/members', asyncMiddleware(async(req, res, next) => {
-    res.json(await req.fabricStarterClient.addOrgToConsortium(orgFromHttpBody(req.body)));
+    res.json(await req.fabricStarterClient.addOrgToConsortium(Org.fromHttpBody(req.body)));
   }));
 
   /**

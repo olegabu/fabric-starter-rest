@@ -7,6 +7,7 @@ const cfg = require('$/config');
 const logger = cfg.log4js.getLogger('NodeRuntime');
 const appManager = require('$/app-manager');
 const IntegrationService = require('$/service/integration-service');
+const util = require('$/util');
 
 class FabricStarterRuntime {
 
@@ -17,8 +18,11 @@ class FabricStarterRuntime {
         this.server = server;
     }
 
-    async tryInitRuntime(orgName) {
-        if (!orgName) return;
+    async tryInitRuntime(org = {}) {
+        if (!org.orgId || !org.domain)
+            return;
+        if (!await util.checkRemotePort(`peer0.${org.orgId}.${org.domain}`, org.peer0Port, {throws: false}))
+            return
 
         await this.initDefaultFabricStarterClient();
         await this.initSocketServer();

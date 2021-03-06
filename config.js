@@ -12,10 +12,8 @@ const TEMPLATES_DIR = process.env.TEMPLATES_DIR || '/etc/hyperledger/templates';
 const YAMLS_DIR = process.env.YAMLS_DIR || `${TEMPLATES_DIR}/..`;
 const ENROLL_ID = process.env.ENROLL_ID || 'admin';
 
-const DEFAULT_PEER0PORT = '7051';
 const HARDCODED_ORDERER_NAME = process.env.HARDCODED_ORDERER_NAME || 'orderer';
 
-const peer0Port = process.env.PEER0_PORT || DEFAULT_PEER0PORT;
 const ordererNamePrefix = process.env.ORDERER_NAME_PREFIX || 'raft';
 const ordererBatchTimeout = process.env.ORDERER_BATCH_TIMEOUT || '2';
 
@@ -31,7 +29,6 @@ module.exports = {
     TEMPLATES_DIR: TEMPLATES_DIR,
     YAMLS_DIR: YAMLS_DIR,
     DEFAULT_CONSORTIUM: process.env.DEFAULT_CONSORTIUM || 'SampleConsortium',
-    peer0Port: peer0Port,
     systemChannelId: systemChannelId,
 
     USE_SERVICE_DISCOVERY: typeof process.env.USE_SERVICE_DISCOVERY === "undefined" || process.env.USE_SERVICE_DISCOVERY === "true",
@@ -56,7 +53,7 @@ module.exports = {
     ORDERER_NAME_PREFIX: ordererNamePrefix,
     ORDERER_BATCH_TIMEOUT: ordererBatchTimeout,
 
-    DEFAULT_PEER0PORT: DEFAULT_PEER0PORT,
+    DEFAULT_PEER0PORT: '7051',
     HARDCODED_ORDERER_NAME: HARDCODED_ORDERER_NAME,
 
     get org() {return persistedConfig.ORG || process.env.ORG || ''},
@@ -70,6 +67,20 @@ module.exports = {
 
     setDomain(val) {
         persistedConfig.DOMAIN = val
+        persistConfig()
+    },
+
+    get myIp() {return persistedConfig.MY_IP || process.env.MY_IP},
+
+    setMyIp(val) {
+        persistedConfig.MY_IP = val
+        persistConfig()
+    },
+
+    get peer0Port() {return persistedConfig.PEER0_PORT || process.env.PEER0_PORT || this.DEFAULT_PEER0PORT},
+
+    setPeer0Port(val) {
+        persistedConfig.PEER0_PORT = val
         persistConfig()
     },
 
@@ -126,7 +137,7 @@ module.exports = {
     get ORDERER_TLS_CERT() {return `${this.ordererCryptoDir}/msp/tlscacerts/tlsca.${this.ordererDomain}-cert.pem` },
 
     // default to peer0.org1.example.com:7051 inside docker-compose or export ORGS='{"org1":"peer0.org1.example.com:7051","org2":"peer0.org2.example.com:7051"}'
-    get orgs() {return process.env.ORGS || `"${this.org}":"peer0.${this.org}.${this.domain}:${peer0Port}"`},
+    get orgs() {return process.env.ORGS || `"${this.org}":"peer0.${this.org}.${this.domain}:${this.peer0Port}"`},
     get cas() {return process.env.CAS || `"${this.org}":"ca.${this.org}.${this.domain}:7054"`},
 
     get PEER_CRYPTO_DIR() {return `${cryptoConfigPath}/peerOrganizations/${this.org}.${this.domain}`},

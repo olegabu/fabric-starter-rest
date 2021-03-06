@@ -5,11 +5,11 @@ const fs = require('fs'),
     shell = require('shelljs'),
     Enum = require('enumify').Enum;
 
-
-const cfg = require('./config'),
-    certsManager = require('./certs-manager');
-
+const cfg = require('./config')
 const logger = cfg.log4js.getLogger('FabricCLI');
+const certsManager = require('./certs-manager')
+const util = require('./util');
+
 
 const WGET_OPTS = process.env.WGET_OPTS || '-N';
 
@@ -46,13 +46,26 @@ class FabricCLI {
     }
 
     execShellCommand(cmd, dir, extraEnv) {
-        const env = _.assign({}, process.env, {ORDERER_DOMAIN: cfg.ordererDomain}, extraEnv || {});
+        const env = _.assign({}, process.env, this.getEnv(), extraEnv || {});
         const opts = {env: env};
         if (dir) {
-            cmd=`cd ${dir}; ${cmd}`;
+            cmd = `cd ${dir}; ${cmd}`;
         }
         logger.info(cmd);
-        return shell.exec(`${cmd} 2>&1`, opts);
+        let execResult = shell.exec(`${cmd} 2>&1`, opts);
+        logger.info("Exit code:", _.get(execResult, 'code'), ". Cmd:", cmd);
+
+        const code = _.get(execResult, 'code');
+        const output = util.splitOutputToMultiline(_.get(execResult, 'stdout'))
+        logger.debug(output);
+
+        return {
+            status: code === 0 ? 'success' : 'error',
+            code: code,
+            output: output,
+            env: util.sortAndFilterObjectProps(env, entry=>!_.startsWith(_.get(entry, '[0]'), 'npm_')),
+            isError: () => code !== 0
+        };
     }
 
     async envSubst(templateFile, outputFile, env) {
@@ -87,7 +100,7 @@ class FabricCLI {
 
     getEnv(extraEnv) {
         return _.assign({
-            DOMAIN: cfg.DOMAIN,
+            DOMAIN: cfg.domain,
             ORG: cfg.org,
             PEER0_PORT: cfg.peer0Port,
             ORDERER_NAME: cfg.ordererName,
@@ -97,7 +110,10 @@ class FabricCLI {
             ORDERER_GENERAL_LISTENPORT: cfg.ordererPort,
             RAFT0_PORT: cfg.RAFT0_PORT,
             RAFT1_PORT: cfg.RAFT1_PORT,
-            RAFT2_PORT: cfg.RAFT2_PORT
+            RAFT2_PORT: cfg.RAFT2_PORT,
+            MY_IP: cfg.myIp,
+            ORDERER_ADDR: cfg.ORDERER_ADDR,
+            ORDERER_TLS_CERT: cfg.ORDERER_TLS_CERT
         }, extraEnv);
     }
 
