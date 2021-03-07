@@ -12,8 +12,6 @@ const TEMPLATES_DIR = process.env.TEMPLATES_DIR || '/etc/hyperledger/templates';
 const YAMLS_DIR = process.env.YAMLS_DIR || `${TEMPLATES_DIR}/..`;
 const ENROLL_ID = process.env.ENROLL_ID || 'admin';
 
-const HARDCODED_ORDERER_NAME = process.env.HARDCODED_ORDERER_NAME || 'orderer';
-
 const ordererNamePrefix = process.env.ORDERER_NAME_PREFIX || 'raft';
 const ordererBatchTimeout = process.env.ORDERER_BATCH_TIMEOUT || '2';
 
@@ -24,12 +22,13 @@ const persistedConfig = fs.readJsonSync(NODE_CONFIG_FILE, {throws: false}) || {}
 
 module.exports = {
     log4js: log4js,
+    systemChannelId: systemChannelId,
     ENROLL_ID: ENROLL_ID,
     CRYPTO_CONFIG_DIR: cryptoConfigPath,
     TEMPLATES_DIR: TEMPLATES_DIR,
     YAMLS_DIR: YAMLS_DIR,
+    FABRIC_STARTER_HOME: process.env.FABRIC_STARTER_HOME || process.env.FABRIC_STARTER_PWD || './',
     DEFAULT_CONSORTIUM: process.env.DEFAULT_CONSORTIUM || 'SampleConsortium',
-    systemChannelId: systemChannelId,
 
     USE_SERVICE_DISCOVERY: typeof process.env.USE_SERVICE_DISCOVERY === "undefined" || process.env.USE_SERVICE_DISCOVERY === "true",
     WEBADMIN_DIR: process.env.WEBADMIN_DIR || "./admin",
@@ -54,7 +53,7 @@ module.exports = {
     ORDERER_BATCH_TIMEOUT: ordererBatchTimeout,
 
     DEFAULT_PEER0PORT: '7051',
-    HARDCODED_ORDERER_NAME: HARDCODED_ORDERER_NAME,
+    HARDCODED_ORDERER_NAME: process.env.HARDCODED_ORDERER_NAME || 'orderer',
 
     get org() {return persistedConfig.ORG || process.env.ORG || ''},
 

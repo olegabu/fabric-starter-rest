@@ -18,6 +18,7 @@ class NodeComponentsManager {
         if (!resultOrderer.isError()) {
             await util.sleep(4000)
             peerResult = this.startPeer(env);
+            await util.sleep(4000)
             await this.fabricStarterRuntime.tryInitRuntime(Org.fromConfig(cfg))
         }
         return {StartOrderer: resultOrderer, StartPeer: peerResult}

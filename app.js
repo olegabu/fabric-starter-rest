@@ -11,7 +11,8 @@ const NodeComponentsManager = require('$/service/node-components-manager');
 
     const app = initAppExpress();
     const server = startHttpAppServer(app);
-
+    initStaticApi(app, server);
+    
     const fabricStarterRuntime = new FabricStarterRuntime(app, server)
     const nodeComponentsManager = new NodeComponentsManager(fabricStarterRuntime)
     initManagementApi(app, server, nodeComponentsManager)
@@ -37,6 +38,10 @@ function initAppExpress() {
     app.options('*', cors());
 
     return app;
+}
+
+function initStaticApi(app, server) {
+    require('./api/static-api')(app, server);
 }
 
 function initManagementApi(app, server, nodeComponentsManager) {

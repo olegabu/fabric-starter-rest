@@ -15,7 +15,9 @@ class Util {
                 resolve(true);
             });
             client.on("error", e => {
-                return _.get(options, 'throws', true)
+                let toThrow = _.get(options, 'throws', true);
+                logger.debug("Error checking remote port, throw:", toThrow, e)
+                return toThrow
                     ? reject(`Endpoint is unreachable: ${server}:${port}. ${e && e.message}`)
                     : resolve(false)
             });

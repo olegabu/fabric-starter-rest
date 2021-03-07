@@ -113,7 +113,8 @@ class FabricCLI {
             RAFT2_PORT: cfg.RAFT2_PORT,
             MY_IP: cfg.myIp,
             ORDERER_ADDR: cfg.ORDERER_ADDR,
-            ORDERER_TLS_CERT: cfg.ORDERER_TLS_CERT
+            ORDERER_TLS_CERT: cfg.ORDERER_TLS_CERT,
+            FABRIC_STARTER_HOME: cfg.FABRIC_STARTER_HOME
         }, extraEnv);
     }
 

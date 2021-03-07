@@ -43,7 +43,7 @@ COPY --from=fabrictools /etc/hyperledger/templates /usr/src/app/templates
 COPY --from=fabrictools /etc/hyperledger/container-scripts /usr/src/app/container-scripts
 #COPY --from=fabrictools /etc/hyperledger/docker-compose*.yaml /usr/src/app/
 COPY --from=fabrictools /etc/hyperledger/docker-compose*.yaml /etc/hyperledger/
-COPY --from=fabrictools /etc/hyperledger/raft /etc/hyperledger/raft
+COPY --from=fabrictools /etc/hyperledger/raft /etc/hyperledger/
 COPY --from=fabrictools /etc/hyperledger/ordering-start.sh /etc/hyperledger/
 
 

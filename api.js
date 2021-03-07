@@ -25,11 +25,12 @@ module.exports = async function(app, server, defaultFabricStarterClient) {
 
 // serve admin and custom web apps as static
   const express = require("express");
+/*
   const webappDir = process.env.WEBAPP_DIR || './webapp';
   app.use('/webapp', express.static(webappDir));
   logger.info(`serving webapp at /webapp from ${webappDir}`);
   app.use('/admin', express.static(cfg.WEBADMIN_DIR));
-  app.use('/admin/*', express.static(cfg.WEBADMIN_DIR));
+  app.use('/admin/!*', express.static(cfg.WEBADMIN_DIR));
   logger.info(`serving admin at /admin from ${cfg.WEBADMIN_DIR}`);
 
 // serve msp directory with certificates as static
@@ -48,7 +49,7 @@ module.exports = async function(app, server, defaultFabricStarterClient) {
   app.get('/', (req, res) => {
     res.status(200).send('Welcome to fabric-starter REST server');
   });
-
+/*
   app.post('/cert', (req, res) => {
     res.json(x509util.decodeCert(req.body.cert));
   });
