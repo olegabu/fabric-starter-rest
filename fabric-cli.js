@@ -141,6 +141,7 @@ class FabricCLI {
             BOOTSTRAP_SERVICE_URL: cfg.BOOTSTRAP_SERVICE_URL,
             CORE_PEER_MSPCONFIGPATH: cfg.CORE_PEER_MSPCONFIGPATH,
             CORE_PEER_LOCALMSPID: cfg.CORE_PEER_LOCALMSPID,
+            FABRIC_STARTER_VERSION: cfg.FABRIC_STARTER_VERSION,
         }, extraEnv);
     }
 
@@ -289,7 +290,7 @@ class FabricCLI {
     }
 
     packageChaincodeWithInstantiationPolicy(chaincodeId, chaincodePath, version, language, instantiationPolicy) {
-        const instantiationPolicyParam = instantiationPolicy ? `-i ${instantiationPolicy}` : `-i "AND('org1.admin')"`;
+        const instantiationPolicyParam = instantiationPolicy ? `-i ${instantiationPolicy}` : `-i "AND('${cfg.org}.admin')"`;
         let packageFileName = `${cfg.CRYPTO_CONFIG_DIR}/chaincode-${cfg.org}_${chaincodeId}.package`;
         const peerPackageCommandArgs = ` -n ${chaincodeId} -p ${chaincodePath} -v ${version} -l ${language} ${instantiationPolicyParam} -s -S ${packageFileName}`
         this.execPeerCommand('chaincode package', peerPackageCommandArgs);

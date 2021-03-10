@@ -28,6 +28,7 @@ module.exports = {
     TEMPLATES_DIR: TEMPLATES_DIR,
     YAMLS_DIR: YAMLS_DIR,
     FABRIC_STARTER_HOME: process.env.FABRIC_STARTER_HOME || process.env.FABRIC_STARTER_PWD || './',
+    FABRIC_STARTER_VERSION: process.env.FABRIC_STARTER_VERSION,
     DEFAULT_CONSORTIUM: process.env.DEFAULT_CONSORTIUM || 'SampleConsortium',
     BOOTSTRAP_SERVICE_URL: process.env.BOOTSTRAP_SERVICE_URL || 'https',
     API_PORT: process.env.API_PORT || '4000',

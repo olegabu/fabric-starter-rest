@@ -367,9 +367,15 @@ class FabricStarterClient {
                     } catch (e) {
                         logger.warn("Deleting temp file failed: ", e)
                     }
+
                     let fullChaincodePath = path.resolve(__dirname, `${baseDir}/${chaincodeId}`);
-                    const chaincodePackageFile = fabricCLI.packageChaincodeWithInstantiationPolicy(chaincodeId, fullChaincodePath, version, language)
-/*
+                    /*
+                                        const chaincodePackageFile = fabricCLI.packageChaincodeWithInstantiationPolicy(chaincodeId, fullChaincodePath, version, language)
+                                        const proposal = {
+                                            targets: peer,
+                                            chaincodePackage: fs.readFileSync(chaincodePackageFile)
+                                        }
+                    */
                     let proposal = {
                         targets: peer,
                         chaincodeId: chaincodeId,
@@ -377,11 +383,7 @@ class FabricStarterClient {
                         chaincodeVersion: version || '1.0',
                         chaincodeType: language || 'node',
                     };
-*/
-                    const proposal = {
-                        targets: peer,
-                        chaincodePackage: fs.readFileSync(chaincodePackageFile)
-                    }
+
                     try {
                         const result = await client.installChaincode(proposal);
                         fsClient.errorCheck(result);

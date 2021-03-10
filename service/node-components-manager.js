@@ -65,7 +65,7 @@ class NodeComponentsManager {
 
         await util.sleep(5000)
         let peerResult = this.startPeerWithDockerCompose(env);
-        await util.sleep(5000)
+        await util.sleep(6000)
         await this.fabricStarterRuntime.tryInitRuntime(Org.fromConfig(cfg))
 
         return {
@@ -108,7 +108,7 @@ class NodeComponentsManager {
     startPeerWithDockerCompose(env) {
         env = envWithDockerComposeProjectName(env)
         let cmd = `docker-compose -f docker-compose.yaml -f docker-compose-couchdb.yaml -f docker-compose-ldap.yaml ${cfg.DOCKER_COMPOSE_EXTRA_ARGS} up `
-            + ` -d --force-recreate --no-deps pre-install ca ldap-service ldapadmin couchdb.peer0 peer0 cli.peer post-install `;//www.peer
+            + ` -d --force-recreate --no-deps pre-install ca  www.local ldap-service ldapadmin couchdb.peer0 peer0 cli.peer post-install `;//www.peer
         let result = fabricCLI.execShellCommand(cmd, cfg.YAMLS_DIR, env);
         return result;
     }
