@@ -16,21 +16,31 @@ class FabricStarterRuntime {
         this.activeNetwork = null;
         this.app = app;
         this.server = server;
+        this.initialized = false
     }
 
     async tryInitRuntime(org = {}) {
-        if (!org.orgId || !org.domain)
-            return;
-        if (!await util.checkRemotePort(`peer0.${org.orgId}.${org.domain}`, org.peer0Port, {throws: false}))
-            return
+        logger.debug('Runtime is initialised: ', this.initialized)
+        if (!this.initialized) {
+            if (!org.orgId || !org.domain)
+                return;
+            if (!await util.checkRemotePort(`peer0.${org.orgId}.${org.domain}`, org.peer0Port, {
+                throws: false,
+                timeout: 6000,
+                from: 'tryInitRuntime'
+            }))
+                return
 
-        await this.initDefaultFabricStarterClient();
-        await this.initSocketServer();
-        this.initApps()
-        this.initJwtApi()
-        await this.initApi();
-        this.integrationService = new IntegrationService(this)
-        this.initIntegrationApi()
+            logger.debug('Init runtime')
+            await this.initDefaultFabricStarterClient();
+            await this.initSocketServer();
+            this.initApps()
+            this.initJwtApi()
+            await this.initApi();
+            this.integrationService = new IntegrationService(this)
+            this.initIntegrationApi()
+            this.initialized = true
+        }
     }
 
     async initDefaultFabricStarterClient() {
@@ -70,7 +80,7 @@ class FabricStarterRuntime {
     }
 
     async initApi() {
-        await require('$/api')(this.app, this.server, this.defaultFabricStarterClient)
+        await require('$/api')(this.app, this.server, this)
     }
 
     initIntegrationApi() {

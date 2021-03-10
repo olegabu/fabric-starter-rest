@@ -1,0 +1,7 @@
+Integration orderer:
+curl -i --retry 0 -k https://192.168.99.1:443/integration/service/raft -H 'Content-Type: application/json' \
+-d '{"ordererName":"orderer", "domain":"org2-example.com", "ordererPort":"7050","wwwPort":"79","ordererIp":"192.168.99.120","orgId":"org2"}'
+
+#Integrate org
+curl -i --connect-timeout 30 --max-time 120 --retry 0 -k http://127.0.0.1:443/integration/service/orgs -H 'Content-Type: application/json' \
+-d '{"orgId":"org2","domain":"example.com","orgIp":"192.168.99.120","peerPort":"7051","wwwPort":"80"}'

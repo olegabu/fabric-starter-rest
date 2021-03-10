@@ -13,6 +13,7 @@ const certsManager = require('./certs-manager');
 const channelManager = require('./channel-manager');
 //const networkConfigFile = '../crypto-config/network.json'; // or .yaml
 //const networkConfig = require('../crypto-config/network.json');
+const networkConfigProvider = require('./network');
 
 const asLocalhost = (process.env.DISCOVER_AS_LOCALHOST === 'true');
 const IS_ADMIN = true;
@@ -23,7 +24,7 @@ class FabricStarterClient {
     constructor(networkConfig) {
         FabricStarterClient.setDefaultConfigSettings(cfg.CRYPTO_SUIT_CONFIG);
 
-        this.networkConfig = networkConfig || require('./network')();
+        this.networkConfig = (networkConfig || networkConfigProvider)();
         logger.info('constructing with network config:', JSON.stringify(this.networkConfig));
         this.client = Client.loadFromConfig(this.networkConfig); // or networkConfigFile
         this.peer = this.client.getPeersForOrg()[0];
@@ -213,7 +214,7 @@ class FabricStarterClient {
     async addOrgToChannel(channelId, orgObj) {
         await this.checkOrgDns(orgObj);
         try {
-            await util.checkRemotePort(`peer0.${orgObj.orgId}.${orgObj.domain}`, orgObj.peer0Port);
+            await util.checkRemotePort(`peer0.${orgObj.orgId}.${orgObj.domain}`, orgObj.peer0Port, {from: `addOrgToChannel(${channelId}, ${orgObj})`});
             let currentChannelConfigFile = fabricCLI.fetchChannelConfig(channelId);
             let configUpdateRes = await fabricCLI.prepareNewOrgConfig(orgObj);
             let res = await channelManager.applyConfigToChannel(channelId, currentChannelConfigFile, configUpdateRes, this.client);
@@ -241,20 +242,21 @@ class FabricStarterClient {
 
     async initOrdererClient() {
         try {
-            const ordererClient = Client.loadFromConfig(this.networkConfig);
+            const ordererClient = Client.loadFromConfig(networkConfigProvider()); //this.networkConfig);
             await ordererClient.initCredentialStores();
             ordererClient.setAdminSigningIdentity(
                 util.loadPemFromFile(certsManager.getPrivateKeyFilePath()),
                 util.loadPemFromFile(certsManager.getSignCertPath()),
-                cfg.ORDERER_MSPID
+                cfg.ordererMspId
             );
             return ordererClient
         } catch (err) {
-            logger.debug("Not orderer on host")
+            logger.debug("No orderer on host", err)
         }
     }
 
     async getConsortiumMemberList(consortiumName = 'SampleConsortium') {
+        logger.debug("About to get consortium mebers list")
         let result = [];
         try {
             // let channel = await (this.client.getChannel(cfg.systemChannelId, false) || this.constructChannel(cfg.systemChannelId));
@@ -271,7 +273,7 @@ class FabricStarterClient {
                 return !(_.startsWith(name, "Orderer") || _.startsWith(name, "orderer"));
             });
         } catch (err) {
-            logger.debug("Not enough permissions to access Consortium");
+            logger.debug("Not enough permissions to access Consortium", err);
         }
         return result;
     }
@@ -526,7 +528,7 @@ class FabricStarterClient {
 
             proposal.txId = txId;
 
-            logger.trace('invoke proposal', proposal);
+            // logger.trace('invoke proposal', proposal.chaincodeId, proposal.fcn, proposal.args,);
             let proposalResponse;
             try {
                 proposalResponse = await channel.sendTransactionProposal(proposal);

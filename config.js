@@ -29,6 +29,8 @@ module.exports = {
     YAMLS_DIR: YAMLS_DIR,
     FABRIC_STARTER_HOME: process.env.FABRIC_STARTER_HOME || process.env.FABRIC_STARTER_PWD || './',
     DEFAULT_CONSORTIUM: process.env.DEFAULT_CONSORTIUM || 'SampleConsortium',
+    BOOTSTRAP_SERVICE_URL: process.env.BOOTSTRAP_SERVICE_URL || 'https',
+    API_PORT: process.env.API_PORT || '4000',
 
     USE_SERVICE_DISCOVERY: typeof process.env.USE_SERVICE_DISCOVERY === "undefined" || process.env.USE_SERVICE_DISCOVERY === "true",
     WEBADMIN_DIR: process.env.WEBADMIN_DIR || "./admin",
@@ -140,6 +142,9 @@ module.exports = {
     get cas() {return process.env.CAS || `"${this.org}":"ca.${this.org}.${this.domain}:7054"`},
 
     get PEER_CRYPTO_DIR() {return `${cryptoConfigPath}/peerOrganizations/${this.org}.${this.domain}`},
+
+    get CORE_PEER_LOCALMSPID() {return this.org},
+    get CORE_PEER_MSPCONFIGPATH() {return `${cryptoConfigPath}/peerOrganizations/${this.org}.${this.domain}/users/Admin@${this.org}.${this.domain}/msp`},
 
     get certificationDomain() { return `${this.org}.${this.domain}`},
 

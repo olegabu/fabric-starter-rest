@@ -13,19 +13,14 @@ const CERT_FOLDERS_PREFIXES = {
 };
 
 
-const ORDERER_BASE_CRYPTO_DIR = `${cfg.CRYPTO_CONFIG_DIR}/ordererOrganizations/${cfg.ordererDomain}`;
-const PEER_BASE_CRYPTO_DIR = `${cfg.CRYPTO_CONFIG_DIR}/peerOrganizations/${cfg.org}.${cfg.domain}`;
-
-
-
 class CertificateManager {
 
-    constructor() {
-        this.ordererMSPEnv = {
+    get ordererMSPEnv() {
+        return {
             CORE_PEER_LOCALMSPID: `${cfg.ordererName}.${cfg.ordererDomain}`,
             CORE_PEER_MSPCONFIGPATH: this.getMSPConfigDirectory(),
             CORE_PEER_TLS_ROOTCERT_FILE: this.getOrdererRootTLSFile()
-        };
+        }
     }
 
     getOrdererMSPEnv() {
@@ -43,23 +38,23 @@ class CertificateManager {
         return path.join(this.getOrgBaseCertificationDirectory(orgId), 'users', `Admin@${certDomain}`, 'msp');
     }
 
-    forEachCertificate(orgObj, domain, /*function (certificateSubDir, fullCertificateDirectoryPath, certificateFileName, directoryPrefixConfig)*/ processorFunc) {
+    forEachCertificate(orgId, domain, /*function (certificateSubDir, fullCertificateDirectoryPath, certificateFileName, directoryPrefixConfig)*/ processorFunc) {
         _.forEach(_.keys(CERT_FOLDERS_PREFIXES), certificateSubDir => {
-            let fullCertificateDirectoryPath = `${this.getOrgBaseCertificationDirectory(_.get(orgObj, "orgId"), domain)}/msp/${certificateSubDir}`;
-            let certificateFilename = this.getCertFileName(certificateSubDir, orgObj, domain);
+            let fullCertificateDirectoryPath = `${this.getOrgBaseCertificationDirectory(orgId, domain)}/msp/${certificateSubDir}`;
+            let certificateFilename = this.getCertFileName(certificateSubDir, orgId, domain);
             processorFunc(certificateSubDir, fullCertificateDirectoryPath, certificateFilename, CERT_FOLDERS_PREFIXES[certificateSubDir]);
         });
     }
 
-    getCertFileName(certificateSubDir, orgObj, domain) {
+    getCertFileName(certificateSubDir, orgId, domain) {
         let certFileNamePart = _.get(CERT_FOLDERS_PREFIXES, `[${certificateSubDir}].certFileNamePart`);
-        let domainCertPath = this.getCertificationDomain(_.get(orgObj, "orgId"), domain);
+        let domainCertPath = this.getCertificationDomain(orgId, domain);
         let certFileName = `${certFileNamePart}${domainCertPath}-cert.pem`;
         return certFileName;
     }
 
     getOrdererRootTLSFile(ordererName = cfg.ordererName, ordererDomain = cfg.ordererDomain) {
-        return `${this.getOrgBaseCertificationDirectory()}/msp/tlscacerts/tlsca.${cfg.ordererDomain}-cert.pem`
+        return `${this.getOrgBaseCertificationDirectory()}/msp/tlscacerts/tlsca.${ordererDomain}-cert.pem`
         // return `${this.getOrgBaseCertificationDirectory()}/orderers/${ordererName}.${ordererDomain}/tls/ca.crt`
     }
 

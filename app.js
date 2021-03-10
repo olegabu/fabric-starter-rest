@@ -7,6 +7,8 @@ const logger = cfg.log4js.getLogger('app');
 const FabricStarterRuntime = require('./service/context/fabric-starter-runtime');
 const NodeComponentsManager = require('$/service/node-components-manager');
 
+
+const fabricCLI = require('$/fabric-cli');
 (async function () {
 
     const app = initAppExpress();

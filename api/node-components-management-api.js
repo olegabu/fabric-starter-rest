@@ -15,6 +15,7 @@ module.exports = async function (app, server, nodeComponentsManager) {
         let enroll = Enroll.fromHttpBody(req.body);
         cfg.setOrg(org.orgId)
         cfg.setDomain(org.domain)
+        cfg.setOrdererDomain(org.domain)
         cfg.setMyIp(org.orgIp)
         cfg.setEnrollSecret(enroll.enrollSecret)
         res.status(200).json('');
@@ -23,6 +24,16 @@ module.exports = async function (app, server, nodeComponentsManager) {
 
     app.post('/node/control', asyncMiddleware(async (req, res, next) => {
         let result = await nodeComponentsManager.startupNode(req.body);
+        res.json(result)
+    }))
+
+    app.post('/node/control/osn', asyncMiddleware(async (req, res, next) => {
+        let result = await nodeComponentsManager.joinNode(req.body);
+        res.json(result)
+    }))
+
+    app.delete('/node/control', asyncMiddleware(async (req, res) => {
+        let result = await nodeComponentsManager.cleanupNode(req.body);
         res.json(result)
     }))
 }

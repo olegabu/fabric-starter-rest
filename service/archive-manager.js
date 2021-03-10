@@ -24,7 +24,7 @@ class TarExtractor {
     extractionOutStream(extractPath) {
         logger.debug("Untar to ", extractPath);
         return tar.x({ // or tar.extract(
-                strip: 1,
+                // strip: 1,//nope
                 cwd: extractPath
             }
         )
@@ -35,7 +35,7 @@ class TarGzExtractor {
     extractionOutStream(extractPath) {
         logger.debug("Untargz to ", extractPath);
         return tar.x({ // or tar.extract(
-                strip: 1,
+                // strip: 1,//nope
                 cwd: extractPath,
                 gzip: true
             }

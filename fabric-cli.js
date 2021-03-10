@@ -1,5 +1,7 @@
 const fs = require('fs'),
     path = require('path'),
+    dns = require('dns'),
+    nodeUtil = require('util'),
     _ = require('lodash'),
     envsub = require('envsub'),
     shell = require('shelljs'),
@@ -23,26 +25,42 @@ class CONFIG_TYPE extends Enum {
 
 CONFIG_TYPE.initEnum(['common.Config', 'common.Block', 'common.ConfigUpdate', 'common.Envelope']);
 
+const dnsLookup = nodeUtil.promisify(dns.lookup)
+
 class FabricCLI {
 
-    async downloadCerts(orgObj, domain = cfg.domain, wwwPort) {
-        const orgDomain = orgObj ? `${orgObj.orgId}.${domain}` : domain;
-        let wwwHost = `www.${orgDomain}`;
-        wwwPort = wwwPort || 80;
-        // await util.checkRemotePort(wwwHost, wwwPort); TODO: same host orderer port is not available when in docker
-        certsManager.forEachCertificate(orgObj, domain,
-            (certificateSubDir, fullCertificateDirectoryPath, certificateFileName, directoryPrefixConfig) => {
-            shell.exec(`/usr/bin/wget ${WGET_OPTS} --directory-prefix ${fullCertificateDirectoryPath} http://${wwwHost}:${wwwPort || 80}/msp/${certificateSubDir}/${certificateFileName}`);
-        });
+    async downloadCerts(orgName, domain, server, nameDomain , wwwPort) {
+        // const orgDomain = orgName ? `${orgName}.${domain}` : domain;
+        let wwwHost = `www.${server}`;
+
+        try {
+            let dnsInfo = await dnsLookup(wwwHost, 4);
+            const wwwIp = dnsInfo.address
+
+            if (!_.isEqual(wwwIp, cfg.myIp) && !_.startsWith(wwwIp, '172')) {
+                wwwPort = wwwPort || 80;
+                await util.checkRemotePort(wwwHost, wwwPort); //TODO: same host orderer port is not available when in docker
+                certsManager.forEachCertificate(orgName, domain,
+                    (certificateSubDir, fullCertificateDirectoryPath, certificateFileName, directoryPrefixConfig) => {
+                        shell.exec(`/usr/bin/wget ${WGET_OPTS} --directory-prefix ${fullCertificateDirectoryPath} http://${wwwHost}:${wwwPort || 80}/node-certs/${nameDomain}/msp/${certificateSubDir}/${certificateFileName}`);
+                    });
+            }
+        } catch(err) {
+            logger.error(`Download certificates. Server not found ${wwwHost}`)
+            throw new Error(`Download certificates. Server not found ${wwwHost}`)
+        }
     }
 
-    async downloadOrdererMSP(wwwPort = cfg.ORDERER_WWW_PORT, ordererDomain=cfg.ordererDomain) {
-        await this.downloadCerts(null, ordererDomain, wwwPort);
+
+    async downloadOrdererMSP(ordererName=cfg.ordererName, ordererDomain=cfg.ordererDomain, wwwPort = cfg.ordererWwwPort, ) {
+        await this.downloadCerts(null, ordererDomain, ordererDomain, `${ordererName}.${ordererDomain}`, wwwPort);
     }
 
     async downloadOrgMSP(orgObj, domain = cfg.domain) {
         //TODO:await util.checkRemotePort(`www.${orgObj.orgId}.${domain}`, orgObj.wwwPort || 80);
-        await this.downloadCerts(orgObj, domain, orgObj.wwwPort);
+        let orgId = _.get(orgObj, 'orgId');
+        logger.debug(`Download MSP for org ${orgId}`, orgObj)
+        await this.downloadCerts(orgId, domain,`${orgId}.${domain}`, `${orgId}.${domain}`, orgObj.wwwPort);
     }
 
     execShellCommand(cmd, dir, extraEnv) {
@@ -51,7 +69,7 @@ class FabricCLI {
         if (dir) {
             cmd = `cd ${dir}; ${cmd}`;
         }
-        logger.info(cmd);
+        logger.info('Executing shell command:', cmd);
         let execResult = shell.exec(`${cmd} 2>&1`, opts);
         logger.info("Exit code:", _.get(execResult, 'code'), ". Cmd:", cmd);
 
@@ -59,13 +77,19 @@ class FabricCLI {
         const output = util.splitOutputToMultiline(_.get(execResult, 'stdout'))
         logger.debug(output);
 
-        return {
+        const result = {
             status: code === 0 ? 'success' : 'error',
+            cmd: cmd,
             code: code,
             output: output,
-            env: util.sortAndFilterObjectProps(env, entry=>!_.startsWith(_.get(entry, '[0]'), 'npm_')),
+            env: util.sortAndFilterObjectProps(env, entry => !_.startsWith(_.get(entry, '[0]'), 'npm_')),
             isError: () => code !== 0
         };
+        if (code !== 0) {
+            logger.error(`Shell execution error: ${result.cmd}, ${result.output}`)
+            logger.error(result.env)
+        }
+        return result;
     }
 
     async envSubst(templateFile, outputFile, env) {
@@ -81,7 +105,6 @@ class FabricCLI {
     }
 
     execPeerCommand(command, paramsStr, extraEnv) {
-        this.execShellCommand(`echo $CORE_PEER_LOCALMSPID`, null, extraEnv);
         this.execShellCommand(`peer ${command} -o ${cfg.ORDERER_ADDR} --tls --cafile ${cfg.ORDERER_TLS_CERT} ${paramsStr}`, null, extraEnv);
     }
 
@@ -114,7 +137,10 @@ class FabricCLI {
             MY_IP: cfg.myIp,
             ORDERER_ADDR: cfg.ORDERER_ADDR,
             ORDERER_TLS_CERT: cfg.ORDERER_TLS_CERT,
-            FABRIC_STARTER_HOME: cfg.FABRIC_STARTER_HOME
+            FABRIC_STARTER_HOME: cfg.FABRIC_STARTER_HOME,
+            BOOTSTRAP_SERVICE_URL: cfg.BOOTSTRAP_SERVICE_URL,
+            CORE_PEER_MSPCONFIGPATH: cfg.CORE_PEER_MSPCONFIGPATH,
+            CORE_PEER_LOCALMSPID: cfg.CORE_PEER_LOCALMSPID,
         }, extraEnv);
     }
 
@@ -145,12 +171,13 @@ class FabricCLI {
     }
 
     translateChannelConfig(configFileName) {
+        logger.debug('translateChannelConfig ', configFileName)
         const outputFileName = `${path.dirname(configFileName)}/${path.basename(configFileName, ".pb")}.json`;
         this.translateProtobufConfig(TRANSLATE_OP.proto_decode, CONFIG_TYPE['common.Block'], configFileName, outputFileName);
         const channelConfigProtobuf = this.loadFileContentSync(outputFileName);
         const channelConfigEnvelope = JSON.parse(_.toString(channelConfigProtobuf));
         let origChannelGroupConfig = _.get(channelConfigEnvelope, "data.data[0].payload.data.config");
-
+        logger.debug('translateChannelConfig. result ', origChannelGroupConfig)
         return origChannelGroupConfig;
     }
 
@@ -207,14 +234,16 @@ class FabricCLI {
     }
 
     async prepareOrgConfigStruct(newOrg, configTemplateFile, extraEnv) {
+        logger.debug("Prepare org config for ", newOrg)
         await this.downloadOrgMSP(newOrg);
 
+        let newOrgId = _.get(newOrg,'orgId');
         let env = _.assign({
-            NEWORG: newOrg.orgId,
+            NEWORG: newOrgId,
             DOMAIN: cfg.domain,
         }, extraEnv);
 
-        certsManager.forEachCertificate(newOrg, cfg.domain, (certificateSubDir, fullCertificateDirectoryPath, certificateFileName, directoryPrefixConfig) => {
+        certsManager.forEachCertificate(newOrgId, newOrg.domain || cfg.domain, (certificateSubDir, fullCertificateDirectoryPath, certificateFileName, directoryPrefixConfig) => {
             let certContent = this.loadFileContentSync(path.join(fullCertificateDirectoryPath, certificateFileName));
             env[directoryPrefixConfig.envVar] = Buffer.from(certContent).toString('base64');
         });
@@ -227,9 +256,9 @@ class FabricCLI {
                 });
         */
 
-        const outputFile = `${cfg.CRYPTO_CONFIG_DIR}/${newOrg.orgId}_OrgConfig.json`;
+        const outputFile = `${cfg.CRYPTO_CONFIG_DIR}/${newOrgId}_OrgConfig.json`;
         let newOrgSubstitution = await this.envSubst(`${cfg.TEMPLATES_DIR}/${configTemplateFile}`, outputFile, env);
-
+        logger.debug('Config for ', newOrg, JSON.parse(newOrgSubstitution.outputContents))
         return {outputFile, outputJson: JSON.parse(newOrgSubstitution.outputContents)};
     }
 

@@ -65,12 +65,16 @@
 
 
         async provisionAppstoreApp(expressApp, fileObj) {
-            let baseFileName = this.getFileBaseName(fileObj);
-            const appFolderPath = path.join(cfg.APPSTORE_DIR, baseFileName);
-            logger.debug("Provisioning Appstore app", appFolderPath, fileObj);
-            let extractPath = await archives.extract(fileObj.path, fileObj.originalname, appFolderPath);
-            let port = await this.assignPortAndSave(baseFileName, extractPath);
-            return await this.deployAppstoreApp(baseFileName, extractPath, port, expressApp);
+            try {
+                let baseFileName = this.getFileBaseName(fileObj);
+                const appFolderPath = path.join(cfg.APPSTORE_DIR, baseFileName);
+                logger.debug("Provisioning Appstore app", appFolderPath, fileObj);
+                let extractPath = await archives.extract(fileObj.path, fileObj.originalname, appFolderPath);
+                let port = await this.assignPortAndSave(baseFileName, extractPath);
+                return await this.deployAppstoreApp(baseFileName, extractPath, port, expressApp);
+            } catch (e) {
+                throw new Error('Error deploying app:', e)
+            }
         }
 
         async deployAppstoreApp(appName, extractPath, port, app) {

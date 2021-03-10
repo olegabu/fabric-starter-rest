@@ -25,10 +25,6 @@ module.exports = async (app, _fabricStarterClient, eventBus) => {
     const password = process.env.DNS_PASSWORD || 'servicePass';
     // const skip = !process.env.MULTIHOST;
     const period = process.env.DNS_PERIOD || 60000;
-    const orgDomain = `${cfg.org}.${cfg.domain}`;
-    const MY_IP = cfg.myIp //process.env.MY_IP;
-    const queryTarget = process.env.DNS_QUERY_TARGET || `peer0.${orgDomain}:${cfg.peer0Port}`;
-
 
     let blockListenerStarted = false;
     let inProcess = false;
@@ -87,9 +83,9 @@ module.exports = async (app, _fabricStarterClient, eventBus) => {
         try {
             let dnsRecords = await getChaincodeData("dns");
             if (dnsRecords) {
-                dnsRecords = filterOutByIp(dnsRecords, MY_IP);
+                dnsRecords = filterOutByIp(dnsRecords, cfg.myIp);
                 util.writeFile(NODE_HOSTS_FILE, dnsRecords);
-                util.writeFile(ORDERER_HOSTS_FILE, dnsRecords);
+                // util.writeFile(ORDERER_HOSTS_FILE, dnsRecords);
             }
 
             const osns = await getChaincodeData("osn");
@@ -97,8 +93,10 @@ module.exports = async (app, _fabricStarterClient, eventBus) => {
                 _.forEach(osns, async (osn, osnKey) => {
                     let ordererWwwPort = osn.wwwPort || cfg.ordererWwwPort;
                     try {
-                        await util.checkRemotePort(`www.${osn.domain}`, ordererWwwPort);
-                        await fabricCLI.downloadOrdererMSP(ordererWwwPort, osn.domain);
+/*
+                        await util.checkRemotePort(`www.${osn.domain}`, ordererWwwPort, {from: 'dns-middleware'});
+                        await fabricCLI.downloadOrdererMSP(osn.domain, osn.ordererName, ordererWwwPort);
+*/
                     } catch (e) {
                         logger.error(`Remote port is inaccessible www.${osn.domain}:${ordererWwwPort}`, e);
                     }
@@ -106,12 +104,12 @@ module.exports = async (app, _fabricStarterClient, eventBus) => {
                 eventBus && eventBus.emit('osn-configuration-changed', osns);
             }
 
-            const chainOrgs = await getChaincodeData("orgs");
+/*            const chainOrgs = await getChaincodeData("orgs");
             if (chainOrgs) {
                 orgs = _.merge(orgs, chainOrgs);
                 // eventBus.emit('orgs-configuration-changed', orgs);
                 // eventBus.emit('osn-configuration-changed', osns);
-            }
+            }*/
 
 
             // taskSettigns=await getChaincodeData("tasksSettings") ||{};
@@ -143,7 +141,7 @@ module.exports = async (app, _fabricStarterClient, eventBus) => {
 
     async function getChaincodeData(dataKey) {
         let result = null;
-        const dataResponses = await fabricStarterClient.query(channel, chaincodeName, 'get', `["${dataKey}"]`, {targets: queryTarget});
+        const dataResponses = await fabricStarterClient.query(channel, chaincodeName, 'get', `["${dataKey}"]`, {targets: process.env.DNS_QUERY_TARGET || `peer0.${cfg.org}.${cfg.domain}:${cfg.peer0Port}`});
         logger.debug(`dataResponses for ${dataKey}`, dataResponses);
         try {
             if (dataResponses && dataResponses[0] !== '') {

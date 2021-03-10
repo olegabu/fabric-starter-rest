@@ -1,4 +1,4 @@
-module.exports = async function(app, server, defaultFabricStarterClient) {
+module.exports = async function(app, server, fabricStarterRuntime) {
 
   const fs = require("fs");
   const path = require('path');
@@ -149,7 +149,7 @@ module.exports = async function(app, server, defaultFabricStarterClient) {
    */
   app.post('/channels/:channelId', asyncMiddleware(async (req, res, next) => {
     let ret = await channelManager.joinChannel(req.params.channelId, req.fabricStarterClient);
-    await defaultFabricStarterClient.subscribeToChannelEvents(req.params.channelId); //TODO: shouldn't be moved to channelManager.joinChannel ?
+    await fabricStarterRuntime.subscribeToChannelEvents(req.params.channelId); //TODO: shouldn't be moved to channelManager.joinChannel ?
     res.json(ret);
   }));
 
