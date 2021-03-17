@@ -13,6 +13,10 @@ module.exports = function (app, server, integrationService) {
         res.json(integrationService.acceptedOrgsList());
     }));
 
+    app.get('/integration/service/accepted/orgs', asyncMiddleware((req, res) => {//todo: unauthorized!!!!
+        res.json(integrationService.acceptedOrgsList());
+    }));
+
     app.post('/integration/service/orgs', asyncMiddleware(async (req, res) => {
         logger.info('Org integration service request: ', req.body);
         try {
