@@ -5,7 +5,7 @@ const cors = require('cors');
 const cfg = require('$/config');
 const logger = cfg.log4js.getLogger('app');
 const FabricStarterRuntime = require('./service/context/fabric-starter-runtime');
-const NodeComponentsManager = require('$/service/node-components-manager');
+const NodeComponentsManager = require('$/service/nodecomponents/node-components-manager');
 
 
 const fabricCLI = require('$/fabric-cli');

@@ -29,7 +29,6 @@ class FabricStarterRuntime {
                 timeout: 6000,
                 from: 'tryInitRuntime'
             }))
-                return
 
             logger.debug('Init runtime')
             await this.initDefaultFabricStarterClient();

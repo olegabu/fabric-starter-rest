@@ -11,13 +11,8 @@ module.exports = async function (app, server, nodeComponentsManager) {
     })
 
     app.post('/node/organization', asyncMiddleware(async (req, res, next) => {
-        let org = Org.fromHttpBody(req.body);
-        let enroll = Enroll.fromHttpBody(req.body);
-        cfg.setOrg(org.orgId)
-        cfg.setDomain(org.domain)
-        cfg.setOrdererDomain(org.domain)
-        cfg.setMyIp(org.orgIp)
-        cfg.setEnrollSecret(enroll.enrollSecret)
+        const {org, enroll} = parseOrg(req.body)
+        nodeComponentsManager.setOrgConfig(org, enroll);
         res.status(200).json('');
     }))
 
@@ -36,4 +31,30 @@ module.exports = async function (app, server, nodeComponentsManager) {
         let result = await nodeComponentsManager.cleanupNode(req.body);
         res.json(result)
     }))
+
+    app.post('/node/components', asyncMiddleware(async (req, res) => {
+        const {org, enroll} = parseOrg(req.body.org)
+        const bootstrap = parseBootstrap(req.body.bootstrap)
+        const components = parseTopology(req.body.components)
+        let result = await nodeComponentsManager.deployTopology(org, enroll, bootstrap, components);
+        res.json(result)
+    }))
+
+    function parseOrg(reqObj) {
+        return {
+            org: Org.fromHttpBody(reqObj),
+            enroll: Enroll.fromHttpBody(reqObj)
+        }
+    }
+
+    function parseBootstrap(reqObj) {
+        return {
+
+        }
+    }
+
+    function parseTopology(reqObj) {
+        return reqObj
+    }
+
 }

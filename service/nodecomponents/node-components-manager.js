@@ -1,18 +1,52 @@
 const fs = require('fs-extra');
 const path = require('path');
 const _ = require('lodash');
+const async = require('async');
 const cfg = require('$/config.js');
 const logger = cfg.log4js.getLogger('NodeComponentsManager');
 const util = require('$/util');
 const fabricCLI = require('$/fabric-cli');
 const httpsService = require('$/service/http-service');
 const Org = require("$/model/Org");
+const Raft3ComponentType = require("./componentypes/Raft3ComponentType");
+const FabricCAComponentType = require("./componentypes/FabricCAComponentType");
+const PeerComponentType = require("./componentypes/PeerComponentType");
 
+const COMPONENT_TYPES = {
+    'RAFT3': Raft3ComponentType,
+    'FabricCA': FabricCAComponentType,
+    'Peer': PeerComponentType,
+}
 
 class NodeComponentsManager {
 
     constructor(fabricStarterRuntime) {
         this.fabricStarterRuntime = fabricStarterRuntime
+    }
+
+    setOrgConfig(org, enroll) {
+        cfg.setOrg(org.orgId)
+        cfg.setDomain(org.domain)
+        cfg.setOrdererDomain(org.domain)
+        cfg.setMyIp(org.orgIp)
+        cfg.setEnrollSecret(enroll.enrollSecret)
+    }
+
+    async deployTopology(org, enroll, bootstrap, topology, env) {
+        this.setOrgConfig(org, enroll)
+        await async.eachSeries(topology, async component => {
+            const componentType = COMPONENT_TYPES[component.componentType]
+            // try {
+                componentType && await componentType.deploy(bootstrap, component)
+            await util.sleep(4000);
+            // } catch (e) {
+//               throw new Error('Error deploying component:', e)
+            // }
+            await this.fabricStarterRuntime.tryInitRuntime(Org.fromConfig(cfg))
+
+        }).catch(err => {
+            logger.error('Error deploying topology:', topology, err)
+        })
     }
 
     async startupNode(env) {
@@ -24,8 +58,8 @@ class NodeComponentsManager {
 
         if (!resultOrderer.isError()) {
             await util.sleep(2000)
-            if (env.ORDERER_TYPE==='RAFT') {
-                env.ORDERER_NAMES=`${cfg.ordererName}:${cfg.ordererPort},raft1:7150,raft2:7250`
+            if (env.ORDERER_TYPE === 'RAFT') {
+                env.ORDERER_NAMES = `${cfg.ordererName}:${cfg.ordererPort},raft1:7150,raft2:7250`
             }
             peerResult = this.startPeerWithDockerCompose(env);
             await this.fabricStarterRuntime.tryInitRuntime(Org.fromConfig(cfg))
@@ -100,7 +134,7 @@ class NodeComponentsManager {
             wwwPort: cfg.ordererWwwPort, ordererIp: cfg.myIp, orgId: cfg.org
         }
         logger.debug('Integration request:', integrationUrl, orderer)
-        let stream = await httpsService.post(integrationUrl, orderer, {headers:{accept:'application/octet-stream'}})
+        let stream = await httpsService.post(integrationUrl, orderer, {headers: {accept: 'application/octet-stream'}})
         logger.debug('Integration answer:', stream)
         return stream;
     }
