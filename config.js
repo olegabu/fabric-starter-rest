@@ -72,10 +72,24 @@ module.exports = {
         persistConfig()
     },
 
+    get peerName() {return persistedConfig.PEER_NAME || process.env.PEER_NAME || 'peer0'},
+
+    setPeerName(val) {
+        persistedConfig.PEER_NAME = val
+        persistConfig()
+    },
+
     get myIp() {return persistedConfig.MY_IP || process.env.MY_IP},
 
     setMyIp(val) {
         persistedConfig.MY_IP = val
+        persistConfig()
+    },
+
+    get masterIp() {return persistedConfig.MASTER_IP || process.env.MASTER_IP || this.myIp},
+
+    setMasterIp(val) {
+        persistedConfig.MASTER_IP = val
         persistConfig()
     },
 
@@ -139,7 +153,7 @@ module.exports = {
     get ORDERER_TLS_CERT() {return `${this.ordererCryptoDir}/msp/tlscacerts/tlsca.${this.ordererDomain}-cert.pem` },
 
     // default to peer0.org1.example.com:7051 inside docker-compose or export ORGS='{"org1":"peer0.org1.example.com:7051","org2":"peer0.org2.example.com:7051"}'
-    get orgs() {return process.env.ORGS || `"${this.org}":"peer0.${this.org}.${this.domain}:${this.peer0Port}"`},
+    get orgs() {return process.env.ORGS || `"${this.org}":"${this.peerName}.${this.org}.${this.domain}:${this.peer0Port}"`},
     get cas() {return process.env.CAS || `"${this.org}":"ca.${this.org}.${this.domain}:7054"`},
 
     get PEER_CRYPTO_DIR() {return `${cryptoConfigPath}/peerOrganizations/${this.org}.${this.domain}`},

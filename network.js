@@ -15,7 +15,7 @@ function addOrg(t, org) {
     // mspid: `${org}MSP`,
     mspid: `${org}`,
     peers: [
-      `peer0.${org}.${cfg.domain}:${cfg.peer0Port}`
+      `${cfg.peerName}.${org}.${cfg.domain}:${cfg.peer0Port}`
     ]
   };
 

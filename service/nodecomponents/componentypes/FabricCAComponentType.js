@@ -5,7 +5,7 @@ const cfg = require('$/config.js');
 
 class FabricCAComponentType {
 
-    async deploy(bootstrap, component, env) {
+    async deployLocal(org, bootstrap, component, env) {
 
         env = ctUtils.envWithDockerComposeProjectName(env, cfg.org)
 
@@ -14,6 +14,11 @@ class FabricCAComponentType {
         let result = fabricCLI.execShellCommand(cmd, cfg.YAMLS_DIR, env);
         return result;
     }
+
+    async deployRemote(org, bootstrap, component, env) {
+        throw new Error('Remote deploymenet for FabricCA is not implemented yet')
+    }
+
 }
 
 

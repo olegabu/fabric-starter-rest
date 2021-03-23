@@ -16,9 +16,6 @@ module.exports = async (app, _fabricStarterClient, eventBus) => {
     const cfg = require('../config.js');
     const certsManager = require('../certs-manager');
 
-    const NODE_HOSTS_FILE = '/etc/hosts';
-    const ORDERER_HOSTS_FILE = '/etc/hosts_orderer';
-
     const channel = cfg.DNS_CHANNEL //process.env.DNS_CHANNEL || 'common';
     const chaincodeName = cfg.DNS_CHAINCODE //process.env.DNS_CHAINCODE || 'dns';
     const username = process.env.DNS_USERNAME || 'serviceUser';
@@ -49,7 +46,7 @@ module.exports = async (app, _fabricStarterClient, eventBus) => {
 
 
     setInterval(async () => {
-        logger.info(`periodically query every ${period} msec for dns entries and update ${NODE_HOSTS_FILE}`);
+        logger.info(`periodically query every ${period} msec for dns entries and update /etc/hosts`);
         try {
             await processEvent();
         } catch (e) {
@@ -84,7 +81,7 @@ module.exports = async (app, _fabricStarterClient, eventBus) => {
             let dnsRecords = await getChaincodeData("dns");
             if (dnsRecords) {
                 dnsRecords = filterOutByIp(dnsRecords, cfg.myIp);
-                util.writeFile(NODE_HOSTS_FILE, dnsRecords);
+                util.writeHostFile(dnsRecords);
                 // util.writeFile(ORDERER_HOSTS_FILE, dnsRecords);
             }
 
@@ -141,7 +138,7 @@ module.exports = async (app, _fabricStarterClient, eventBus) => {
 
     async function getChaincodeData(dataKey) {
         let result = null;
-        const dataResponses = await fabricStarterClient.query(channel, chaincodeName, 'get', `["${dataKey}"]`, {targets: process.env.DNS_QUERY_TARGET || `peer0.${cfg.org}.${cfg.domain}:${cfg.peer0Port}`});
+        const dataResponses = await fabricStarterClient.query(channel, chaincodeName, 'get', `["${dataKey}"]`, {targets: process.env.DNS_QUERY_TARGET || `${cfg.peerName}.${cfg.org}.${cfg.domain}:${cfg.peer0Port}`});
         logger.debug(`dataResponses for ${dataKey}`, dataResponses);
         try {
             if (dataResponses && dataResponses[0] !== '') {

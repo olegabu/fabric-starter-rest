@@ -1,4 +1,5 @@
 const fs = require('fs');
+const path = require('path');
 const net = require('net');
 const _ = require('lodash');
 const cfg = require('./config.js');
@@ -89,7 +90,8 @@ class Util {
         return result;
     }
 
-    writeFile(file, keyValueHostRecords) {
+    writeHostFile(keyValueHostRecords) {
+        const file = path.join(cfg.CRYPTO_CONFIG_DIR, 'hosts')
         if (this.existsAndIsFile(file)) {
             try {
                 const currHostsLines = fs.readFileSync(file, 'utf-8').split('\n');

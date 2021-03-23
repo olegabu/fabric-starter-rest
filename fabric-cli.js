@@ -125,6 +125,7 @@ class FabricCLI {
         return _.assign({
             DOMAIN: cfg.domain,
             ORG: cfg.org,
+            PEER_NAME: cfg.peerName,
             PEER0_PORT: cfg.peer0Port,
             ORDERER_NAME: cfg.ordererName,
             ORDERER_DOMAIN: cfg.ordererDomain,

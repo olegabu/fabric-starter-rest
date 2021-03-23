@@ -5,7 +5,7 @@ const cfg = require('$/config.js');
 
 class Raft3ComponentType {
 
-    async deploy(bootstrap, component, env) {
+    async deployLocal(org, bootstrap, component, env) {
         env = ctUtils.envWithDockerComposeProjectName(env, cfg.org)
 
         if (_.get(component, 'ORDERER_NAME')) cfg.setOrdererName(component.ORDERER_NAME)
@@ -13,6 +13,10 @@ class Raft3ComponentType {
 
         let resultOrderer = fabricCLI.execShellCommand("/bin/bash ./ordering-start.sh", cfg.YAMLS_DIR, env);
         return resultOrderer;
+    }
+
+    async deployRemote(org, bootstrap, component, env) {
+        throw new Error('Remote deploymenet for Raft3 is not implemented yet')
     }
 }
 

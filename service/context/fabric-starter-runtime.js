@@ -24,7 +24,7 @@ class FabricStarterRuntime {
         if (!this.initialized) {
             if (!org.orgId || !org.domain)
                 return;
-            if (!await util.checkRemotePort(`peer0.${org.orgId}.${org.domain}`, org.peer0Port, {
+            if (!await util.checkRemotePort(`${cfg.peerName}.${org.orgId}.${org.domain}`, org.peer0Port, {
                 throws: false,
                 timeout: 6000,
                 from: 'tryInitRuntime'

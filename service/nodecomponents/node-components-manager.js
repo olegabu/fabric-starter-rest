@@ -12,10 +12,10 @@ const Raft3ComponentType = require("./componentypes/Raft3ComponentType");
 const FabricCAComponentType = require("./componentypes/FabricCAComponentType");
 const PeerComponentType = require("./componentypes/PeerComponentType");
 
-const COMPONENT_TYPES = {
+const COMPONENT_DEPLOYERS = {
     'RAFT3': Raft3ComponentType,
     'FabricCA': FabricCAComponentType,
-    'Peer': PeerComponentType,
+    'PEER': PeerComponentType,
 }
 
 class NodeComponentsManager {
@@ -29,24 +29,38 @@ class NodeComponentsManager {
         cfg.setDomain(org.domain)
         cfg.setOrdererDomain(org.domain)
         cfg.setMyIp(org.orgIp)
+        cfg.setMasterIp(org.masterIp)
         cfg.setEnrollSecret(enroll.enrollSecret)
     }
 
     async deployTopology(org, enroll, bootstrap, topology, env) {
         this.setOrgConfig(org, enroll)
         await async.eachSeries(topology, async component => {
-            const componentType = COMPONENT_TYPES[component.componentType]
-            // try {
-                componentType && await componentType.deploy(bootstrap, component)
+            const componentDeployer = this.getDeployer(component);
+            if (componentDeployer) {
+                if (this.isTargetSameHost(org, component)) {
+                    await componentDeployer.deployLocal(org, bootstrap, component)
+                } else {
+                    await componentDeployer.deployRemote(org, bootstrap, component)
+                }
+            }
             await util.sleep(4000);
-            // } catch (e) {
-//               throw new Error('Error deploying component:', e)
-            // }
-            await this.fabricStarterRuntime.tryInitRuntime(Org.fromConfig(cfg))
-
-        }).catch(err => {
+        })/*.catch(err => {
             logger.error('Error deploying topology:', topology, err)
-        })
+            throw new Error('Error deploying topology:', topology)
+        })*/
+
+        await this.fabricStarterRuntime.tryInitRuntime(Org.fromConfig(cfg))
+
+    }
+
+    isTargetSameHost(org, component) {
+        return _.isEqual(org.orgIp, _.get(component, 'componentIp', org.orgIp));
+    }
+
+    getDeployer(component) {
+        const componentDeployer = COMPONENT_DEPLOYERS[component.componentType]
+        return componentDeployer;
     }
 
     async startupNode(env) {
@@ -109,11 +123,11 @@ class NodeComponentsManager {
     }
 
     cleanupNode(env) {
-        const containerList = `peer0.${cfg.org}.${cfg.domain} ca.${cfg.org}.${cfg.domain} cli.${cfg.org}.${cfg.domain} post-install.${cfg.org}.${cfg.domain} `
-            + ` couchdb.peer0.${cfg.org}.${cfg.domain} ldap.${cfg.org}.${cfg.domain} ldapadmin.${cfg.org}.${cfg.domain} `
+        const containerList = `${cfg.peerName}.${cfg.org}.${cfg.domain} ca.${cfg.org}.${cfg.domain} cli.${cfg.org}.${cfg.domain} post-install.${cfg.org}.${cfg.domain} `
+            + ` couchdb.${cfg.peerName}.${cfg.org}.${cfg.domain} ldap.${cfg.org}.${cfg.domain} ldapadmin.${cfg.org}.${cfg.domain} `
             + ` ${cfg.ordererName}.${cfg.ordererDomain} cli.${cfg.ordererName}.${cfg.ordererDomain} raft1.${cfg.ordererDomain} raft2.${cfg.ordererDomain}`
             + ` www.${cfg.ordererDomain} www.${cfg.org}-${cfg.domain} cli.${cfg.ordererName}.${cfg.org}-${cfg.domain} ${cfg.ordererName}.${cfg.org}-${cfg.domain}`
-            + `dev-peer0.${cfg.org}.${cfg.domain}-${cfg.DNS_CHAINCODE}-1.0`
+            + `dev-${cfg.peerName}.${cfg.org}.${cfg.domain}-${cfg.DNS_CHAINCODE}-1.0`
         let result = this.deleteContainers(containerList, env);
         fs.writeFileSync(path.join(cfg.CRYPTO_CONFIG_DIR, 'hosts'), `#Renewed on deleting containers at ${new Date()}`)
         return result
@@ -142,7 +156,7 @@ class NodeComponentsManager {
     startPeerWithDockerCompose(env) {
         env = envWithDockerComposeProjectName(env)
         let cmd = `docker-compose -f docker-compose.yaml -f docker-compose-couchdb.yaml -f docker-compose-ldap.yaml ${cfg.DOCKER_COMPOSE_EXTRA_ARGS} up `
-            + ` -d --force-recreate --no-deps pre-install ca  www.local ldap-service ldapadmin couchdb.peer0 peer0 cli.peer post-install `;//www.peer
+            + ` -d --force-recreate --no-deps pre-install ca  www.local ldap-service ldapadmin couchdb.peer peer cli.peer post-install `;//www.peer
         let result = fabricCLI.execShellCommand(cmd, cfg.YAMLS_DIR, env);
         return result;
     }
