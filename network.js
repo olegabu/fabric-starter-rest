@@ -2,10 +2,7 @@ const fs = require('fs');
 const cfg = require('./config.js');
 const certsManager = require('./certs-manager');
 
-const t = {
-  name: 'Network',
-  version: '1.0',
-};
+
 
 function addOrg(t, org) {
   if(!t.organizations) {
@@ -67,7 +64,7 @@ function addCA(t, org, caAddress) {
     },
     registrar: [
       {
-        ENROLL_ID: cfg.ENROLL_ID,
+        enrollId: cfg.ENROLL_ID,
         enrollSecret: cfg.enrollSecret
       }
     ],
@@ -80,7 +77,14 @@ function envOptionToSetting(envVarName, optionName, normalizeFactor) {
   return process.env[envVarName] && {[optionName]: optionValue};
 }
 
-module.exports = function () {
+module.exports = function (cas, storeSubPath='') {
+  const t = {
+    name: 'Network',
+    version: '1.0',
+  };
+
+  if (!cas) throw new Error("Certificate Authority is not specified")
+
   t.orderers= {
     [`${cfg.ORDERER_ADDR}`]: {
       url: `grpcs://${cfg.ORDERER_ADDR}`,
@@ -94,9 +98,9 @@ module.exports = function () {
   t.client = {
     organization: cfg.org,
     credentialStore: {
-      path: `hfc-kvs/${cfg.org}`,
+      path: `hfc-kvs/${cfg.org}${storeSubPath}`,
       cryptoStore: {
-        path: `hfc-cvs/${cfg.org}`
+        path: `hfc-cvs/${cfg.org}${storeSubPath}`
       }
     },
     connection: {
@@ -124,9 +128,9 @@ module.exports = function () {
   }
 
   try {
-    cas = JSON.parse(cfg.cas);
+    cas = JSON.parse(cas);
   } catch (e) {
-    cas = JSON.parse('{' + cfg.cas + '}');
+    cas = JSON.parse('{' + cas + '}');
   }
 
   Object.keys(orgs).forEach(k => {

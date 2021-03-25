@@ -5,6 +5,10 @@ const cfg = require('$/config.js');
 
 class Raft3ComponentType {
 
+    constructor(fabricStarterRuntime) {
+        this.fabricStarterRuntime = fabricStarterRuntime
+    }
+
     async deployLocal(org, bootstrap, component, env) {
         env = ctUtils.envWithDockerComposeProjectName(env, cfg.org)
 
@@ -21,4 +25,4 @@ class Raft3ComponentType {
 }
 
 
-module.exports = new Raft3ComponentType()
+module.exports = Raft3ComponentType

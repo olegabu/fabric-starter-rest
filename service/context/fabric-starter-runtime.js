@@ -19,6 +19,10 @@ class FabricStarterRuntime {
         this.initialized = false
     }
 
+    async init() {
+        await this.initDefaultFabricStarterClient();
+    }
+
     async tryInitRuntime(org = {}) {
         logger.debug('Runtime is initialised: ', this.initialized)
         if (!this.initialized) {
@@ -31,7 +35,6 @@ class FabricStarterRuntime {
             }))
 
             logger.debug('Init runtime')
-            await this.initDefaultFabricStarterClient();
             await this.initSocketServer();
             this.initApps()
             this.initJwtApi()
@@ -46,6 +49,9 @@ class FabricStarterRuntime {
         // fabric client
         this.defaultFabricStarterClient = new FabricStarterClient();
         await this.defaultFabricStarterClient.loginOrRegister(cfg.ENROLL_ID, cfg.enrollSecret);
+        const networkConfigProvider = require('$/network');
+        this.tlsFabricStarterClient = new FabricStarterClient(networkConfigProvider(cfg.tlsCas, 'tls'));
+        await this.tlsFabricStarterClient.loginOrRegister(cfg.ENROLL_ID, cfg.enrollSecret);
     }
 
     async initSocketServer() {
@@ -123,6 +129,9 @@ class FabricStarterRuntime {
 
     getDefaultFabricStarterClient() {
         return this.defaultFabricStarterClient
+    }
+    getTLSFabricStarterClient() {
+        return this.tlsFabricStarterClient
     }
 }
 

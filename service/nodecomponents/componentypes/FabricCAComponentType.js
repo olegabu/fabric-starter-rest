@@ -1,9 +1,13 @@
 const _ = require('lodash');
 const fabricCLI = require('$/fabric-cli');
-const ctUtils= require('../component-manager-utils')
+const ctUtils = require('../component-manager-utils')
 const cfg = require('$/config.js');
 
 class FabricCAComponentType {
+
+    constructor(fabricStarterRuntime) {
+        this.fabricStarterRuntime = fabricStarterRuntime
+    }
 
     async deployLocal(org, bootstrap, component, env) {
 
@@ -22,4 +26,4 @@ class FabricCAComponentType {
 }
 
 
-module.exports = new FabricCAComponentType()
+module.exports = FabricCAComponentType

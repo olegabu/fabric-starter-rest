@@ -24,7 +24,7 @@ class FabricStarterClient {
     constructor(networkConfig) {
         FabricStarterClient.setDefaultConfigSettings(cfg.CRYPTO_SUIT_CONFIG);
 
-        this.networkConfig = (networkConfig || networkConfigProvider)();
+        this.networkConfig = networkConfig || networkConfigProvider(cfg.cas);
         logger.info('constructing with network config:', JSON.stringify(this.networkConfig));
         this.client = Client.loadFromConfig(this.networkConfig); // or networkConfigFile
         this.peer = this.client.getPeersForOrg()[0];
@@ -100,20 +100,22 @@ class FabricStarterClient {
         }
     }
 
-    async register(username, password, affiliation) {
+    async register(username, password, affiliation, role, attrs=[]) {
         if (cfg.AUTH_MODE === 'CA') {
             await this.checkClientInitialized();
             let fabricCaClient = this.client.getCertificateAuthority()
             const registrar = fabricCaClient.getRegistrar()[0];
             const admin = await this.client.setUserContext({
-                username: registrar.enrollId,
+                username: registrar.enrollId, //TODO: used to be enrollId, now unexpectedly ENROLL_ID
                 password: registrar.enrollSecret
             });
-            await fabricCaClient.register({
+            return await fabricCaClient.register({
                 enrollmentID: username,
                 enrollmentSecret: password,
                 affiliation: affiliation || cfg.org,
-                maxEnrollments: -1
+                maxEnrollments: -1,
+                role,
+                attrs
             }, admin);
         }
     }
@@ -136,6 +138,11 @@ class FabricStarterClient {
                 });
         });
         return this.registerQueue[username];
+    }
+
+    async enroll(enrollmentId, password, profile) {
+        let fabricCaClient = this.client.getCertificateAuthority()
+        return await fabricCaClient.enroll({enrollmentID: enrollmentId, enrollmentSecret: password, profile})
     }
 
     getSecret() {

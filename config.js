@@ -149,12 +149,27 @@ module.exports = {
         persistConfig()
     },
 
+    get masterCAPort() {return persistedConfig.MASTER_CA_PORT || process.env.MASTER_CA_PORT || '7054'},
+
+    setMasterCAPort(val) {
+        persistedConfig.MASTER_CA_PORT = val
+        persistConfig()
+    },
+
+    get masterTLSCAPort() {return persistedConfig.MASTER_TLSCA_PORT || process.env.MASTER_TLSCA_PORT || '7055'},
+
+    setMasterTLSCAPort(val) {
+        persistedConfig.MASTER_TLSCA_PORT = val
+        persistConfig()
+    },
+
     get ordererCryptoDir() {return `${cryptoConfigPath}/ordererOrganizations/${this.ordererDomain}` },
     get ORDERER_TLS_CERT() {return `${this.ordererCryptoDir}/msp/tlscacerts/tlsca.${this.ordererDomain}-cert.pem` },
 
     // default to peer0.org1.example.com:7051 inside docker-compose or export ORGS='{"org1":"peer0.org1.example.com:7051","org2":"peer0.org2.example.com:7051"}'
     get orgs() {return process.env.ORGS || `"${this.org}":"${this.peerName}.${this.org}.${this.domain}:${this.peer0Port}"`},
-    get cas() {return process.env.CAS || `"${this.org}":"ca.${this.org}.${this.domain}:7054"`},
+    get cas() {return process.env.CAS || `"${this.org}":"ca.${this.org}.${this.domain}:${this.masterCAPort}"`},
+    get tlsCas() {return process.env.TLS_CAS || `"${this.org}":"tlsca.${this.org}.${this.domain}:${this.masterTLSCAPort}"`},
 
     get PEER_CRYPTO_DIR() {return `${cryptoConfigPath}/peerOrganizations/${this.org}.${this.domain}`},
 

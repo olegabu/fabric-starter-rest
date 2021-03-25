@@ -22,6 +22,9 @@ class NodeComponentsManager {
 
     constructor(fabricStarterRuntime) {
         this.fabricStarterRuntime = fabricStarterRuntime
+        COMPONENT_DEPLOYERS['RAFT3']=new Raft3ComponentType(fabricStarterRuntime)
+        COMPONENT_DEPLOYERS['FabricCA']=new FabricCAComponentType(fabricStarterRuntime)
+        COMPONENT_DEPLOYERS['PEER']=new PeerComponentType(fabricStarterRuntime)
     }
 
     setOrgConfig(org, enroll) {
