@@ -1,7 +1,13 @@
+const os = require('os');
+const multer = require('multer');
 const asyncMiddleware = require('$/api/async-middleware-error-handler');
 const cfg = require('$/config.js');
 const Org = require('$/model/Org')
 const Enroll = require('$/model/Enroll')
+
+const uploadDir = os.tmpdir() || './upload';
+const upload = multer({dest: uploadDir});
+const fileUpload = upload.fields([ {name: 'file', maxCount: 1}]);
 
 
 module.exports = async function (app, server, nodeComponentsManager) {
@@ -32,11 +38,18 @@ module.exports = async function (app, server, nodeComponentsManager) {
         res.json(result)
     }))
 
-    app.post('/node/components', asyncMiddleware(async (req, res) => {
+    app.post('/node/components', fileUpload, asyncMiddleware(async (req, res) => {
+
+        // let s = req.files['file'][0].originalname.substring(0, req.files['file'][0].originalname.length - 4);
+        // let filePath = req.files['file'][0].path;
+
+
         const {org, enroll} = parseOrg(req.body.org)
         const bootstrap = parseBootstrap(req.body.bootstrap)
         const components = parseTopology(req.body.components)
         let result = await nodeComponentsManager.deployTopology(org, enroll, bootstrap, components);
+
+
         res.json(result)
     }))
 
