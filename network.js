@@ -44,7 +44,7 @@ function addPeer(t, org, i, peerAddress) {
       //'ssl-target-name-override': 'localhost',
     },
     tlsCACerts: {
-      path: `${cfg.PEER_CRYPTO_DIR}/peers/peer${i}.${org}.${cfg.domain}/msp/tlscacerts/tlsca.${org}.${cfg.domain}-cert.pem`//TODO: use certsManager.getTLSxxx
+      path: `${cfg.ORG_CRYPTO_DIR}/peers/peer${i}.${org}.${cfg.domain}/msp/tlscacerts/tlsca.${org}.${cfg.domain}-cert.pem`//TODO: use certsManager.getTLSxxx
     }
   };
 }
@@ -60,7 +60,7 @@ function addCA(t, org, caAddress) {
       verify: false
     },
     tlsCACerts: {
-      path: `${cfg.PEER_CRYPTO_DIR}/ca/ca.${org}.${cfg.domain}-cert.pem`
+      path: `${cfg.ORG_CRYPTO_DIR}/ca/ca.${org}.${cfg.domain}-cert.pem`
     },
     registrar: [
       {

@@ -171,7 +171,7 @@ module.exports = {
     get cas() {return process.env.CAS || `"${this.org}":"ca.${this.org}.${this.domain}:${this.masterCAPort}"`},
     get tlsCas() {return process.env.TLS_CAS || `"${this.org}":"tlsca.${this.org}.${this.domain}:${this.masterTLSCAPort}"`},
 
-    get PEER_CRYPTO_DIR() {return `${cryptoConfigPath}/peerOrganizations/${this.org}.${this.domain}`},
+    get ORG_CRYPTO_DIR() {return `${cryptoConfigPath}/peerOrganizations/${this.org}.${this.domain}`},
 
     get CORE_PEER_LOCALMSPID() {return this.org},
     get CORE_PEER_MSPCONFIGPATH() {return `${cryptoConfigPath}/peerOrganizations/${this.org}.${this.domain}/users/Admin@${this.org}.${this.domain}/msp`},

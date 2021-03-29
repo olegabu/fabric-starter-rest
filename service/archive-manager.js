@@ -3,7 +3,7 @@ const path = require('path');
 const unzip = require('unzipper');
 const tar = require('tar');
 const cfg = require('../config.js');
-const logger = cfg.log4js.getLogger('UnzipExtractor');
+const logger = cfg.log4js.getLogger('ArchiveManager');
 
 function unlinkFile(path) {
     try {
@@ -77,6 +77,26 @@ class ArchiveManager {
                 }
             })
         })
+    }
+
+    async gzip(sourcePath, filter, targetFileName) {
+        logger.debug(`gzip path: ${sourcePath} to ${targetFileName}`, filter && ` with filter ${filter}`)
+        return tar.c(
+            {
+                [targetFileName ? 'file' : '']: targetFileName,
+                gzip: true, // this will perform the compression too
+                cwd: sourcePath,
+                filter: (path, stat) => {
+                    logger.debug('include:', path);
+                    if (new RegExp(filter).test(path)) {
+                        logger.debug('gzip exclude:', path);
+                        return false
+                    }
+                    return true
+                }
+            },
+            ['./'],
+        )
     }
 }
 

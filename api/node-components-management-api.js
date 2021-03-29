@@ -1,6 +1,7 @@
 const os = require('os');
 const multer = require('multer');
 const asyncMiddleware = require('$/api/async-middleware-error-handler');
+const mspManager = require('$/service/msp/msp-manager');
 const cfg = require('$/config.js');
 const Org = require('$/model/Org')
 const Enroll = require('$/model/Enroll')
@@ -15,6 +16,16 @@ module.exports = async function (app, server, nodeComponentsManager) {
     app.get('/node/config', (req, res) => {
         res.json({org: Org.fromConfig(cfg)})
     })
+
+    app.get('/node/msp', asyncMiddleware(async (req, res) => {
+        const packStream = await mspManager.packOrgPeerMsp();
+        if (!packStream) {
+            throw new Error('Error providing msp')
+        }
+        res.setHeader('Content-type','application/octet-stream')
+        res.setHeader('Content-disposition',`attachment; filename="msp_${cfg.org}.tgz"`)
+        packStream.pipe(res)
+    }))
 
     app.post('/node/organization', asyncMiddleware(async (req, res, next) => {
         const {org, enroll} = parseOrg(req.body)

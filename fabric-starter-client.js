@@ -761,7 +761,7 @@ class FabricStarterClient {
         let connectionOptions = {
             'ssl-target-name-override': peerUrl,
             //'ssl-target-name-override': 'localhost',
-            pem: util.loadPemFromFile(`${cfg.PEER_CRYPTO_DIR}/peers/${mspSubPath}/msp/tlscacerts/tlsca.${org || cfg.org}.${domain || cfg.domain}-cert.pem`)
+            pem: util.loadPemFromFile(`${cfg.ORG_CRYPTO_DIR}/peers/${mspSubPath}/msp/tlscacerts/tlsca.${org || cfg.org}.${domain || cfg.domain}-cert.pem`)
         };
         return connectionOptions;
     }

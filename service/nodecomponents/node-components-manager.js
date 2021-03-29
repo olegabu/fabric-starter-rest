@@ -176,14 +176,6 @@ class NodeComponentsManager {
         return fabricCLI.execShellCommand(cmd, cfg.YAMLS_DIR, env);
     }
 
-    async downloadOrdererGenesisBlock(remoteAddr) {
-        return httpsService.download(`http://${remoteAddr}/msp/${cfg.ordererName}.${cfg.ordererDomain}/genesis/${cfg.systemChannelId}_remote.pb`)
-        /*
-        wget ${WGET_OPTS} --directory-prefix crypto-config/configtx http://${REMOTE_WWW_ADDR}/msp/${ORDERER_NAME}.${ORDERER_DOMAIN}/genesis/${SYSTEM_CHANNEL}_remote.pb
-            cp crypto-config/configtx/${SYSTEM_CHANNEL}_remote.pb crypto-config/configtx/${ORDERER_DOMAIN}/genesis.pb
-*/
-
-    }
 }
 
 function envWithDockerComposeProjectName(env) {

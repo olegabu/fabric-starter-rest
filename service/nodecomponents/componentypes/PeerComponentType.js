@@ -27,7 +27,7 @@ class PeerComponentType {
         await tlsFabricStarterClient.register(subjectName, cfg.enrollSecret, cfg.org, 'peer')
 
         let enroll = await tlsFabricStarterClient.enroll(subjectName, cfg.enrollSecret, 'tls');
-        const peerDir= path.join(cfg.PEER_CRYPTO_DIR, 'peers', subjectName)
+        const peerDir= path.join(cfg.ORG_CRYPTO_DIR, 'peers', subjectName)
         let tlsDir = path.join(peerDir, 'tls');
         await fs.ensureDir(tlsDir)
         await fs.outputFile(path.join(tlsDir, 'server.crt'), enroll.certificate, {encoding: 'binary'})
