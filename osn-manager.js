@@ -13,6 +13,10 @@ class OsnManager {
         this.osns = [];
     }
 
+    constructOrdererDomain(org={}, bootstrap={}) {
+        return _.get(bootstrap, 'ip') ? `${org.orgId}-${org.domain}` : org.domain //TODO: remove after normalize orderer domain names at deployment
+    }
+
     async addRaftConsenter(newOrderer, fabricStarterClient) {
         logger.debug("Register new orderer DNS info ", newOrderer);
         await this.registerOrdererInCommonChannel(newOrderer, fabricStarterClient);

@@ -30,7 +30,7 @@ module.exports = function (app, server, integrationService) {
     app.post('/integration/dns/org', asyncMiddleware(async (req, res) => {
         logger.info('Dns integration service request: ', req.body);
         try {
-            res.json(await integrationService.registerOrgInDns(Org.fromHttpBody(req.body)))
+            res.json(await integrationService.registerOrgInDns(Org.fromHttpBody({...req.body})))
         } catch (e) {
             logger.error(e);
             res.status(401).json(e);

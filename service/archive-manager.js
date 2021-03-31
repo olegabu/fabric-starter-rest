@@ -1,8 +1,11 @@
 const fse = require('fs-extra');
 const path = require('path');
+const _ = require('lodash');
 const unzip = require('unzipper');
 const tar = require('tar');
+const tt = require("tar-transform");
 const cfg = require('../config.js');
+const {ReadEntry} = require("tar");
 const logger = cfg.log4js.getLogger('ArchiveManager');
 
 function unlinkFile(path) {
@@ -31,17 +34,43 @@ class TarExtractor {
     }
 }
 
+class MyEntry extends ReadEntry {
+    constructor (header, ex, gex) {
+        super(header, ex, gex)
+    }
+
+    write(source){
+        console.log(this)
+    }
+
+    pipe(source) {
+        console.log(this)
+    }
+}
+
 class TarGzExtractor {
     extractionOutStream(extractPath) {
         logger.debug("Untargz to ", extractPath);
         return tar.x({ // or tar.extract(
                 // strip: 1,//nope
                 cwd: extractPath,
-                gzip: true
+                gzip: true,
+               /* transform: (e)=>{
+                    // if (_.includes(e.header.path, 'peer')) console.log(e.header.path); e.header.path=_.replace(e.header.path, 'peer', 'neer')
+                    let h = e.header
+                    h.set({path:_.replace(h.path, 'peer', 'neer')})
+                    const myEntry = new ReadEntry(h, e.extended, e.globalExtended);
+                    myEntry.on('data', e=>{
+                        // console.log(e)
+                    })
+                    return myEntry
+                }*/
+
             }
         )
     }
 }
+
 
 
 const ARCHIVES_EXTRACTOR = {
@@ -53,23 +82,60 @@ const ARCHIVES_EXTRACTOR = {
 
 class ArchiveManager {
 
+    async extractUploadedArchive(uploadedFile, extractPath, transform) {
+        const extractTarStream = this.extractTarTransform(uploadedFile.path, transform );
+
+        return await this.extractStream(extractTarStream, '.tgz', extractPath)
+        // return await this.extract(uploadedFile.path, uploadedFile.originalname, extractPath)
+    }
+
+    extractTarTransform(sourcePath, transform=(name=>name)) {
+        const readStream = fse.createReadStream(sourcePath);
+        return readStream.pipe(tt.extract({gzip: true}))
+            .pipe(tt.transform({
+            onEntry(entry) {
+                let headers = entry.headers
+                const newName = transform(headers.name)
+                headers  = {...headers, name: newName}
+                this.push({...entry, headers});
+            }
+        })).pipe(tt.pack({ gzip: true }))
+    }
+
     async extract(sourcePath, sourceFileName, extractPath) {
         let archiveType = path.extname(sourceFileName) || ".zip";
-        let extractor = ARCHIVES_EXTRACTOR[archiveType];
-        const fileBaseName = path.basename(sourceFileName, path.extname(sourceFileName));
-        return new Promise((resolve, reject) => {
-            return fse.emptyDir(path.join(extractPath, fileBaseName)).then(() => {
-                try {
-                    const readStream = fse.createReadStream(sourcePath);
-                    let outStream = extractor.extractionOutStream(extractPath);
+        logger.debug(`Extracting archive: ${sourceFileName}`, archiveType)
+        const readStream = fse.createReadStream(sourcePath);
 
+        const resultStream = await this.extractStream(readStream, archiveType, extractPath, sourcePath)
+        resultStream.on('close', async function () { //TODO: this does not work
+            logger.debug(`Extracting archive finished: ${sourceFileName}`)
+            unlinkFile(sourcePath);
+        })
+        resultStream.on('error', async function (err) {
+            logger.debug(`Extracting archive error: ${sourceFileName}`, err)
+            unlinkFile(sourcePath);
+            // reject();
+        })
+        return extractPath
+    }
+
+    extractStream(readStream, archiveType='.zip', extractPath, sourcePath) {//TODO: unlink source in a caller
+        let extractor = ARCHIVES_EXTRACTOR[archiveType];
+        return new Promise((resolve, reject) => {
+            logger.debug(`Extracting stream: `, extractor)
+            return fse.emptyDir(extractPath).then(() => {
+                try {
+                    let outStream = extractor.extractionOutStream(extractPath);
                     const pipe = readStream.pipe(outStream); //TODO: check if folder inside zip have different name
                     pipe.on('close', async function () {
-                        unlinkFile(sourcePath);
-                        resolve(extractPath);
+                        logger.debug(`Extracting stream finished`)
+                        sourcePath && unlinkFile(sourcePath);
+                        resolve(outStream);
                     });
-                    pipe.on('error', async function () {
-                        unlinkFile(sourcePath);
+                    pipe.on('error', async function (err) {
+                        logger.debug(`Extracting stream error:`, err)
+                        sourcePath && unlinkFile(sourcePath);
                         reject();
                     })
                 } catch (e) {
@@ -81,13 +147,13 @@ class ArchiveManager {
 
     async gzip(sourcePath, filter, targetFileName) {
         logger.debug(`gzip path: ${sourcePath} to ${targetFileName}`, filter && ` with filter ${filter}`)
-        return tar.c(
+        const tarOrig = tar.c(
             {
                 [targetFileName ? 'file' : '']: targetFileName,
                 gzip: true, // this will perform the compression too
                 cwd: sourcePath,
                 filter: (path, stat) => {
-                    logger.debug('include:', path);
+                    logger.debug('gzip check:', path);
                     if (new RegExp(filter).test(path)) {
                         logger.debug('gzip exclude:', path);
                         return false
@@ -96,7 +162,11 @@ class ArchiveManager {
                 }
             },
             ['./'],
-        )
+        );
+        // const converted = tarOrig.pipe(tar.t({
+        //     onentry: e=>{if (_.includes(e.header.path, 'peer')) console.log('T'); e.header.path=_.replace(e.header.path, 'peer', 'neer')}
+        // }));
+        return tarOrig
     }
 }
 

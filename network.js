@@ -1,4 +1,5 @@
 const fs = require('fs');
+const _ = require('lodash');
 const cfg = require('./config.js');
 const certsManager = require('./certs-manager');
 
@@ -19,13 +20,19 @@ function addOrg(t, org) {
     if (org === cfg.org) {
         const mspPath = certsManager.getMSPConfigDirectory(org);
         const keystorePath = `${mspPath}/keystore`;
-        const keystoreFiles = fs.readdirSync(keystorePath);
-        const keyPath = `${keystorePath}/${keystoreFiles[0]}`;
+        try {
+          const keystoreFiles = fs.readdirSync(keystorePath);
+          if (keystoreFiles.length) {
+            const keyPath = `${keystorePath}/${keystoreFiles[0]}`;
+            t.organizations[org].adminPrivateKey = {
+              path: keyPath
+            };
+          }
+        } catch(e) {
+          console.log('Skipping Admin keystore, not exists: ', keystorePath)
+        }
 
         t.organizations[org].certificateAuthorities = [org];
-        t.organizations[org].adminPrivateKey = {
-            path: keyPath
-        };
         t.organizations[org].signedCert = {
             path: `${mspPath}/signcerts/Admin@${cfg.certificationDomain}-cert.pem` //TODO: use certsManager.getSignCertPath()
         };
@@ -36,15 +43,15 @@ function addPeer(t, org, i, peerAddress) {
   if(!t.peers) {
     t.peers = {};
   }
-    const peerName = `peer${i}.${org}.${cfg.domain}:${cfg.peer0Port}`;
+    const peerName = peerAddress; //`peer${i}.${org}.${cfg.domain}:${cfg.peer0Port}`;
     t.peers[peerName] = {
     url: `grpcs://${peerAddress}`,
     grpcOptions: {
-       'ssl-target-name-override': `peer${i}.${org}.${cfg.domain}`,
+       'ssl-target-name-override': `${cfg.peerName}.${org}.${cfg.domain}`, //`peer${i}.${org}.${cfg.domain}`,
       //'ssl-target-name-override': 'localhost',
     },
     tlsCACerts: {
-      path: `${cfg.ORG_CRYPTO_DIR}/peers/peer${i}.${org}.${cfg.domain}/msp/tlscacerts/tlsca.${org}.${cfg.domain}-cert.pem`//TODO: use certsManager.getTLSxxx
+      path: `${cfg.ORG_CRYPTO_DIR}/peers/${cfg.peerName}.${org}.${cfg.domain}/msp/tlscacerts/tlsca.${org}.${cfg.domain}-cert.pem`//TODO: use certsManager.getTLSxxx
     }
   };
 }
@@ -136,7 +143,7 @@ module.exports = function (cas, storeSubPath='') {
   Object.keys(orgs).forEach(k => {
     addOrg(t, k);
     // if (!cfg.isOrderer) {
-      addPeer(t, k, 0, orgs[k]);
+      addPeer(t, k, 0, orgs[k]); //TODO: different peer names are in addOrg and addPeer
     // }
   });
 

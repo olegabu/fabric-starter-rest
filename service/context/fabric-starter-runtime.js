@@ -19,20 +19,24 @@ class FabricStarterRuntime {
         this.initialized = false
     }
 
-    async init() {
-        await this.initDefaultFabricStarterClient();
+    async setOrg(org = {}) {
+        if (!org.orgId || !org.domain)
+            return false;
+
+        await this.initDefaultFabricStarterClient()//TODO: move to separate class
+        this.initialized = false
+        return true
     }
 
     async tryInitRuntime(org = {}) {
         logger.debug('Runtime is initialised: ', this.initialized)
         if (!this.initialized) {
-            if (!org.orgId || !org.domain)
-                return;
+
             if (!await util.checkRemotePort(`${cfg.peerName}.${org.orgId}.${org.domain}`, org.peer0Port, {
-                throws: false,
-                timeout: 6000,
-                from: 'tryInitRuntime'
-            }))
+                throws: false, timeout: 3000, from: 'tryInitRuntime'
+            })) {
+                return
+            }
 
             logger.debug('Init runtime')
             await this.initSocketServer();
@@ -48,9 +52,9 @@ class FabricStarterRuntime {
     async initDefaultFabricStarterClient() {
         // fabric client
         this.defaultFabricStarterClient = new FabricStarterClient();
+        const tlsNetworkConfigProvider = require('$/network');
+        this.tlsFabricStarterClient = new FabricStarterClient(tlsNetworkConfigProvider(cfg.tlsCas, 'tls'));
         await this.defaultFabricStarterClient.loginOrRegister(cfg.ENROLL_ID, cfg.enrollSecret);
-        const networkConfigProvider = require('$/network');
-        this.tlsFabricStarterClient = new FabricStarterClient(networkConfigProvider(cfg.tlsCas, 'tls'));
         await this.tlsFabricStarterClient.loginOrRegister(cfg.ENROLL_ID, cfg.enrollSecret);
     }
 
@@ -130,6 +134,7 @@ class FabricStarterRuntime {
     getDefaultFabricStarterClient() {
         return this.defaultFabricStarterClient
     }
+
     getTLSFabricStarterClient() {
         return this.tlsFabricStarterClient
     }

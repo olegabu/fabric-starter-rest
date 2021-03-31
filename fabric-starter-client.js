@@ -203,7 +203,7 @@ class FabricStarterClient {
         await fabricCLI.downloadOrdererMSP();
 
         const tx2_id = this.client.newTransactionID(true);
-        let peers = await this.queryPeers();
+        let peers = [this.peer];//await this.queryPeers();
         let channel = await this.constructChannel(channelId, peers);
         let genesis_block = await channel.getGenesisBlock();//{txId: tx2_id});
         let gen_tx_id = this.client.newTransactionID(true);
@@ -297,7 +297,7 @@ class FabricStarterClient {
             const orgIp = _.get(orgObj, "orgIp");
 
             if (orgIp){
-                await this.invoke(cfg.DNS_CHANNEL, cfg.DNS_CHAINCODE, "registerOrg", [JSON.stringify(orgObj)], {targets: []}, true)
+                await this.invoke(cfg.DNS_CHANNEL, cfg.DNS_CHAINCODE, "registerOrg", [JSON.stringify({...orgObj, peerName:cgf.peerName})], {targets: []}, true)
                     .then(() => util.sleep(cfg.DNS_UPDATE_TIMEOUT));
             }
         } catch (e) {
@@ -375,7 +375,7 @@ class FabricStarterClient {
                         logger.warn("Deleting temp file failed: ", e)
                     }
 
-                    let fullChaincodePath = path.resolve(__dirname, `${baseDir}/${chaincodeId}`);
+                    let fullChaincodePath = path.resolve(__dirname, baseDir, chaincodeId);
                     /*
                                         const chaincodePackageFile = fabricCLI.packageChaincodeWithInstantiationPolicy(chaincodeId, fullChaincodePath, version, language)
                                         const proposal = {

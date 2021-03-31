@@ -4,8 +4,8 @@ const logger = cfg.log4js.getLogger('component-manager-utils');
 
 module.exports = {
 
-    envWithDockerComposeProjectName: (env, org, component) => {
-        let fullEnv = _.assign({COMPOSE_PROJECT_NAME: org + (component && component.name)}, env)
+    envWithDockerComposeProjectName: (env, org, componentName = '') => {
+        let fullEnv = _.assign({COMPOSE_PROJECT_NAME: org + componentName}, env)
         logger.debug("Full env:", fullEnv);
         return fullEnv;
     }

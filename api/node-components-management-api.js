@@ -1,4 +1,5 @@
 const os = require('os');
+const _ = require('lodash');
 const multer = require('multer');
 const asyncMiddleware = require('$/api/async-middleware-error-handler');
 const mspManager = require('$/service/msp/msp-manager');
@@ -8,10 +9,10 @@ const Enroll = require('$/model/Enroll')
 
 const uploadDir = os.tmpdir() || './upload';
 const upload = multer({dest: uploadDir});
-const fileUpload = upload.fields([ {name: 'file', maxCount: 1}]);
+const fileUpload = upload.any();//fields([{name: 'file', maxCount:4}]); //TODO: any allows any number of files
 
 
-module.exports = async function (app, server, nodeComponentsManager) {
+module.exports = function (app, server, nodeComponentsManager) {
 
     app.get('/node/config', (req, res) => {
         res.json({org: Org.fromConfig(cfg)})
@@ -22,14 +23,14 @@ module.exports = async function (app, server, nodeComponentsManager) {
         if (!packStream) {
             throw new Error('Error providing msp')
         }
-        res.setHeader('Content-type','application/octet-stream')
-        res.setHeader('Content-disposition',`attachment; filename="msp_${cfg.org}.tgz"`)
+        res.setHeader('Content-type', 'application/octet-stream')
+        res.setHeader('Content-disposition', `attachment; filename="msp_${cfg.org}.tgz"`)
         packStream.pipe(res)
     }))
 
     app.post('/node/organization', asyncMiddleware(async (req, res, next) => {
         const {org, enroll} = parseOrg(req.body)
-        nodeComponentsManager.setOrgConfig(org, enroll);
+        nodeComponentsManager.saveOrgConfig(org, enroll);
         res.status(200).json('');
     }))
 
@@ -57,7 +58,7 @@ module.exports = async function (app, server, nodeComponentsManager) {
 
         const {org, enroll} = parseOrg(req.body.org)
         const bootstrap = parseBootstrap(req.body.bootstrap)
-        const components = parseTopology(req.body.components)
+        const components = parseTopology(req.body.components, req.files)
         let result = await nodeComponentsManager.deployTopology(org, enroll, bootstrap, components);
 
 
@@ -72,13 +73,24 @@ module.exports = async function (app, server, nodeComponentsManager) {
     }
 
     function parseBootstrap(reqObj) {
-        return {
-
-        }
+        return {}
     }
 
-    function parseTopology(reqObj) {
-        return reqObj
+    function parseTopology(reqObjs, files) {
+        if (typeof reqObjs === 'string') {
+            reqObjs = JSON.parse(reqObjs)
+        }
+        if (!Array.isArray(reqObjs)) {
+            reqObjs = [reqObjs]
+        }
+
+        if (files && files.length) {
+            reqObjs.forEach(ro => {
+                const compFiles = files.filter(f => f.fieldname === 'file_' + _.get(ro,'values.name'))
+                ro.files = compFiles;
+            })
+        }
+        return reqObjs
     }
 
 }

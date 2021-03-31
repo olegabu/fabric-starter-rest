@@ -12,12 +12,12 @@
     class AppManager {
 
         async provisionWebApp(fileObj) {
+            let baseFileName = this.getFileBaseName(fileObj);
+            const appFolderPath = path.join(cfg.WEBAPPS_DIR, baseFileName);
 
             return archives.extract(fileObj.path, fileObj.originalname, cfg.WEBAPPS_DIR)
                 .then(() => {
-                    const fileBaseName = this.getFileBaseName(fileObj);
-                    let appFolder = path.resolve(cfg.WEBAPPS_DIR, fileBaseName);
-                    return {context: fileBaseName, folder: appFolder};
+                    return {context: baseFileName, folder: appFolderPath};
                 });
         }
 
@@ -73,7 +73,8 @@
                 let port = await this.assignPortAndSave(baseFileName, extractPath);
                 return await this.deployAppstoreApp(baseFileName, extractPath, port, expressApp);
             } catch (e) {
-                throw new Error('Error deploying app:', e)
+                console.error('Error deploying app:', e)
+                throw e
             }
         }
 
@@ -85,7 +86,7 @@
                 await this.deployWebappIfPresent(extractPath, appName, app);
                 return result;
             }
-            throw new Error(`Docker-compose up error. Return code: ${result.code}, Console output: ${result.stdout}`);
+            throw new Error(`Docker-compose up error. Return code: ${result.code}, Console output: ${result.output}`);
         }
 
         async assignPortAndSave(appName, extractPath) {

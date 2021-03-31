@@ -27,7 +27,7 @@ class NodeComponentsManager {
         COMPONENT_DEPLOYERS['PEER']=new PeerComponentType(fabricStarterRuntime)
     }
 
-    setOrgConfig(org, enroll) {
+    saveOrgConfig(org, enroll) {
         cfg.setOrg(org.orgId)
         cfg.setDomain(org.domain)
         cfg.setOrdererDomain(org.domain)
@@ -37,7 +37,10 @@ class NodeComponentsManager {
     }
 
     async deployTopology(org, enroll, bootstrap, topology, env) {
-        this.setOrgConfig(org, enroll)
+        this.saveOrgConfig(org, enroll)
+
+        // await this.fabricStarterRuntime.setOrg(Org.fromConfig(cfg))//TODO: check if org is changed
+
         await async.eachSeries(topology, async component => {
             const componentDeployer = this.getDeployer(component);
             if (componentDeployer) {
@@ -62,7 +65,7 @@ class NodeComponentsManager {
     }
 
     getDeployer(component) {
-        const componentDeployer = COMPONENT_DEPLOYERS[component.componentType]
+        const componentDeployer = COMPONENT_DEPLOYERS[_.get(component,'values.componentType')]
         return componentDeployer;
     }
 
