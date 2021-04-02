@@ -9,10 +9,12 @@ const fabricCLI = require('$/fabric-cli');
 const httpsService = require('$/service/http-service');
 const Org = require("$/model/Org");
 const Raft3ComponentType = require("./componentypes/Raft3ComponentType");
+const RaftComponentType = require("./componentypes/RaftComponentType");
 const FabricCAComponentType = require("./componentypes/FabricCAComponentType");
 const PeerComponentType = require("./componentypes/PeerComponentType");
+const componentDeployer = require("./ComponentDeployer");
 
-const COMPONENT_DEPLOYERS = {
+const COMPONENT_TYPE = {
     'RAFT3': Raft3ComponentType,
     'FabricCA': FabricCAComponentType,
     'PEER': PeerComponentType,
@@ -22,33 +24,37 @@ class NodeComponentsManager {
 
     constructor(fabricStarterRuntime) {
         this.fabricStarterRuntime = fabricStarterRuntime
-        COMPONENT_DEPLOYERS['RAFT3']=new Raft3ComponentType(fabricStarterRuntime)
-        COMPONENT_DEPLOYERS['FabricCA']=new FabricCAComponentType(fabricStarterRuntime)
-        COMPONENT_DEPLOYERS['PEER']=new PeerComponentType(fabricStarterRuntime)
+        COMPONENT_TYPE['RAFT3']=new Raft3ComponentType(fabricStarterRuntime)
+        COMPONENT_TYPE['RAFT']=new RaftComponentType(fabricStarterRuntime)
+        COMPONENT_TYPE['FabricCA']=new FabricCAComponentType(fabricStarterRuntime)
+        COMPONENT_TYPE['PEER']=new PeerComponentType(fabricStarterRuntime)
     }
 
-    saveOrgConfig(org, enroll) {
+    saveOrgConfig(org, bootstrap, enroll) {
         cfg.setOrg(org.orgId)
         cfg.setDomain(org.domain)
         cfg.setOrdererDomain(org.domain)
         cfg.setMyIp(org.orgIp)
         cfg.setMasterIp(org.masterIp)
+        // cfg.setRemoteOrdererPort()
+        cfg.setBootstrapIp(bootstrap.ip)
         cfg.setEnrollSecret(enroll.enrollSecret)
     }
 
     async deployTopology(org, enroll, bootstrap, topology, env) {
-        this.saveOrgConfig(org, enroll)
+        this.saveOrgConfig(org, bootstrap, enroll)
 
         // await this.fabricStarterRuntime.setOrg(Org.fromConfig(cfg))//TODO: check if org is changed
 
         await async.eachSeries(topology, async component => {
-            const componentDeployer = this.getDeployer(component);
-            if (componentDeployer) {
-                if (this.isTargetSameHost(org, component)) {
-                    await componentDeployer.deployLocal(org, bootstrap, component)
+            const componentType = COMPONENT_TYPE[_.get(component, 'componentType')];
+            if (componentType) {
+                await componentDeployer.deploy(org, bootstrap, component, componentType)
+                /*if (this.isTargetSameHost(org, component)) {
+                    await componentType.deployLocal(org, bootstrap, component)
                 } else {
-                    await componentDeployer.deployRemote(org, bootstrap, component)
-                }
+                    await componentType.deployRemote(org, bootstrap, component)
+                }*/
             }
             await util.sleep(4000);
         })/*.catch(err => {
@@ -61,14 +67,10 @@ class NodeComponentsManager {
     }
 
     isTargetSameHost(org, component) {
-        return _.isEqual(org.orgIp, _.get(component, 'componentIp', org.orgIp));
+        const orgIp = _.get(org, 'orgIp');
+        const componentIp = _.get(component, 'values.componentIp');
+        return _.isEmpty(componentIp) || _.isEqual(orgIp, componentIp);
     }
-
-    getDeployer(component) {
-        const componentDeployer = COMPONENT_DEPLOYERS[_.get(component,'values.componentType')]
-        return componentDeployer;
-    }
-
     async startupNode(env) {
         if (_.get(env, 'ORDERER_NAME')) cfg.setOrdererName(env.ORDERER_NAME)
         if (_.get(env, 'ORDERER_DOMAIN')) cfg.setOrdererDomain(env.ORDERER_DOMAIN)
@@ -167,11 +169,7 @@ class NodeComponentsManager {
         return result;
     }
 
-    startOrdererWithDockerCompose(dockerComposeServices, env) {
-        let cmd = `docker-compose -f docker-compose-orderer.yaml -f docker-compose-orderer-domain.yaml -f docker-compose-orderer-ports.yaml up -d ${dockerComposeServices}`
-        let result = fabricCLI.execShellCommand(cmd, cfg.YAMLS_DIR, env);
-        return result;
-    }
+
 
     deleteContainers(containersList, env) {
         env = envWithDockerComposeProjectName(env)

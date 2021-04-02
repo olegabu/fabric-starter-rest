@@ -32,6 +32,7 @@ module.exports = {
     FABRIC_STARTER_VERSION: process.env.FABRIC_STARTER_VERSION,
     DEFAULT_CONSORTIUM: process.env.DEFAULT_CONSORTIUM || 'SampleConsortium',
     BOOTSTRAP_SERVICE_URL: process.env.BOOTSTRAP_SERVICE_URL || 'https',
+    BOOTSTRAP_EXTERNAL_PORT: process.env.BOOTSTRAP_EXTERNAL_PORT || '443',
     API_PORT: process.env.API_PORT || '4000',
 
     USE_SERVICE_DISCOVERY: typeof process.env.USE_SERVICE_DISCOVERY === "undefined" || process.env.USE_SERVICE_DISCOVERY === "true",
@@ -91,6 +92,13 @@ module.exports = {
 
     setMasterIp(val) {
         persistedConfig.MASTER_IP = val
+        persistConfig()
+    },
+
+    get bootstrapIp() {return persistedConfig.BOOTSTRAP_IP || process.env.BOOTSTRAP_IP},
+
+    setBootstrapIp(val) {
+        persistedConfig.BOOTSTRAP_IP = val
         persistConfig()
     },
 

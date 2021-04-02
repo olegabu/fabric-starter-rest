@@ -5,7 +5,7 @@ class Org {
 
     static fromHttpBody(body) {
         if (typeof body === 'string') {
-            body= JSON.parse(body)
+            body = JSON.parse(body)
         }
         let org = {
             orgId: body.orgId, orgIp: body.orgIp,
@@ -20,7 +20,15 @@ class Org {
     }
 
     static fromConfig(config) {
-        let org = {orgId: config.org, domain: config.domain, orgIp: config.myIp, peer0Port: cfg.peer0Port, peerName: cfg.peerName, masterIp: cfg.masterIp};
+        let org = {
+            orgId: config.org,
+            domain: config.domain,
+            orgIp: config.myIp,
+            peer0Port: cfg.peer0Port,
+            peerName: cfg.peerName,
+            masterIp: cfg.masterIp,
+            bootstrapIp: cfg.bootstrapIp
+        };
         logger.debug("Org from config", org)
         return org
     }

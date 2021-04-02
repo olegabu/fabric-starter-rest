@@ -6,6 +6,9 @@ const mspManager = require('$/service/msp/msp-manager');
 const cfg = require('$/config.js');
 const Org = require('$/model/Org')
 const Enroll = require('$/model/Enroll')
+const Bootstrap = require("../model/Bootstrap");
+const ModelParser = require("../model/ModelParser");
+const Component = require("../model/Component");
 
 const uploadDir = os.tmpdir() || './upload';
 const upload = multer({dest: uploadDir});
@@ -30,7 +33,8 @@ module.exports = function (app, server, nodeComponentsManager) {
 
     app.post('/node/organization', asyncMiddleware(async (req, res, next) => {
         const {org, enroll} = parseOrg(req.body)
-        nodeComponentsManager.saveOrgConfig(org, enroll);
+        const bootstrap = parseBootstrap(req.body)
+        nodeComponentsManager.saveOrgConfig(org, bootstrap, enroll);
         res.status(200).json('');
     }))
 
@@ -57,7 +61,7 @@ module.exports = function (app, server, nodeComponentsManager) {
 
 
         const {org, enroll} = parseOrg(req.body.org)
-        const bootstrap = parseBootstrap(req.body.bootstrap)
+        const bootstrap = parseBootstrap(req.body.org) //todo: use req.body.bootstrap
         const components = parseTopology(req.body.components, req.files)
         let result = await nodeComponentsManager.deployTopology(org, enroll, bootstrap, components);
 
@@ -73,24 +77,23 @@ module.exports = function (app, server, nodeComponentsManager) {
     }
 
     function parseBootstrap(reqObj) {
-        return {}
+        return Bootstrap.fromHttpBody(reqObj)
     }
 
-    function parseTopology(reqObjs, files) {
-        if (typeof reqObjs === 'string') {
-            reqObjs = JSON.parse(reqObjs)
+    function parseTopology(reqComponentsArray, files) {
+        if (typeof reqComponentsArray === 'string') {
+            reqComponentsArray = JSON.parse(reqComponentsArray)
         }
-        if (!Array.isArray(reqObjs)) {
-            reqObjs = [reqObjs]
-        }
+        reqComponentsArray = ModelParser.toJson(reqComponentsArray);
 
+        const components = _.map(reqComponentsArray, cmp=>ModelParser.fromHttp(cmp, Component))
         if (files && files.length) {
-            reqObjs.forEach(ro => {
+            components.forEach(ro => {
                 const compFiles = files.filter(f => f.fieldname === 'file_' + _.get(ro,'values.name'))
                 ro.files = compFiles;
             })
         }
-        return reqObjs
+        return components
     }
 
 }

@@ -9,14 +9,26 @@ class Raft3ComponentType {
         this.fabricStarterRuntime = fabricStarterRuntime
     }
 
-    async deployLocal(org, bootstrap, component, env) {
+    async deployLocalPrimary(org, bootstrap, component, env) {
         env = ctUtils.envWithDockerComposeProjectName(env, cfg.org)
 
-        if (_.get(component, 'ORDERER_NAME')) cfg.setOrdererName(component.ORDERER_NAME)
-        if (_.get(component, 'ORDERER_DOMAIN')) cfg.setOrdererDomain(component.ORDERER_DOMAIN)
+        if (_.get(component, 'values.ORDERER_NAME')) cfg.setOrdererName(component.values.ORDERER_NAME)
+        if (_.get(component, 'values.ORDERER_DOMAIN')) cfg.setOrdererDomain(component.values.ORDERER_DOMAIN)
 
         let resultOrderer = fabricCLI.execShellCommand("/bin/bash ./ordering-start.sh", cfg.YAMLS_DIR, env);
         return resultOrderer;
+    }
+
+    async deployLocalSecondary(org, bootstrap, component, env) {
+        throw new Error('Raft3ComponentType secondary is not implemented yet')
+    }
+
+    async deployLocalJoined(org, bootstrap, component, env) {
+        throw new Error('not implemented yet')
+    }
+
+    async deployLocalSecondaryJoined(org, bootstrap, component, env) {
+        throw new Error('not implemented yet')
     }
 
     async deployRemote(org, bootstrap, component, env) {

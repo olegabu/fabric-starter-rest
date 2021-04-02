@@ -15,11 +15,48 @@ class PeerComponentType {
         this.fabricStarterRuntime = fabricStarterRuntime
     }
 
+    async deployLocalPrimary(org, bootstrap, component, env) {
+        const componentName = _.get(component, 'name')
+        const peerPort = _.get(component, 'peerPort')
+        cfg.setPeerName(componentName)
+
+        env = ctUtils.envWithDockerComposeProjectName(env, cfg.org, componentName)
+
+        let cmd = `docker-compose -f docker-compose.yaml -f docker-compose-couchdb.yaml -f docker-compose-ldap.yaml ${cfg.DOCKER_COMPOSE_EXTRA_ARGS} up `
+            + ` -d --force-recreate --no-deps pre-install ca tlsca  www.local couchdb.peer peer cli.peer post-install `;//www.peer ldap-service ldapadmin //TODO: exclude ca, tlsca from here
+        let result = fabricCLI.execShellCommand(cmd, cfg.YAMLS_DIR, env);
+        await util.sleep(4000)
+        await this.fabricStarterRuntime.setOrg(Org.fromConfig(cfg))//TODO: check if org is changed
+
+        return result;
+    }
+
+    async deployLocalSecondary(org, bootstrap, component, env) {
+        return await this.deployLocal(org, bootstrap, component, env)
+    }
+
+    async deployLocalJoined(org, bootstrap, component, env) {
+        return this.deployLocalPrimary(org, bootstrap, component, env)
+/*
+        env = ctUtils.envWithDockerComposeProjectName(env, cfg.org)
+        let cmd = `docker-compose -f docker-compose.yaml -f docker-compose-couchdb.yaml -f docker-compose-ldap.yaml ${cfg.DOCKER_COMPOSE_EXTRA_ARGS} up `
+            + ` -d --force-recreate --no-deps pre-install ca tlsca www.local ldap-service ldapadmin couchdb.peer peer cli.peer post-install `;//www.peer
+        let result = fabricCLI.execShellCommand(cmd, cfg.YAMLS_DIR, env);
+        await util.sleep(4000)
+        await this.fabricStarterRuntime.setOrg(Org.fromConfig(cfg))//TODO: check if org is changed
+        return result;
+*/
+    }
+
+    async deployLocalSecondaryJoined(org, bootstrap, component, env) {
+        throw new Error('not implemented yet')
+    }
+
     async deployLocal(org, bootstrap, component, env) {
 
         let ordererDomain = OsnManager.constructOrdererDomain(org, bootstrap)
-        const componentName=_.get(component, 'values.name')
-        const peerPort=_.get(component, 'values.peerPort')
+        const componentName = _.get(component, 'values.name')
+        const peerPort = _.get(component, 'values.peerPort')
 
         let localEnv = ctUtils.envWithDockerComposeProjectName(env, cfg.org, componentName)
 
@@ -89,7 +126,18 @@ class PeerComponentType {
             + ` -d --force-recreate --no-deps pre-install www.local couchdb.peer peer cli.peer post-install `;//www.peer
         let result = fabricCLI.execShellCommand(cmd, cfg.YAMLS_DIR, localEnv);
         return result;
+
+        let peerResult = this.startPeerWithDockerCompose(env);
+        await util.sleep(6000)
+        await this.fabricStarterRuntime.tryInitRuntime(Org.fromConfig(cfg))
+
+        return {
+            'www orderer': resultWww, 'integration request': configBlockStream, 'dns record': dnsResult,
+            'start orderer': resultOrderer, 'start peer': peerResult
+        };
     }
+
+
 
     async deployRemote(org, bootstrap, component, env) {
 

@@ -1,4 +1,6 @@
-const logger = cfg.log4js.getLogger('Org');
+const _ = require('lodash');
+const cfg = require('$/config.js');
+const logger = cfg.log4js.getLogger('Bootstrap');
 
 class Bootstrap {
 
@@ -7,7 +9,8 @@ class Bootstrap {
             body= JSON.parse(body)
         }
         let obj = {
-            ip: body.body.bootstrapIp
+            ip: _.get(body, 'bootstrapIp', _.get(body, 'BOOTSTRAP_IP')),
+            remoteOrdererDomain: _.get(body,'remoteOrdererDomain', _.get(body, 'REMOTE_ORDERER_DOMAIN'))
         };
         logger.debug("Bootstrap from http", obj)
         return obj

@@ -47,8 +47,8 @@ class IntegrationService {
     async checkOrgIsAllowed(org) {
         const allowedOrg = this.orgsToAccept[org.orgId];
         logger.info("Check org is in accepted:", allowedOrg, "ACCEPT_ALL_ORGS:", cfg.ACCEPT_ALL_ORGS);
-        if (cfg.ACCEPT_ALL_ORGS ||
-            (allowedOrg && !allowedOrg.joined
+        if ((cfg.ACCEPT_ALL_ORGS && _.isEmpty(this.orgsToAccept))
+            || (allowedOrg && !allowedOrg.joined
                 && org.orgIp == allowedOrg.orgIp
                 && org.domain == allowedOrg.domain
                 && org.tlsCert == allowedOrg.tlsCert)) {

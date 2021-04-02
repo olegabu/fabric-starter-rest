@@ -14,7 +14,7 @@ class OsnManager {
     }
 
     constructOrdererDomain(org={}, bootstrap={}) {
-        return _.get(bootstrap, 'ip') ? `${org.orgId}-${org.domain}` : org.domain //TODO: remove after normalize orderer domain names at deployment
+        return _.get(bootstrap, 'ip') ? `${org.orgId}-osn.${org.domain}` : org.domain //TODO: remove after normalize orderer domain names at deployment
     }
 
     async addRaftConsenter(newOrderer, fabricStarterClient) {
