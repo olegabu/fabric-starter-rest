@@ -15,7 +15,7 @@ class Raft3ComponentType {
         if (_.get(component, 'values.ORDERER_NAME')) cfg.setOrdererName(component.values.ORDERER_NAME)
         if (_.get(component, 'values.ORDERER_DOMAIN')) cfg.setOrdererDomain(component.values.ORDERER_DOMAIN)
 
-        let resultOrderer = fabricCLI.execShellCommand("/bin/bash ./ordering-start.sh", cfg.YAMLS_DIR, env);
+        let resultOrderer = fabricCLI.execShellCommand("/bin/bash ./ordering-start.sh", cfg.YAMLS_DIR, env, ()=>{});
         return resultOrderer;
     }
 

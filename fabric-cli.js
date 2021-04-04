@@ -63,14 +63,19 @@ class FabricCLI {
         await this.downloadCerts(orgId, domain,`${orgId}.${domain}`, `${orgId}.${domain}`, orgObj.wwwPort);
     }
 
-    execShellCommand(cmd, dir, extraEnv) {
+    execShellCommand(cmd, dir, extraEnv, callback) {
         const env = _.assign({}, process.env, this.getEnv(), extraEnv || {});
         const opts = {env: env};
         if (dir) {
             cmd = `cd ${dir}; ${cmd}`;
         }
         logger.info('Executing shell command:', cmd);
-        let execResult = shell.exec(`${cmd} 2>&1`, opts);
+        let execResult = shell.exec(`${cmd} 2>&1`, opts, callback);
+
+        if (callback) { //todo: refactor out to different function
+            return execResult.stdout;
+        }
+
         logger.info("Exit code:", _.get(execResult, 'code'), ". Cmd:", cmd);
 
         const code = _.get(execResult, 'code');

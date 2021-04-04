@@ -25,7 +25,8 @@ class RaftComponentType {
         await util.checkRemotePort(cfg.myIp, cfg.ordererWwwPort, {
             timeout: 2000, from: 'RaftComponentType:deployLocal'
         })
-        await this.integrateToRemoteOSNService(org.masterIp, cfg.API_PORT);
+        let result = await this.integrateToRemoteOSNService(org.masterIp, cfg.API_PORT, {}, ()=>{});
+        return result
     }
 
     async deployLocalJoined(org = {}, bootstrap = {}, component, env) {
@@ -37,7 +38,8 @@ class RaftComponentType {
             timeout: 2000, from: 'RaftComponentType:deployLocal'
         })
         await this.updateDnsInfo(bootstrap.ip, bootstrap.remoteOrdererDomain || cfg.domain);
-        await this.integrateToRemoteOSNService(bootstrap.ip, bootstrap.bootstrapCommunicationPort || cfg.BOOTSTRAP_EXTERNAL_PORT, env);
+        let result = await this.integrateToRemoteOSNService(bootstrap.ip, bootstrap.bootstrapCommunicationPort || cfg.BOOTSTRAP_EXTERNAL_PORT, env, ()=>{});
+        return result
     }
 
     async deployLocalSecondaryJoined(org, bootstrap, component, env) {
@@ -45,7 +47,7 @@ class RaftComponentType {
     }
 
 
-    async integrateToRemoteOSNService(remoteIntegrationIP, remoteIntegrationPort, env) {
+    async integrateToRemoteOSNService(remoteIntegrationIP, remoteIntegrationPort, env, callback) {
         if (remoteIntegrationIP) {//TODO: if empty, are we trying to start another instance of raft server
             let configBlockStream = await this.requestIntegrationToBootstrapNode(remoteIntegrationIP, remoteIntegrationPort, env);
             let genesisFilePath = path.join(cfg.CRYPTO_CONFIG_DIR, 'configtx', cfg.ordererDomain, 'genesis.pb');
@@ -55,10 +57,11 @@ class RaftComponentType {
             fs.writeFileSync(genesisFilePath, configBlockStream, {encoding: 'binary'})
 
             // await this.downloadOrdererGenesisBlock(env)
-            let resultStart = this.startOrdererWithDockerCompose('orderer cli.orderer', env)
+            let resultStart = this.startOrdererWithDockerCompose('orderer cli.orderer', env, callback)
             let {env: ordEnv, ...resultOrderer} = resultStart
 
             await util.sleep(5000)
+            return resultStart
         }
     }
 
@@ -83,9 +86,9 @@ class RaftComponentType {
         throw new Error('Remote deploymenet for Raft3 is not implemented yet')
     }
 
-    startOrdererWithDockerCompose(dockerComposeServices, env) {
+    startOrdererWithDockerCompose(dockerComposeServices, env, callback) {
         let cmd = `docker-compose -f docker-compose-orderer.yaml -f docker-compose-orderer-domain.yaml -f docker-compose-orderer-ports.yaml up -d ${dockerComposeServices}`
-        let result = fabricCLI.execShellCommand(cmd, cfg.YAMLS_DIR, env);
+        let result = fabricCLI.execShellCommand(cmd, cfg.YAMLS_DIR, env, callback);
         return result;
     }
 

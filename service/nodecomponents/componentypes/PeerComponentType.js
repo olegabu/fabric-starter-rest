@@ -24,8 +24,7 @@ class PeerComponentType {
 
         let cmd = `docker-compose -f docker-compose.yaml -f docker-compose-couchdb.yaml -f docker-compose-ldap.yaml ${cfg.DOCKER_COMPOSE_EXTRA_ARGS} up `
             + ` -d --force-recreate --no-deps pre-install ca tlsca  www.local couchdb.peer peer cli.peer post-install `;//www.peer ldap-service ldapadmin //TODO: exclude ca, tlsca from here
-        let result = fabricCLI.execShellCommand(cmd, cfg.YAMLS_DIR, env);
-        await util.sleep(4000)
+        let result = fabricCLI.execShellCommand(cmd, cfg.YAMLS_DIR, env, ()=>{});
         await this.fabricStarterRuntime.setOrg(Org.fromConfig(cfg))//TODO: check if org is changed
 
         return result;
@@ -124,17 +123,17 @@ class PeerComponentType {
 
         let cmd = `docker-compose -f docker-compose.yaml -f docker-compose-couchdb.yaml ${cfg.DOCKER_COMPOSE_EXTRA_ARGS} up `
             + ` -d --force-recreate --no-deps pre-install www.local couchdb.peer peer cli.peer post-install `;//www.peer
-        let result = fabricCLI.execShellCommand(cmd, cfg.YAMLS_DIR, localEnv);
+        let result = fabricCLI.execShellCommand(cmd, cfg.YAMLS_DIR, localEnv, ()=>{});
         return result;
 
-        let peerResult = this.startPeerWithDockerCompose(env);
+/*        let peerResult = this.startPeerWithDockerCompose(env);
         await util.sleep(6000)
         await this.fabricStarterRuntime.tryInitRuntime(Org.fromConfig(cfg))
 
         return {
             'www orderer': resultWww, 'integration request': configBlockStream, 'dns record': dnsResult,
             'start orderer': resultOrderer, 'start peer': peerResult
-        };
+        };*/
     }
 
 

@@ -15,7 +15,7 @@ class FabricCAComponentType {
 
         let cmd = `docker-compose -f docker-compose.yaml -f docker-compose-ldap.yaml ${cfg.DOCKER_COMPOSE_EXTRA_ARGS} up `
             + ` -d --force-recreate --no-deps pre-install ca tlsca ldap-service ldapadmin `
-        let result = fabricCLI.execShellCommand(cmd, cfg.YAMLS_DIR, env);
+        let result = fabricCLI.execShellCommand(cmd, cfg.YAMLS_DIR, env, ()=>{});
         return result;
     }
 

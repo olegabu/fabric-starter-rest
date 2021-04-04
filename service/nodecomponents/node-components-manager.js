@@ -41,15 +41,31 @@ class NodeComponentsManager {
         cfg.setEnrollSecret(enroll.enrollSecret)
     }
 
-    async deployTopology(org, enroll, bootstrap, topology, env) {
+    async deployTopology(org, enroll, bootstrap, topology, res, env) {
         this.saveOrgConfig(org, bootstrap, enroll)
 
         // await this.fabricStarterRuntime.setOrg(Org.fromConfig(cfg))//TODO: check if org is changed
 
+        res.setHeader('Content-Type', 'text/html; charset=utf-8');
+        res.setHeader('Transfer-Encoding', 'chunked')
+
         await async.eachSeries(topology, async component => {
             const componentType = COMPONENT_TYPE[_.get(component, 'componentType')];
             if (componentType) {
-                await componentDeployer.deploy(org, bootstrap, component, componentType)
+                const stdout = await componentDeployer.deploy(org, bootstrap, component, componentType)//TODO: pass callback or res
+                await new Promise((resolve, reject)=>{
+                    stdout.on('data', data=>{
+                        try {
+                            res.write(data)
+                        } catch (e) {
+                            logger.debug('Error writing chunk', e)
+                            return reject()
+                        }
+                    })
+                    stdout.on('end', ()=>{
+                        return resolve()
+                    })
+                })
                 /*if (this.isTargetSameHost(org, component)) {
                     await componentType.deployLocal(org, bootstrap, component)
                 } else {
@@ -57,7 +73,10 @@ class NodeComponentsManager {
                 }*/
             }
             await util.sleep(4000);
-        })/*.catch(err => {
+        })
+        res.end()
+
+        /*.catch(err => {
             logger.error('Error deploying topology:', topology, err)
             throw new Error('Error deploying topology:', topology)
         })*/
