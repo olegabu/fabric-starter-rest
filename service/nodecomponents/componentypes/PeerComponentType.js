@@ -1,6 +1,8 @@
 const fs = require('fs-extra');
 const path = require('path');
+const stream = require('stream');
 const _ = require('lodash');
+const ConcatStream = require('stream3-concat');
 const fabricCLI = require('$/fabric-cli');
 const ctUtils= require('../component-manager-utils')
 const cfg = require('$/config.js');
@@ -24,8 +26,30 @@ class PeerComponentType {
 
         let cmd = `docker-compose -f docker-compose.yaml -f docker-compose-couchdb.yaml -f docker-compose-ldap.yaml ${cfg.DOCKER_COMPOSE_EXTRA_ARGS} up `
             + ` -d --force-recreate --no-deps pre-install ca tlsca  www.local couchdb.peer peer cli.peer post-install `;//www.peer ldap-service ldapadmin //TODO: exclude ca, tlsca from here
-        let result = fabricCLI.execShellCommand(cmd, cfg.YAMLS_DIR, env, ()=>{});
+        let upResult = fabricCLI.execShellCommand(cmd, cfg.YAMLS_DIR, env, () => {
+        });
         await this.fabricStarterRuntime.setOrg(Org.fromConfig(cfg))//TODO: check if org is changed
+
+
+        function waitLogStream(combinedStream, count) {
+            try {
+                count>0 && setTimeout(() => {
+                    cmd = `docker logs post-install.${cfg.peerName}.${cfg.org}.${cfg.domain}`
+                    let shellResult = fabricCLI.execShellCommand(cmd, cfg.YAMLS_DIR, env);
+                    if (!shellResult.isError()) {
+                        let logResult = fabricCLI.execShellCommand(`${cmd} -f`, cfg.YAMLS_DIR, env, () => {});
+                        combinedStream.add(logResult)
+                    } else
+                        waitLogStream(combinedStream, count--)
+                }, 1000)
+            } catch (e) {
+                logger.debug('Command failed:', cmd, e)
+            }
+        }
+
+        const result = new ConcatStream([upResult]);
+
+        waitLogStream(result, 20)
 
         return result;
     }

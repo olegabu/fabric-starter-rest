@@ -62,7 +62,7 @@ class NodeComponentsManager {
                             return reject()
                         }
                     })
-                    stdout.on('end', ()=>{
+                    stdout.once('end', ()=>{
                         return resolve()
                     })
                 })
