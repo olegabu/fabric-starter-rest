@@ -1,7 +1,7 @@
 ARG DOCKER_REGISTRY
 ARG FABRIC_STARTER_VERSION
 ARG CUSTOM_SOURCES_TAR
-FROM ${DOCKER_REGISTRY:-docker.io}/olegabu/fabric-starter-rest:${FABRIC_STARTER_VERSION:-latest}
+FROM ${DOCKER_REGISTRY:-docker.io}/olegabu/fabric-starter-rest:${FABRIC_STARTER_VERSION:-stable-1.4.6}
 
 
 WORKDIR /usr/src/app
