@@ -4,7 +4,8 @@
   "description": "rest api server and client for hyperledger fabric built with nodejs sdk",
   "main": "fabric-starter-client.js",
   "scripts": {
-    "test": "DISCOVER_AS_LOCALHOST=true mocha",
+    "test": "cucumber-js",
+    "mocha-test": "DISCOVER_AS_LOCALHOST=true mocha",
     "dev": "./start-dev.sh",
     "start": "node app.js",
     "postinstall": "npx basetag link"
@@ -56,6 +57,7 @@
     "x509": "^0.3.4"
   },
   "devDependencies": {
+    "cucumber": "^6.0.5",
     "express-swagger-generator": "^1.1.15",
     "mocha": "^5.2.0",
     "nodemon": "^1.19.1",
