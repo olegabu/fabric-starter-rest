@@ -162,14 +162,19 @@ class PeerComponentType {
 
 
 
-    async deployRemote(org, bootstrap, component, env) {
+    async deployRemote(org, bootstrap, component, addresses, env) {
 
         env = ctUtils.envWithDockerComposeProjectName(env, cfg.org)
 
-        let cmd = `docker-compose -f docker-compose.yaml -f docker-compose-couchdb.yaml ${cfg.DOCKER_COMPOSE_EXTRA_ARGS} up `
-            + ` -d --force-recreate --no-deps pre-install www.local couchdb.peer peer cli.peer post-install `;//www.peer
-        let result = fabricCLI.execShellCommand(cmd, cfg.YAMLS_DIR, env);
-        return result;
+        // let cmd = `docker-compose -f docker-compose.yaml -f docker-compose-couchdb.yaml ${cfg.DOCKER_COMPOSE_EXTRA_ARGS} up `
+        //     + ` -d --force-recreate --no-deps pre-install www.local couchdb.peer peer cli.peer post-install `;//www.peer
+        // let result = fabricCLI.execShellCommand(cmd, cfg.YAMLS_DIR, env);
+        // return result;
+
+        const remoteServer = _.get(addresses.targetIp);
+
+
+
     }
 
     isMasterHost(org) {

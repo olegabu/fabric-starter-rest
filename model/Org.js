@@ -1,3 +1,4 @@
+const _ = require('lodash');
 const cfg = require('$/config.js');
 const logger = cfg.log4js.getLogger('Org');
 
@@ -8,12 +9,13 @@ class Org {
             body = JSON.parse(body)
         }
         let org = {
-            orgId: body.orgId, orgIp: body.orgIp,
-            domain: body.domain || cfg.domain,
-            peer0Port: body.peerPort || body.peer0Port || cfg.DEFAULT_PEER0PORT,
-            wwwPort: body.wwwPort,
-            masterIp: body.masterIp,
-            peerName: body.peerName
+            orgId: _.get(body, 'orgId'),
+            orgIp: _.get(body, 'orgIp'),
+            domain: _.get(body, 'domain', cfg.domain),
+            peer0Port: _.get(body, 'peerPort', _.get(body, 'peer0Port')) || cfg.DEFAULT_PEER0PORT,
+            wwwPort: _.get(body, 'wwwPort'),
+            masterIp: _.get(body, 'masterIp'),
+            peerName: _.get(body, 'peerName')
         };
         logger.debug("Org from http", org)
         return org
