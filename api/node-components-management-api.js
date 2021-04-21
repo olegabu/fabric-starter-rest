@@ -86,13 +86,11 @@ module.exports = function (app, server, nodeComponentsManager) {
         }
         reqComponentsArray = ModelParser.toJson(reqComponentsArray);
 
-        const components = _.map(reqComponentsArray, cmp=>ModelParser.fromHttp(cmp, Component))
-        if (files && files.length) {
-            components.forEach(ro => {
-                const compFiles = files.filter(f => f.fieldname === 'file_' + _.get(ro,'values.name'))
-                ro.files = compFiles;
-            })
-        }
+        const components = _.map(reqComponentsArray, cmp => {
+            _.filter(files, f => f.fieldname === 'file_' + _.get(cmp, 'values.name'))
+            const component = ModelParser.fromHttp(cmp, Component, files)
+            return component
+        })
         return components
     }
 

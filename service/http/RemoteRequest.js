@@ -2,8 +2,9 @@ const http = require('http')
 
 class RemoteRequest {
 
-    startComponent({targetIp, componentName, componentType}) {
-        http.request()
+    deployComponent(org, component) {
+
+        http.request({hostname: component.componentIp, port: component.externalPort || 443, path:'/node/components', method:'POST'})
     }
 }
 

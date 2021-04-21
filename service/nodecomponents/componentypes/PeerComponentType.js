@@ -10,6 +10,7 @@ const util = require('$/util');
 const archives = require('$/service/archive-manager');
 const Org = require("../../../model/Org");
 const {OsnManager} = require('$/osn-manager');
+const remoteRequest = require('$/service/http/RemoteRequest');
 
 class PeerComponentType {
 
@@ -162,7 +163,7 @@ class PeerComponentType {
 
 
 
-    async deployRemote(org, bootstrap, component, addresses, env) {
+    async deployRemote(org, bootstrap, component, env) {
 
         env = ctUtils.envWithDockerComposeProjectName(env, cfg.org)
 
@@ -171,8 +172,9 @@ class PeerComponentType {
         // let result = fabricCLI.execShellCommand(cmd, cfg.YAMLS_DIR, env);
         // return result;
 
-        const remoteServer = _.get(addresses.targetIp);
+        const remoteIp = _.get(component, 'componentIp');
 
+        remoteRequest.deployComponent(org, component)
 
 
     }

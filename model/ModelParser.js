@@ -3,9 +3,9 @@ const logger = cfg.log4js.getLogger('ModelParser');
 
 module.exports = {
 
-    fromHttp(body, Model) {
+    fromHttp(body, Model, ...extra) {
         body = this.toJson(body)
-        return Model.fromHttpBody(body)
+        return Model.fromHttpBody(body, ...extra)
     },
 
     toJson(body) {

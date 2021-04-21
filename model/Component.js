@@ -4,23 +4,24 @@ const logger = cfg.log4js.getLogger('Component');
 
 class Component {
 
-    static fromHttpBody(body) {
-        let comp = new Component(body)
-        logger.debug("Component from http", comp)
-        return comp
+    static fromHttpBody(body, files) {
+        const values = _.get(body, 'values')
+        let component = new Component(values, files)
+        logger.debug("Component from http", component)
+        return component
     }
 
-    constructor(comp) {
-        this.comp = comp
+    constructor(values, files) {
+        this.values = values;
+        this.files = files;
     }
 
     get name() {return this.valueProp('name')}
     get componentIp() {return this.valueProp('componentIp')}
     get componentType() {return this.valueProp('componentType')}
 
-    get values() {return this.comp.values}
     valueProp (propName) {
-        return _.get(this.comp, `values.${propName}`)
+        return _.get(this, `values.${propName}`)
     }
 
 }
