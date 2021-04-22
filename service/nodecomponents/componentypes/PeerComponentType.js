@@ -174,7 +174,7 @@ class PeerComponentType {
 
         const remoteIp = _.get(component, 'componentIp');
 
-        remoteRequest.deployComponent(org, component)
+        return await remoteRequest.deployComponent(org, component)
 
 
     }

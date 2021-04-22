@@ -58,7 +58,6 @@ module.exports = function (app, server, nodeComponentsManager) {
 
         // let s = req.files['file'][0].originalname.substring(0, req.files['file'][0].originalname.length - 4);
         // let filePath = req.files['file'][0].path;
-
         console.log('POST /node/components')
         const {org, enroll} = parseOrg(req.body.org)
         const bootstrap = parseBootstrap(req.body.org) //todo: use req.body.bootstrap

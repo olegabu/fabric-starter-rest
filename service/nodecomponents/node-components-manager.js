@@ -6,7 +6,7 @@ const cfg = require('$/config.js');
 const logger = cfg.log4js.getLogger('NodeComponentsManager');
 const util = require('$/util');
 const fabricCLI = require('$/fabric-cli');
-const httpsService = require('$/service/http-service');
+const httpsService = require('$/service/http/http-service');
 const Org = require("$/model/Org");
 const Raft3ComponentType = require("./componentypes/Raft3ComponentType");
 const RaftComponentType = require("./componentypes/RaftComponentType");
@@ -54,6 +54,9 @@ class NodeComponentsManager {
             if (componentType) {
                 const stdout = await componentDeployer.deploy(org, bootstrap, component, componentType)//TODO: pass callback or res
                 await new Promise((resolve, reject)=>{
+                    if (!stdout) {
+                        return resolve()
+                    }
                     stdout.on('data', data=>{
                         try {
                             res.write(data)

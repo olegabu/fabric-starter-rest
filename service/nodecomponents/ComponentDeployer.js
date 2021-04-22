@@ -19,7 +19,7 @@ class ComponentDeployer {
             return componentType.deployLocalSecondaryJoined(org, bootstrap, component)
 
         if (this.targetIsRemoteSecondaryHost(addresses)) {
-            return componentType.deployRemote(org, bootstrap, component, componentType)
+            return componentType.deployRemote(org, bootstrap, component)
         }
     }
 

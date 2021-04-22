@@ -8,7 +8,7 @@
     "test-mocha": "DISCOVER_AS_LOCALHOST=true mocha",
     "dev": "./start-dev.sh",
     "start": "node app.js",
-    "postinstall": "npx basetag link"
+    "postinstall": "npx basetag link --hook"
   },
   "jest": {
     "verbose": true,
@@ -67,6 +67,7 @@
     "express-swagger-generator": "^1.1.15",
     "jest": "^25.5.4",
     "mocha": "^7.2.0",
+    "nock": "^11.9.1",
     "nodemon": "^1.19.1",
     "randomstring": "^1.1.5",
     "supertest": "^6.1.3"
