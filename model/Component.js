@@ -1,5 +1,5 @@
 const _ = require('lodash');
-const cfg = require('$/config.js');
+const cfg = require('../config.js');
 const logger = cfg.log4js.getLogger('Component');
 
 class Component {
@@ -19,6 +19,8 @@ class Component {
     get name() {return this.valueProp('name')}
     get componentIp() {return this.valueProp('componentIp')}
     get componentType() {return this.valueProp('componentType')}
+    get externalPort() {return this.valueProp('externalPort')}
+    get communicationProtocol() {return this.valueProp('communicationProtocol')}
 
     valueProp (propName) {
         return _.get(this, `values.${propName}`)

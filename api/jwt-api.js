@@ -1,13 +1,13 @@
 const _ = require('lodash');
 const jwt = require('express-jwt');
 const jsonwebtoken = require('jsonwebtoken');
-const asyncMiddleware = require('$/api/async-middleware-error-handler');
-const cfg = require('$/config.js');
+const asyncMiddleware = require('../api/async-middleware-error-handler');
+const cfg = require('../config.js');
 const logger = cfg.log4js.getLogger('jwt-api');
 
 // // fabric client
-const FabricStarterClient = require('$/fabric-starter-client'); //todo: move to fabricStarterRuntime
-const x509util = require('$/util/x509-util');
+const FabricStarterClient = require('../fabric-starter-client'); //todo: move to fabricStarterRuntime
+const x509util = require('../util/x509-util');
 
 module.exports = function (app, server, defaultFabricStarterClient) {
 

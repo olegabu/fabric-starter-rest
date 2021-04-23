@@ -1,5 +1,5 @@
 const _ = require('lodash')
-const cfg = require('$/config.js');
+const cfg = require('../../config.js');
 const logger = cfg.log4js.getLogger('component-manager-utils');
 
 module.exports = {

@@ -1,34 +1,59 @@
-// jest.mock('http')
-// const httpMock = require('http')
+const _ = require('lodash')
 const nock = require('nock')
-
 const axios = require("axios");
-const remoteRequest = require("../../../../service/http/RemoteRequest")
+axios.defaults.adapter = require('axios/lib/adapters/http')
 
 const Org = require("../../../../model/Org");
 const Component = require("../../../../model/Component");
+const remoteRequest = require("../../../../service/http/RemoteRequest")
 
-axios.defaults.adapter = require('axios/lib/adapters/http')
+jest.mock('../../../../service/http/FormDataFactory', () => {
+    return {
+        createFormData: (fields, files) => {
+            const OriginalFormDataFabric = jest.requireActual('../../../../service/http/FormDataFactory');
+            const {formData, formDataHeaders} = OriginalFormDataFabric.createFormData(fields, files);
+            return {formData: JSON.stringify(formData), formDataHeaders}
+        }
+    }
+})
+
+const TEST_REMOTE_PROTOCOL = 'http'
+const TEST_REMOTE_HOST = 'remotehost'
+const TEST_REMOTE_PORT = 4443
 
 test('deploy remote component request', async () => {
 
-    const scope = nock('https://remotehost')
-        .log(console.log)
-        .post('/node/components', (body) => {
-            console.log("Remote deploy body:", body)
-            return true
+    const scope = nock(`${TEST_REMOTE_PROTOCOL}://${TEST_REMOTE_HOST}:${TEST_REMOTE_PORT}`)
+        .matchHeader('content-type', /^multipart\/form-data;.*/)
+        .post('/node/components', body => {
+            checkMultipartData(body, 'form-data; name="org"');
+            checkMultipartData(body, '"orgIp":"remotehost"');
+            checkMultipartData(body, '[{"values":{');
+            checkMultipartData(body, 'form-data; name="file_peer0"; filename=');
+            return true;//&& filedPresent
         })
-        // .reply(200, 'domain matched', {'Access-Control-Allow-Origin': '*'})
-        .reply((uri, requestBody) => {
-            console.log(this.req)
-        })
+        .reply(200, "", {'Access-Control-Allow-Origin': '*'})
 
-    const response = await remoteRequest.deployComponent(Org.fromConfig({myIp: 'localhost'}), new Component({
-        componentIp: 'remotehost',
-        componentName: 'peer0.org1.example.com',
-        componentType: 'PEER'
-    }))
+    const testComponent = new Component({
+            name: 'peer0',
+            componentType: 'PEER',
+            componentIp: TEST_REMOTE_HOST,
+            externalPort: TEST_REMOTE_PORT,
+            communicationProtocol: TEST_REMOTE_PROTOCOL,
+            componentName: 'peer0.org1.example.com'
+        },
+        [{fieldname: 'file_peer0', path: 'file.tgz'}]
+    );
 
-    nock.restore()
-    // expect(httpMock.request).toBeCalledWith({hostname: 'x.x.x.x'})
+    const response = await remoteRequest.requestRemoteComponentDeployment(
+        Org.fromOrg({orgIp: 'localhost'}),
+        testComponent
+    )
+
+    nock.restore() //required with jest
 })
+
+function checkMultipartData(body, content) {
+    if (!_.find(body._streams, fieldPart => _.includes(fieldPart, content)))
+        throw new Error(`Fragment ${content} is not found in multipart body`)
+}

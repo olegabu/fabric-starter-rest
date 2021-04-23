@@ -26,11 +26,11 @@ const expectedComponent = {
 }
 
 
-test('component deploy POST', async () => {
+test.skip('component deploy POST', async () => {
     await request(app)
         .options('/node/components')
         .retry(0)
-        .then((res)=>{
+        .then((res) => {
             expect(res.headers['Access-Control-Allow-Origin']).toEqual(expect.anything())
         })
 

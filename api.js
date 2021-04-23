@@ -7,8 +7,8 @@ module.exports = async function(app, server, fabricStarterRuntime) {
   const cfg = require('./config.js');
   const logger = cfg.log4js.getLogger('api');
   const x509util = require('./util/x509-util');
-  const asyncMiddleware = require('$/api/async-middleware-error-handler');
-  const Org = require('$/model/Org')
+  const asyncMiddleware = require('./api/async-middleware-error-handler');
+  const Org = require('./model/Org')
 
   // upload for chaincode and app installation
   const uploadDir = os.tmpdir() || './upload';

@@ -2,9 +2,10 @@ const fs = require('fs');
 const FormData = require('form-data');
 const axios = require('axios');
 const _ = require('lodash');
-const cfg = require('$/config.js')
+const cfg = require('../../config.js')
 const https = require("https");
 const logger = cfg.log4js.getLogger('HttpService')
+const FormDataFactory = require('./FormDataFactory');
 
 class HttpService {
 
@@ -18,9 +19,9 @@ class HttpService {
         return response.data
     }
 
-    async postMultipart(url, values, files, opts) {
-        logger.debug(`postMultipart. Request:${url}`, values, files)
-        let response = await this.agent.postMultipart(url, values, files, opts);
+    async postMultipart(url, fields, files, opts) {
+        logger.debug(`postMultipart. Request:${url}`, fields, files)
+        let response = await this.agent.postMultipart(url, fields, files, opts);
         logger.debug('postMultipart. Response:', this.extractResponse(response))
         return response.data
     }
@@ -53,23 +54,10 @@ class AxiosAgent {
         return await this.instance.post(url, data, opts)
     }
 
-    async postMultipart(url, values, files, opts) {
-
-        const formData = new FormData();
-        _.each(values, (val, key) => {
-            formData.append(key, val);
-        })
-        _.each(files, f => {
-            try {
-                formData.append(f.fieldname, fs.createReadStream(f.path, {encoding: 'binary'}));
-            } catch (e) {
-                logger.debug("Can't attach file to multipart: ", f)
-            }
-        })
-
-        return await this.instance.post(url, formData, _.assign({}, opts, {headers: formData.getHeaders()}))
+    async postMultipart(url, fields, files, opts) {
+        const {formData, formDataHeaders} = FormDataFactory.createFormData(fields, files)
+        return await this.instance.post(url, formData, _.assign({}, opts, {headers: formDataHeaders}))
     }
-
 
 }
 

@@ -1,4 +1,4 @@
-const cfg = require('$/config.js');
+const cfg = require('../config.js');
 const logger = cfg.log4js.getLogger('ModelParser');
 
 module.exports = {

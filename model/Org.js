@@ -1,5 +1,5 @@
 const _ = require('lodash');
-const cfg = require('$/config.js');
+const cfg = require('../config.js');
 const logger = cfg.log4js.getLogger('Org');
 
 class Org {
@@ -32,6 +32,12 @@ class Org {
             bootstrapIp: cfg.bootstrapIp
         };
         logger.debug("Org from config", org)
+        return org
+    }
+
+    static fromOrg(orgObj, updateProps) {
+        let org = _.assign({}, orgObj, updateProps)
+        logger.debug("Org from other another Org", org)
         return org
     }
 }
