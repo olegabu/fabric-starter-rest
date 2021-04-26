@@ -1,5 +1,5 @@
-const Org = require("$/model/Org");
-const Component = require("$/model/Component");
+const Org = require("../../../../model/Org");
+const Component = require("../../../../model/Component");
 const componentDeployer = require("../../../../service/nodecomponents/ComponentDeployer");
 
 const componentTypeMock = {deployRemote: jest.fn()}

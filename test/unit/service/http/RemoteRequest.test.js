@@ -5,7 +5,8 @@ axios.defaults.adapter = require('axios/lib/adapters/http')
 
 const Org = require("../../../../model/Org");
 const Component = require("../../../../model/Component");
-const remoteRequest = require("../../../../service/http/RemoteRequest")
+const remoteRequest = require("../../../../service/nodecomponents/RemoteComponentRequest")
+const Files = require("../../../../model/Files");
 
 jest.mock('../../../../service/http/FormDataFactory', () => {
     return {
@@ -29,7 +30,7 @@ test('deploy remote component request', async () => {
             checkMultipartData(body, 'form-data; name="org"');
             checkMultipartData(body, '"orgIp":"remotehost"');
             checkMultipartData(body, '[{"values":{');
-            checkMultipartData(body, 'form-data; name="file_peer0"; filename=');
+            checkMultipartData(body, `form-data; name="${Files.componentFileName('peer0')}"; filename=`);
             return true;//&& filedPresent
         })
         .reply(200, "", {'Access-Control-Allow-Origin': '*'})
@@ -42,7 +43,7 @@ test('deploy remote component request', async () => {
             communicationProtocol: TEST_REMOTE_PROTOCOL,
             componentName: 'peer0.org1.example.com'
         },
-        [{fieldname: 'file_peer0', path: 'file.tgz'}]
+        [{fieldname: Files.componentFileName('peer0'), path: 'file.tgz'}]
     );
 
     const response = await remoteRequest.requestRemoteComponentDeployment(

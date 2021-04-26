@@ -9,6 +9,7 @@ const Enroll = require('../model/Enroll')
 const Bootstrap = require("../model/Bootstrap");
 const ModelParser = require("../model/ModelParser");
 const Component = require("../model/Component");
+const Files = require("../model/Files");
 
 const uploadDir = os.tmpdir() || './upload';
 const upload = multer({dest: uploadDir});
@@ -65,7 +66,7 @@ module.exports = function (app, server, nodeComponentsManager) {
         let result = await nodeComponentsManager.deployTopology(org, enroll, bootstrap, components, res);
 
 
-        res.json(result)
+        res.end()
     }))
 
     function parseOrg(reqObj) {
@@ -86,7 +87,7 @@ module.exports = function (app, server, nodeComponentsManager) {
         reqComponentsArray = ModelParser.toJson(reqComponentsArray);
 
         const components = _.map(reqComponentsArray, cmp => {
-            _.filter(files, f => f.fieldname === 'file_' + _.get(cmp, 'values.name'))
+            _.filter(files, f => f.fieldname === Files.componentFileName(cmp))
             const component = ModelParser.fromHttp(cmp, Component, files)
             return component
         })

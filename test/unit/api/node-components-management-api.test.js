@@ -4,6 +4,7 @@ const express = require('express');
 const bodyParser = require('body-parser');
 
 const nodeComponentsApi = require('../../../api/node-components-management-api')
+const Files = require("../../../model/Files");
 
 const app = express()
 app.use(bodyParser.json({limit: '100MB', type: 'application/json'}));//TODO
@@ -20,13 +21,25 @@ const expectedComponent = {
     componentIp: componentValues.componentIp,
     values: componentValues,
     files: [expect.objectContaining({
-        "fieldname": "file_peer0",
+        "fieldname": Files.componentFileName("peer0"),
         "originalname": "test.tgz",
     })]
 }
 
 
-test.skip('component deploy POST', async () => {
+test('component deploy POST', async () => {
+    await request(app)
+        .post('/node/components')
+        .field('components', JSON.stringify([{values: componentValues}]))
+        .attach(Files.componentFileName('peer0'), Buffer.from('test'), 'test.tgz')
+        .expect(200)
+
+    expect(componentsManagerMock.deployTopology).toHaveBeenCalledWith(expect.anything(), expect.anything(), expect.anything(),
+        [expect.objectContaining(expectedComponent)], expect.anything())
+})
+
+
+test.skip('component deploy should allow CORS', async () => {
     await request(app)
         .options('/node/components')
         .retry(0)
@@ -34,12 +47,4 @@ test.skip('component deploy POST', async () => {
             expect(res.headers['Access-Control-Allow-Origin']).toEqual(expect.anything())
         })
 
-    await request(app)
-        .post('/node/components')
-        .field('components', JSON.stringify([{values: componentValues}]))
-        .attach('file_peer0', Buffer.from('test'), 'test.tgz')
-        .expect(200)
-
-    expect(componentsManagerMock.deployTopology).toHaveBeenCalledWith(expect.anything(), expect.anything(), expect.anything(),
-        [expect.objectContaining(expectedComponent)], expect.anything())
 })

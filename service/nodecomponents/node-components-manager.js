@@ -59,7 +59,6 @@ class NodeComponentsManager {
                     // }
                     stdout.on('data', data=>{
                         try {
-                            logger.debug('About to write chunk', data)
                             res.write(data)
                         } catch (e) {
                             logger.debug('Error writing chunk', e)
@@ -67,6 +66,7 @@ class NodeComponentsManager {
                         }
                     })
                     stdout.once('end', ()=>{
+                        // logger.debug('\n\n\n\n END \n\n\n\n')
                         resolve()
                     })
                 })
@@ -78,7 +78,7 @@ class NodeComponentsManager {
             }
             await util.sleep(4000);
         })
-        res.end()
+        // res.end()
 
         /*.catch(err => {
             logger.error('Error deploying topology:', topology, err)

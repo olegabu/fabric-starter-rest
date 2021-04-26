@@ -1,6 +1,6 @@
 const fs = require('fs-extra');
 const path = require('path');
-const stream = require('stream');
+const stream  = require('stream');
 const _ = require('lodash');
 const ConcatStream = require('stream3-concat');
 const fabricCLI = require('../../../fabric-cli');
@@ -10,7 +10,11 @@ const util = require('../../../util');
 const archives = require('../../../service/archive-manager');
 const Org = require("../../../model/Org");
 const {OsnManager} = require('../../../osn-manager');
-const remoteRequest = require('../../../service/http/RemoteRequest');
+const remoteComponentRequest = require('../RemoteComponentRequest');
+const mspManager = require('../../../service/msp/msp-manager');
+const Files = require("../../../model/Files");
+const Component = require("../../../model/Component");
+
 
 class PeerComponentType {
 
@@ -31,18 +35,35 @@ class PeerComponentType {
         });
         await this.fabricStarterRuntime.setOrg(Org.fromConfig(cfg))//TODO: check if org is changed
 
+        var stream = require('stream');
+        var util = require('util');
+
+        function DelayedStream(){//todo
+            stream.Readable.call(this);
+        }
+        util.inherits(DelayedStream, stream.Readable);
+
+        DelayedStream.prototype._read = function(obj){
+            // setTimeout(()=>{
+            //     this.push(null)
+            // }, 15000)
+        };
+        const delayedStream = new DelayedStream();
+
+        const postInstallContainerName = `post-install.${cfg.peerName}.${cfg.org}.${cfg.domain}`;
 
         function waitLogStream(combinedStream, count) {
             try {
                 count > 0 && setTimeout(() => {
-                    cmd = `docker logs post-install.${cfg.peerName}.${cfg.org}.${cfg.domain}`
+                    cmd = `docker logs ${postInstallContainerName}`
                     let shellResult = fabricCLI.execShellCommand(cmd, cfg.YAMLS_DIR, env);
                     if (!shellResult.isError()) {
-                        let logResult = fabricCLI.execShellCommand(`${cmd} -f`, cfg.YAMLS_DIR, env, () => {
-                        });
+                        let logResult = fabricCLI.execShellCommand(`${cmd} -f`, cfg.YAMLS_DIR, env, () => {});
                         combinedStream.add(logResult)
-                    } else
+                        combinedStream.remove(delayedStream)
+                    } else {
                         waitLogStream(combinedStream, count--)
+                    }
                 }, 1000)
             } catch (e) {
                 logger.debug('Command failed:', cmd, e)
@@ -50,6 +71,7 @@ class PeerComponentType {
         }
 
         const result = new ConcatStream([upResult]);
+        result.add(delayedStream)
 
         waitLogStream(result, 20)
 
@@ -174,23 +196,25 @@ class PeerComponentType {
 
     async deployRemote(org, bootstrap, component, env) {
 
-        env = ctUtils.envWithDockerComposeProjectName(env, cfg.org)
-
-        // let cmd = `docker-compose -f docker-compose.yaml -f docker-compose-couchdb.yaml ${cfg.DOCKER_COMPOSE_EXTRA_ARGS} up `
-        //     + ` -d --force-recreate --no-deps pre-install www.local couchdb.peer peer cli.peer post-install `;//www.peer
-        // let result = fabricCLI.execShellCommand(cmd, cfg.YAMLS_DIR, env);
-        // return result;
-
         const remoteOrg = Org.fromOrg(org, {peerName: _.get(component, 'name')})
-        return await remoteRequest.requestRemoteComponentDeployment(remoteOrg, component)
-
-
+        component = await this.attachMspFileIfAbsent(component);
+        return await remoteComponentRequest.requestRemoteComponentDeployment(remoteOrg, component)
     }
 
     isMasterHost(org) {
         return _.isEqual(org.orgIp, _.get(org, 'masterIp', org.orgIp));
     }
 
+    async attachMspFileIfAbsent(component) {
+        if (_.isEmpty(_.get(component, 'files'))) {
+            const mspPackageStream = await mspManager.packOrgPeerMsp();
+            component = Component.fromComponent(component, null, [{
+                fieldname: Files.componentFileName(component),
+                stream: mspPackageStream
+            }])
+        }
+        return component;
+    }
 }
 
 

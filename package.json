@@ -7,8 +7,7 @@
     "test-jest": "DISCOVER_AS_LOCALHOST=true jest",
     "test-mocha": "DISCOVER_AS_LOCALHOST=true mocha",
     "dev": "./start-dev.sh",
-    "start": "node app.js",
-    "postinstall": "npx basetag link --hook"
+    "start": "node app.js"
   },
   "jest": {
     "verbose": true,
@@ -38,6 +37,7 @@
     "ffi": "^2.3.0",
     "fs-extra": "^8.1.0",
     "glob": "^7.1.4",
+    "into-stream": "^5.1.1",
     "json5": "^2.1.1",
     "jsonwebtoken": "^8.5.1",
     "lodash": "^4.17.15",

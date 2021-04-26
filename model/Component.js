@@ -1,4 +1,5 @@
 const _ = require('lodash');
+const Files = require('./Files');
 const cfg = require('../config.js');
 const logger = cfg.log4js.getLogger('Component');
 
@@ -9,6 +10,13 @@ class Component {
         let component = new Component(values, files)
         logger.debug("Component from http", component)
         return component
+    }
+
+    static fromComponent(component, valuesUpdate, filesUpdateArr) {
+        return new Component(
+            _.assign({}, _.get(component, 'values'), valuesUpdate),
+            Files.mergedFiles(_.get(component, 'files'), filesUpdateArr)
+        )
     }
 
     constructor(values, files) {

@@ -20,7 +20,7 @@ class HttpService {
     }
 
     async postMultipart(url, fields, files, opts) {
-        logger.debug(`postMultipart. Request:${url}`, fields, files)
+        logger.debug(`postMultipart. Request:${url}`, fields, _.map(files, f => f.fieldname))
         let response = await this.agent.postMultipart(url, fields, files, opts);
         logger.debug('postMultipart. Response:', this.extractResponse(response))
         return response.data

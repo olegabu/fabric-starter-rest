@@ -19,7 +19,7 @@ module.exports = function (app, server, defaultFabricStarterClient) {
     //   const jwtSecret = fabricStarterClient.getSecret();
     const jwtSecret = defaultFabricStarterClient.getSecret();
     app.use(jwt({secret: jwtSecret}).unless({
-        path: ['/', '/users', /\/jwt\/.*/, '/domain', '/mspid', '/config',
+        path: ['/', '/users', /\/jwt\/.*/, '/domain', '/mspid', '/config', '/node/components',//TODO:
             new RegExp('/api-docs'), '/api-docs.json', /\/webapp/, /\/webapps\/.*/, '/admin/', /\/admin\/.*/, '/msp/', /\/integration\/.*/]
     }));
 

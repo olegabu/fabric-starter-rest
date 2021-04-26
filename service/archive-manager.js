@@ -153,7 +153,7 @@ class ArchiveManager {
                 gzip: true, // this will perform the compression too
                 cwd: sourcePath,
                 filter: (path, stat) => {
-                    logger.debug('gzip check:', path);
+                    logger.debug('gzip add:', path);
                     if (new RegExp(filter).test(path)) {
                         logger.debug('gzip exclude:', path);
                         return false
