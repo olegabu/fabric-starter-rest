@@ -6,6 +6,7 @@ const ConcatStream = require('stream3-concat');
 const fabricCLI = require('../../../fabric-cli');
 const ctUtils = require('../component-manager-utils')
 const cfg = require('../../../config.js');
+const logger = cfg.log4js.getLogger('PeerComponentType');
 const util = require('../../../util');
 const archives = require('../../../service/archive-manager');
 const Org = require("../../../model/Org");
@@ -101,6 +102,7 @@ class PeerComponentType {
 
     async deployLocal(org, bootstrap, component, env) {
 
+        logger.debug('Deploying component', component)
         let ordererDomain = OsnManager.constructOrdererDomain(org, bootstrap)
         const componentName = _.get(component, 'values.name')
         const peerPort = _.get(component, 'values.peerPort')
@@ -207,9 +209,10 @@ class PeerComponentType {
 
     async attachMspFileIfAbsent(component) {
         if (_.isEmpty(_.get(component, 'files'))) {
-            const mspPackageStream = await mspManager.packOrgPeerMsp();
+            const mspPackageStream = mspManager.packOrgPeerMsp();
             component = Component.fromComponent(component, null, [{
                 fieldname: Files.componentFileName(component),
+                filename: 'msp.tgz',
                 stream: mspPackageStream
             }])
         }

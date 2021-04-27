@@ -54,9 +54,9 @@ class NodeComponentsManager {
             if (componentType) {
                 const stdout = await componentDeployer.deploy(org, bootstrap, component, componentType)//TODO: pass callback or res
                 await new Promise((resolve, reject)=>{
-                    // if (!stdout) {
-                    //     return resolve()
-                    // }
+                    if (!stdout) {
+                        return resolve()
+                    }
                     stdout.on('data', data=>{
                         try {
                             res.write(data)

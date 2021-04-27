@@ -4,6 +4,7 @@ const multer = require('multer');
 const asyncMiddleware = require('../api/async-middleware-error-handler');
 const mspManager = require('../service/msp/msp-manager');
 const cfg = require('../config.js');
+const logger = cfg.log4js.getLogger('node-components-management-api');
 const Org = require('../model/Org')
 const Enroll = require('../model/Enroll')
 const Bootstrap = require("../model/Bootstrap");
@@ -59,7 +60,7 @@ module.exports = function (app, server, nodeComponentsManager) {
 
         // let s = req.files['file'][0].originalname.substring(0, req.files['file'][0].originalname.length - 4);
         // let filePath = req.files['file'][0].path;
-        console.log('POST /node/components')
+        logger.debug('\nPOST /node/components', req.body, req.files)
         const {org, enroll} = parseOrg(req.body.org)
         const bootstrap = parseBootstrap(req.body.org) //todo: use req.body.bootstrap
         const components = parseTopology(req.body.components, req.files)

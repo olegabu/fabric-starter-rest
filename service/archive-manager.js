@@ -89,17 +89,17 @@ class ArchiveManager {
         // return await this.extract(uploadedFile.path, uploadedFile.originalname, extractPath)
     }
 
-    extractTarTransform(sourcePath, transform=(name=>name)) {
+    extractTarTransform(sourcePath, transform = (name => name)) {
         const readStream = fse.createReadStream(sourcePath);
         return readStream.pipe(tt.extract({gzip: true}))
             .pipe(tt.transform({
-            onEntry(entry) {
-                let headers = entry.headers
-                const newName = transform(headers.name)
-                headers  = {...headers, name: newName}
-                this.push({...entry, headers});
-            }
-        })).pipe(tt.pack({ gzip: true }))
+                onEntry(entry) {
+                    let headers = entry.headers
+                    const newName = transform(headers.name)
+                    headers = {...headers, name: newName}
+                    this.push({...entry, headers});
+                }
+            })).pipe(tt.pack({gzip: true}))
     }
 
     async extract(sourcePath, sourceFileName, extractPath) {
@@ -145,16 +145,17 @@ class ArchiveManager {
         })
     }
 
-    async gzip(sourcePath, filter, targetFileName) {
+    gzip(sourcePath, filter, targetFileName) {
         logger.debug(`gzip path: ${sourcePath} to ${targetFileName}`, filter && ` with filter ${filter}`)
+        const excludeFileFilterRegExp = new RegExp(filter);
         const tarOrig = tar.c(
             {
-                [targetFileName ? 'file' : '']: targetFileName,
+//                [targetFileName ? 'file' : '']: targetFileName,
                 gzip: true, // this will perform the compression too
                 cwd: sourcePath,
                 filter: (path, stat) => {
                     logger.debug('gzip add:', path);
-                    if (new RegExp(filter).test(path)) {
+                    if (excludeFileFilterRegExp.test(path)) {
                         logger.debug('gzip exclude:', path);
                         return false
                     }

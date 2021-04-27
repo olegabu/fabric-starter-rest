@@ -21,9 +21,9 @@ class FormDataFactory {
     appendFiles(formData, files) {
         _.each(files, f => {
             try {
-                formData.append(f.fieldname, f.stream ? f.stream : fs.createReadStream(f.path, {encoding: 'binary'}));
+                formData.append(f.fieldname, f.stream ? f.stream : fs.createReadStream(f.path, {encoding: 'binary'}), f.filename);
             } catch (e) {
-                logger.debug("Can't attach file to multipart: ", f)
+                logger.error("Can't attach file to multipart: ", f)
             }
         })
     }
