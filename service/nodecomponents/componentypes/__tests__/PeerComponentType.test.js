@@ -1,11 +1,11 @@
-jest.mock('../../../../../service/nodecomponents/RemoteComponentRequest')
+jest.mock('../../../nodecomponents/RemoteComponentRequest')
 
-const PeerComponentType = require('../../../../../service/nodecomponents/componentypes/PeerComponentType')
-const Org = require("../../../../../model/Org");
-const Component = require("../../../../../model/Component");
-const remoteComponentRequestMock = require('../../../../../service/nodecomponents/RemoteComponentRequest')
-const Files = require("../../../../../model/Files");
-const fabricStarterRuntimeMock = jest.genMockFromModule('../../../../../service/context/fabric-starter-runtime')
+const PeerComponentType = require('../PeerComponentType')
+const Org = require("../../../../model/Org");
+const Component = require("../../../../model/Component");
+const remoteComponentRequestMock = require('../../RemoteComponentRequest')
+const Files = require("../../../../model/Files");
+const fabricStarterRuntimeMock = jest.genMockFromModule('../../../context/fabric-starter-runtime')
 
 const org = Org.fromOrg({orgIp: 'localhost'});
 const component = new Component({
@@ -15,7 +15,7 @@ const component = new Component({
 },[]);
 
 const expectedComponent = new Component(component.values,
-    [{"fieldname": Files.componentFileName(component), stream: expect.anything()}]
+    [{"fieldname": Files.componentFileName(component), stream: expect.anything(), filename: expect.anything()}]
 );
 
 describe('PeerComponentType deployment', () => {

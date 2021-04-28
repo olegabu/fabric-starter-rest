@@ -23,7 +23,7 @@ class FormDataFactory {
             try {
                 formData.append(f.fieldname, f.stream ? f.stream : fs.createReadStream(f.path, {encoding: 'binary'}), f.filename);
             } catch (e) {
-                logger.error("Can't attach file to multipart: ", f)
+                logger.error("Can't attach file to multipart: ", f, e)
             }
         })
     }

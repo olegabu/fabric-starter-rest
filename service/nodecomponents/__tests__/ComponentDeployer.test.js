@@ -1,6 +1,6 @@
-const Org = require("../../../../model/Org");
-const Component = require("../../../../model/Component");
-const componentDeployer = require("../../../../service/nodecomponents/ComponentDeployer");
+const Org = require("../../../model/Org");
+const Component = require("../../../model/Component");
+const componentDeployer = require("../ComponentDeployer");
 
 const componentTypeMock = {deployRemote: jest.fn()}
 

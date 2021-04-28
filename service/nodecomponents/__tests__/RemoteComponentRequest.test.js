@@ -3,15 +3,15 @@ const nock = require('nock')
 const axios = require("axios");
 axios.defaults.adapter = require('axios/lib/adapters/http')
 
-const Org = require("../../../../model/Org");
-const Component = require("../../../../model/Component");
-const remoteRequest = require("../../../../service/nodecomponents/RemoteComponentRequest")
-const Files = require("../../../../model/Files");
+const Org = require("../../../model/Org");
+const Component = require("../../../model/Component");
+const remoteRequest = require("../RemoteComponentRequest")
+const Files = require("../../../model/Files");
 
-jest.mock('../../../../service/http/FormDataFactory', () => {
+jest.mock('../../http/FormDataFactory', () => {
     return {
         createFormData: (fields, files) => {
-            const OriginalFormDataFabric = jest.requireActual('../../../../service/http/FormDataFactory');
+            const OriginalFormDataFabric = jest.requireActual('../../http/FormDataFactory');
             const {formData, formDataHeaders} = OriginalFormDataFabric.createFormData(fields, files);
             return {formData: JSON.stringify(formData), formDataHeaders}
         }

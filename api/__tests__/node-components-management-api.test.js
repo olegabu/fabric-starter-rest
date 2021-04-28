@@ -3,14 +3,14 @@ const request = require('supertest')
 const express = require('express');
 const bodyParser = require('body-parser');
 
-const nodeComponentsApi = require('../../../api/node-components-management-api')
-const Files = require("../../../model/Files");
+const nodeComponentsApi = require('../node-components-management-api')
+const Files = require("../../model/Files");
 
 const app = express()
 app.use(bodyParser.json({limit: '100MB', type: 'application/json'}));//TODO
 app.use(bodyParser.urlencoded({extended: true, limit: '100MB'}));
 
-const NodeComponentsManager = jest.genMockFromModule("../../../service/nodecomponents/node-components-manager")
+const NodeComponentsManager = jest.genMockFromModule("../../service/nodecomponents/node-components-manager")
 const componentsManagerMock = new NodeComponentsManager();
 nodeComponentsApi(app, null, componentsManagerMock)
 
