@@ -30,7 +30,7 @@ test('deploy remote component request', async () => {
             checkMultipartData(body, 'form-data; name="org"');
             checkMultipartData(body, '"orgIp":"remotehost"');
             checkMultipartData(body, '[{"values":{');
-            checkMultipartData(body, `form-data; name="${Files.componentFileName('peer0')}"; filename=`);
+            checkMultipartData(body, `form-data; name="${Files.componentFileName('peer0')}"; filename="file.tgz"`);
             return true;//&& filedPresent
         })
         .reply(200, "", {'Access-Control-Allow-Origin': '*'})

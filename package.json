@@ -69,7 +69,8 @@
     "mocha": "^7.2.0",
     "nock": "^11.9.1",
     "nodemon": "^1.19.1",
-    "randomstring": "^1.1.5"
+    "randomstring": "^1.1.5",
+    "supertest": "^6.1.3"
   },
   "nodemonConfig": {
     "ignore": [
