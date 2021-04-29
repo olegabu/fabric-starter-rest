@@ -1,13 +1,13 @@
 const glob = require('glob');
 const path = require('path');
 
-const FabricStarterClient = require('$/fabric-starter-client');
-const RestSocketServer = require('$/rest-socket-server');
-const cfg = require('$/config');
+const FabricStarterClient = require('../../fabric-starter-client');
+const RestSocketServer = require('../../rest-socket-server');
+const cfg = require('../../config');
 const logger = cfg.log4js.getLogger('NodeRuntime');
-const appManager = require('$/app-manager');
-const IntegrationService = require('$/service/integration-service');
-const util = require('$/util');
+const appManager = require('../../app-manager');
+const IntegrationService = require('../../service/integration-service');
+const util = require('../../util');
 
 class FabricStarterRuntime {
 
@@ -53,7 +53,7 @@ class FabricStarterRuntime {
         // fabric client
         this.defaultFabricStarterClient = new FabricStarterClient();
         try {
-            const tlsNetworkConfigProvider = require('$/network');
+            const tlsNetworkConfigProvider = require('../../network');
             this.tlsFabricStarterClient = new FabricStarterClient(tlsNetworkConfigProvider(cfg.tlsCas, 'tls'));
             await this.defaultFabricStarterClient.loginOrRegister(cfg.ENROLL_ID, cfg.enrollSecret);
             await this.tlsFabricStarterClient.loginOrRegister(cfg.ENROLL_ID, cfg.enrollSecret);
@@ -89,15 +89,15 @@ class FabricStarterRuntime {
     }
 
     initJwtApi() {
-        require('$/api/jwt-api')(this.app, this.server, this.defaultFabricStarterClient);
+        require('../../api/jwt-api')(this.app, this.server, this.defaultFabricStarterClient);
     }
 
     async initApi() {
-        await require('$/api')(this.app, this.server, this)
+        await require('../../api')(this.app, this.server, this)
     }
 
     initIntegrationApi() {
-        require('$/api/integration-api')(this.app, this.server, this.integrationService)
+        require('../../api/integration-api')(this.app, this.server, this.integrationService)
     }
 
 

@@ -5,10 +5,17 @@
   "main": "fabric-starter-client.js",
   "scripts": {
     "test": "cucumber-js",
-    "mocha-test": "DISCOVER_AS_LOCALHOST=true mocha",
+    "test-jest": "DISCOVER_AS_LOCALHOST=true jest",
+    "test-mocha": "DISCOVER_AS_LOCALHOST=true mocha",
     "dev": "./start-dev.sh",
-    "start": "node app.js",
-    "postinstall": "npx basetag link"
+    "start": "node app.js"
+  },
+  "jest": {
+    "verbose": true,
+    "testPathIgnorePatterns": [
+      "<rootDir>/gost-deps/",
+      "<rootDir>/node_modules/"
+    ]
   },
   "repository": "https://github.com/olegabu/fabric-starter-rest",
   "author": "Oleg Abdrashitov <olegabu73@gmail.com>",
@@ -16,7 +23,6 @@
   "dependencies": {
     "async": "^3.2.0",
     "axios": "^0.21.1",
-    "basetag": "^2.0.0",
     "body-parser": "^1.19.0",
     "channel.js": "0.0.2",
     "chmod-plus": "0.0.3",
@@ -59,7 +65,9 @@
   "devDependencies": {
     "cucumber": "^6.0.5",
     "express-swagger-generator": "^1.1.15",
-    "mocha": "^5.2.0",
+    "jest": "^25.5.4",
+    "mocha": "^7.2.0",
+    "nock": "^11.9.1",
     "nodemon": "^1.19.1",
     "randomstring": "^1.1.5"
   },

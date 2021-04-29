@@ -1,7 +1,7 @@
-const asyncMiddleware = require('$/api/async-middleware-error-handler');
-const cfg = require('$/config');
+const asyncMiddleware = require('../api/async-middleware-error-handler');
+const cfg = require('../config');
 const logger = cfg.log4js.getLogger('IntegrationApi');
-const Org = require('$/model/Org')
+const Org = require('../model/Org')
 
 module.exports = function (app, server, integrationService) {
 

@@ -1,6 +1,6 @@
 const fs = require("fs");
 const path = require('path');
-const cfg = require('$/config.js');
+const cfg = require('../config.js');
 const express = require("express");
 const logger = cfg.log4js.getLogger('static-api');
 

@@ -2,12 +2,12 @@ const fs = require('fs-extra');
 const path = require('path');
 const _ = require('lodash');
 const async = require('async');
-const cfg = require('$/config.js');
+const cfg = require('../../config.js');
 const logger = cfg.log4js.getLogger('NodeComponentsManager');
-const util = require('$/util');
-const fabricCLI = require('$/fabric-cli');
-const httpsService = require('$/service/http-service');
-const Org = require("$/model/Org");
+const util = require('../../util');
+const fabricCLI = require('../../fabric-cli');
+const httpsService = require('../../service/http/http-service');
+const Org = require("../../model/Org");
 const Raft3ComponentType = require("./componentypes/Raft3ComponentType");
 const RaftComponentType = require("./componentypes/RaftComponentType");
 const FabricCAComponentType = require("./componentypes/FabricCAComponentType");
@@ -42,7 +42,7 @@ class NodeComponentsManager {
     }
 
     async deployTopology(org, enroll, bootstrap, topology, res, env) {
-        this.saveOrgConfig(org, bootstrap, enroll)
+        this.saveOrgConfig(org, bootstrap, enroll) //TODO: extract as separate operation
 
         // await this.fabricStarterRuntime.setOrg(Org.fromConfig(cfg))//TODO: check if org is changed
 
@@ -54,16 +54,20 @@ class NodeComponentsManager {
             if (componentType) {
                 const stdout = await componentDeployer.deploy(org, bootstrap, component, componentType)//TODO: pass callback or res
                 await new Promise((resolve, reject)=>{
+                    if (!stdout) {
+                        return resolve()
+                    }
                     stdout.on('data', data=>{
                         try {
                             res.write(data)
                         } catch (e) {
                             logger.debug('Error writing chunk', e)
-                            return reject()
+                            reject(e)
                         }
                     })
                     stdout.once('end', ()=>{
-                        return resolve()
+                        // logger.debug('\n\n\n\n END \n\n\n\n')
+                        resolve()
                     })
                 })
                 /*if (this.isTargetSameHost(org, component)) {
@@ -74,7 +78,7 @@ class NodeComponentsManager {
             }
             await util.sleep(4000);
         })
-        res.end()
+        // res.end()
 
         /*.catch(err => {
             logger.error('Error deploying topology:', topology, err)

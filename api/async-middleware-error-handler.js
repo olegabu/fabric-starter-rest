@@ -1,4 +1,4 @@
-const cfg = require('$/config');
+const cfg = require('../config');
 const logger = cfg.log4js.getLogger('asyncMiddleware');
 
 //TODO: refactor ?

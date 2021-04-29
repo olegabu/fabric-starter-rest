@@ -1,5 +1,5 @@
-const cfg = require('$/config');
-const archiverManager = require('$/service/archive-manager');
+const cfg = require('../../config');
+const archiverManager = require('../../service/archive-manager');
 
 class MspManager {
     packOrgPeerMsp() {

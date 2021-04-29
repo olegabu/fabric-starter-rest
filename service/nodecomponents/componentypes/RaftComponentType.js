@@ -1,12 +1,12 @@
 const fs = require('fs-extra');
 const path = require('path');
 const _ = require('lodash');
-const fabricCLI = require('$/fabric-cli');
-const cfg = require('$/config.js');
+const fabricCLI = require('../../../fabric-cli');
+const cfg = require('../../../config.js');
 const logger = cfg.log4js.getLogger('RaftComponentType');
-const httpsService = require('$/service/http-service');
-const {OsnManager} = require('$/osn-manager');
-const util = require('$/util')
+const httpsService = require('../../../service/http/http-service');
+const {OsnManager} = require('../../../osn-manager');
+const util = require('../../../util')
 const ctUtils = require('../component-manager-utils')
 
 class RaftComponentType {

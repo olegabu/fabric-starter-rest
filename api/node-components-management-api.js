@@ -1,14 +1,16 @@
 const os = require('os');
 const _ = require('lodash');
 const multer = require('multer');
-const asyncMiddleware = require('$/api/async-middleware-error-handler');
-const mspManager = require('$/service/msp/msp-manager');
-const cfg = require('$/config.js');
-const Org = require('$/model/Org')
-const Enroll = require('$/model/Enroll')
+const asyncMiddleware = require('../api/async-middleware-error-handler');
+const mspManager = require('../service/msp/msp-manager');
+const cfg = require('../config.js');
+const logger = cfg.log4js.getLogger('node-components-management-api');
+const Org = require('../model/Org')
+const Enroll = require('../model/Enroll')
 const Bootstrap = require("../model/Bootstrap");
 const ModelParser = require("../model/ModelParser");
 const Component = require("../model/Component");
+const Files = require("../model/Files");
 
 const uploadDir = os.tmpdir() || './upload';
 const upload = multer({dest: uploadDir});
@@ -58,15 +60,14 @@ module.exports = function (app, server, nodeComponentsManager) {
 
         // let s = req.files['file'][0].originalname.substring(0, req.files['file'][0].originalname.length - 4);
         // let filePath = req.files['file'][0].path;
-
-
+        logger.debug('\nPOST /node/components', req.body, req.files)
         const {org, enroll} = parseOrg(req.body.org)
         const bootstrap = parseBootstrap(req.body.org) //todo: use req.body.bootstrap
         const components = parseTopology(req.body.components, req.files)
         let result = await nodeComponentsManager.deployTopology(org, enroll, bootstrap, components, res);
 
 
-        // res.json(result)
+        res.end()
     }))
 
     function parseOrg(reqObj) {
@@ -86,13 +87,11 @@ module.exports = function (app, server, nodeComponentsManager) {
         }
         reqComponentsArray = ModelParser.toJson(reqComponentsArray);
 
-        const components = _.map(reqComponentsArray, cmp=>ModelParser.fromHttp(cmp, Component))
-        if (files && files.length) {
-            components.forEach(ro => {
-                const compFiles = files.filter(f => f.fieldname === 'file_' + _.get(ro,'values.name'))
-                ro.files = compFiles;
-            })
-        }
+        const components = _.map(reqComponentsArray, cmp => {
+            _.filter(files, f => f.fieldname === Files.componentFileName(cmp))
+            const component = ModelParser.fromHttp(cmp, Component, files)
+            return component
+        })
         return components
     }
 

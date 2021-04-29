@@ -1,15 +1,21 @@
 const fs = require('fs-extra');
 const path = require('path');
-const stream = require('stream');
+const stream  = require('stream');
 const _ = require('lodash');
 const ConcatStream = require('stream3-concat');
-const fabricCLI = require('$/fabric-cli');
-const ctUtils= require('../component-manager-utils')
-const cfg = require('$/config.js');
-const util = require('$/util');
-const archives = require('$/service/archive-manager');
+const fabricCLI = require('../../../fabric-cli');
+const ctUtils = require('../component-manager-utils')
+const cfg = require('../../../config.js');
+const logger = cfg.log4js.getLogger('PeerComponentType');
+const util = require('../../../util');
+const archives = require('../../../service/archive-manager');
 const Org = require("../../../model/Org");
-const {OsnManager} = require('$/osn-manager');
+const {OsnManager} = require('../../../osn-manager');
+const remoteComponentRequest = require('../RemoteComponentRequest');
+const mspManager = require('../../../service/msp/msp-manager');
+const Files = require("../../../model/Files");
+const Component = require("../../../model/Component");
+
 
 class PeerComponentType {
 
@@ -30,17 +36,35 @@ class PeerComponentType {
         });
         await this.fabricStarterRuntime.setOrg(Org.fromConfig(cfg))//TODO: check if org is changed
 
+        var stream = require('stream');
+        var util = require('util');
+
+        function DelayedStream(){//todo
+            stream.Readable.call(this);
+        }
+        util.inherits(DelayedStream, stream.Readable);
+
+        DelayedStream.prototype._read = function(obj){
+            // setTimeout(()=>{
+            //     this.push(null)
+            // }, 15000)
+        };
+        const delayedStream = new DelayedStream();
+
+        const postInstallContainerName = `post-install.${cfg.peerName}.${cfg.org}.${cfg.domain}`;
 
         function waitLogStream(combinedStream, count) {
             try {
-                count>0 && setTimeout(() => {
-                    cmd = `docker logs post-install.${cfg.peerName}.${cfg.org}.${cfg.domain}`
+                count > 0 && setTimeout(() => {
+                    cmd = `docker logs ${postInstallContainerName}`
                     let shellResult = fabricCLI.execShellCommand(cmd, cfg.YAMLS_DIR, env);
                     if (!shellResult.isError()) {
                         let logResult = fabricCLI.execShellCommand(`${cmd} -f`, cfg.YAMLS_DIR, env, () => {});
                         combinedStream.add(logResult)
-                    } else
+                        combinedStream.remove(delayedStream)
+                    } else {
                         waitLogStream(combinedStream, count--)
+                    }
                 }, 1000)
             } catch (e) {
                 logger.debug('Command failed:', cmd, e)
@@ -48,6 +72,7 @@ class PeerComponentType {
         }
 
         const result = new ConcatStream([upResult]);
+        result.add(delayedStream)
 
         waitLogStream(result, 20)
 
@@ -60,15 +85,15 @@ class PeerComponentType {
 
     async deployLocalJoined(org, bootstrap, component, env) {
         return this.deployLocalPrimary(org, bootstrap, component, env)
-/*
-        env = ctUtils.envWithDockerComposeProjectName(env, cfg.org)
-        let cmd = `docker-compose -f docker-compose.yaml -f docker-compose-couchdb.yaml -f docker-compose-ldap.yaml ${cfg.DOCKER_COMPOSE_EXTRA_ARGS} up `
-            + ` -d --force-recreate --no-deps pre-install ca tlsca www.local ldap-service ldapadmin couchdb.peer peer cli.peer post-install `;//www.peer
-        let result = fabricCLI.execShellCommand(cmd, cfg.YAMLS_DIR, env);
-        await util.sleep(4000)
-        await this.fabricStarterRuntime.setOrg(Org.fromConfig(cfg))//TODO: check if org is changed
-        return result;
-*/
+        /*
+                env = ctUtils.envWithDockerComposeProjectName(env, cfg.org)
+                let cmd = `docker-compose -f docker-compose.yaml -f docker-compose-couchdb.yaml -f docker-compose-ldap.yaml ${cfg.DOCKER_COMPOSE_EXTRA_ARGS} up `
+                    + ` -d --force-recreate --no-deps pre-install ca tlsca www.local ldap-service ldapadmin couchdb.peer peer cli.peer post-install `;//www.peer
+                let result = fabricCLI.execShellCommand(cmd, cfg.YAMLS_DIR, env);
+                await util.sleep(4000)
+                await this.fabricStarterRuntime.setOrg(Org.fromConfig(cfg))//TODO: check if org is changed
+                return result;
+        */
     }
 
     async deployLocalSecondaryJoined(org, bootstrap, component, env) {
@@ -77,6 +102,7 @@ class PeerComponentType {
 
     async deployLocal(org, bootstrap, component, env) {
 
+        logger.debug('Deploying component', component)
         let ordererDomain = OsnManager.constructOrdererDomain(org, bootstrap)
         const componentName = _.get(component, 'values.name')
         const peerPort = _.get(component, 'values.peerPort')
@@ -95,14 +121,19 @@ class PeerComponentType {
 
         await this.fabricStarterRuntime.setOrg(Org.fromConfig(cfg))//TODO: check if org is changed
 
-        _.assign(localEnv, {CAS:`ca.${cfg.org}.${cfg.domain}:7054`, PEER_NAME: componentName, PEER0_PORT: peerPort,
-            CORE_PEER_ADDRESS:`${componentName}.${org.orgId}.${org.domain}`}) //TODO: PEER0_PORT is to be renamed
+        _.assign(localEnv, {
+            CAS: `ca.${cfg.org}.${cfg.domain}:7054`, PEER_NAME: componentName, PEER0_PORT: peerPort,
+            CORE_PEER_ADDRESS: `${componentName}.${org.orgId}.${org.domain}`
+        }) //TODO: PEER0_PORT is to be renamed
 
         const defaultFabricStarterClient = this.fabricStarterRuntime.getDefaultFabricStarterClient();
         let enrollAdmin = await defaultFabricStarterClient.enroll('admin', cfg.enrollSecret);
         let adminMSPDir = path.join(cfg.ORG_CRYPTO_DIR, 'users', `Admin@${org.orgId}.${org.domain}`, 'msp');
         await fs.emptyDir(path.join(adminMSPDir, 'keystore'))
-        await fs.outputFile(path.join(adminMSPDir, 'keystore', `${enrollAdmin.key.getSKI()}_sk`), enrollAdmin.key.toBytes(), {mode: 0o100400, encoding: 'binary'})
+        await fs.outputFile(path.join(adminMSPDir, 'keystore', `${enrollAdmin.key.getSKI()}_sk`), enrollAdmin.key.toBytes(), {
+            mode: 0o100400,
+            encoding: 'binary'
+        })
         await fs.emptyDir(path.join(adminMSPDir, 'signcerts'))
         await fs.outputFile(path.join(adminMSPDir, 'signcerts', `Admin@${org.orgId}.${org.domain}-cert.pem`), enrollAdmin.certificate, {encoding: 'binary'})
 
@@ -110,7 +141,7 @@ class PeerComponentType {
 
 
         let subjectName = `${componentName}.${cfg.org}.${cfg.domain}`;
-        const peerDir= path.join(cfg.ORG_CRYPTO_DIR, 'peers', subjectName)
+        const peerDir = path.join(cfg.ORG_CRYPTO_DIR, 'peers', subjectName)
         const tlsFabricStarterClient = this.fabricStarterRuntime.getTLSFabricStarterClient();
         try {
             await tlsFabricStarterClient.register(subjectName, cfg.enrollSecret, cfg.org, 'peer')
@@ -124,7 +155,7 @@ class PeerComponentType {
         await fs.outputFile(path.join(tlsDir, 'server.crt'), enroll.certificate, {encoding: 'binary'})
         await fs.outputFile(path.join(tlsDir, 'server.key'), enroll.key.toBytes(), {mode: 0o100400, encoding: 'binary'})
 
-        try{
+        try {
             await defaultFabricStarterClient.register(subjectName, cfg.enrollSecret, cfg.org, 'peer')
         } catch (e) {
             console.log(e)
@@ -138,7 +169,10 @@ class PeerComponentType {
 
         let keystoreDir = path.join(peerDir, 'msp', 'keystore');
         await fs.emptyDir(keystoreDir)
-        await fs.outputFile(path.join(keystoreDir, `${enroll.key.getSKI()}_sk`), enroll.key.toBytes(), {mode: 0o100400, encoding: 'binary'})
+        await fs.outputFile(path.join(keystoreDir, `${enroll.key.getSKI()}_sk`), enroll.key.toBytes(), {
+            mode: 0o100400,
+            encoding: 'binary'
+        })
 
         let peerAdminDir = path.join(peerDir, 'msp', 'admincerts');
         await fs.emptyDir(peerAdminDir)
@@ -147,35 +181,43 @@ class PeerComponentType {
 
         let cmd = `docker-compose -f docker-compose.yaml -f docker-compose-couchdb.yaml ${cfg.DOCKER_COMPOSE_EXTRA_ARGS} up `
             + ` -d --force-recreate --no-deps pre-install www.local couchdb.peer peer cli.peer post-install `;//www.peer
-        let result = fabricCLI.execShellCommand(cmd, cfg.YAMLS_DIR, localEnv, ()=>{});
+        let result = fabricCLI.execShellCommand(cmd, cfg.YAMLS_DIR, localEnv, () => {
+        });
         return result;
 
-/*        let peerResult = this.startPeerWithDockerCompose(env);
-        await util.sleep(6000)
-        await this.fabricStarterRuntime.tryInitRuntime(Org.fromConfig(cfg))
+        /*        let peerResult = this.startPeerWithDockerCompose(env);
+                await util.sleep(6000)
+                await this.fabricStarterRuntime.tryInitRuntime(Org.fromConfig(cfg))
 
-        return {
-            'www orderer': resultWww, 'integration request': configBlockStream, 'dns record': dnsResult,
-            'start orderer': resultOrderer, 'start peer': peerResult
-        };*/
+                return {
+                    'www orderer': resultWww, 'integration request': configBlockStream, 'dns record': dnsResult,
+                    'start orderer': resultOrderer, 'start peer': peerResult
+                };*/
     }
-
 
 
     async deployRemote(org, bootstrap, component, env) {
 
-        env = ctUtils.envWithDockerComposeProjectName(env, cfg.org)
-
-        let cmd = `docker-compose -f docker-compose.yaml -f docker-compose-couchdb.yaml ${cfg.DOCKER_COMPOSE_EXTRA_ARGS} up `
-            + ` -d --force-recreate --no-deps pre-install www.local couchdb.peer peer cli.peer post-install `;//www.peer
-        let result = fabricCLI.execShellCommand(cmd, cfg.YAMLS_DIR, env);
-        return result;
+        const remoteOrg = Org.fromOrg(org, {peerName: _.get(component, 'name')})
+        component = await this.attachMspFileIfAbsent(component);
+        return await remoteComponentRequest.requestRemoteComponentDeployment(remoteOrg, component)
     }
 
     isMasterHost(org) {
         return _.isEqual(org.orgIp, _.get(org, 'masterIp', org.orgIp));
     }
 
+    async attachMspFileIfAbsent(component) {
+        if (_.isEmpty(_.get(component, 'files'))) {
+            const mspPackageStream = mspManager.packOrgPeerMsp();
+            component = Component.fromComponent(component, null, [{
+                fieldname: Files.componentFileName(component),
+                filename: 'msp.tgz',
+                stream: mspPackageStream
+            }])
+        }
+        return component;
+    }
 }
 
 
