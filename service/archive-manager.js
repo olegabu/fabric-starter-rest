@@ -86,6 +86,9 @@ class ArchiveManager {
         const extractTarStream = this.extractTarTransform(uploadedFile.path, transform );
 
         return await this.extractStream(extractTarStream, '.tgz', extractPath)
+
+        //TODO: delete uploaded file ??
+
         // return await this.extract(uploadedFile.path, uploadedFile.originalname, extractPath)
     }
 
@@ -102,47 +105,52 @@ class ArchiveManager {
             })).pipe(tt.pack({gzip: true}))
     }
 
-    async extract(sourcePath, sourceFileName, extractPath) {
+    async extract(sourceFile, sourceFileName, extractPath, deleteSourceFile) {
         let archiveType = path.extname(sourceFileName) || ".zip";
         logger.debug(`Extracting archive: ${sourceFileName}`, archiveType)
-        const readStream = fse.createReadStream(sourcePath);
+        const readStream = fse.createReadStream(sourceFile);
 
-        const resultStream = await this.extractStream(readStream, archiveType, extractPath, sourcePath)
+        const resultStream = await this.extractStream(readStream, archiveType, extractPath, sourceFile)
         resultStream.on('close', async function () { //TODO: this does not work
-            logger.debug(`Extracting archive finished: ${sourceFileName}`)
-            unlinkFile(sourcePath);
+            logger.debug(`Extracting archive finished: ${sourceFileName}, Deleting source file: ${!!deleteSourceFile}`)
+            if (deleteSourceFile) {
+                unlinkFile(sourceFile);
+            }
         })
         resultStream.on('error', async function (err) {
-            logger.debug(`Extracting archive error: ${sourceFileName}`, err)
-            unlinkFile(sourcePath);
+            logger.debug(`Extracting archive error: ${sourceFileName}, Deleting source file: ${!!deleteSourceFile}`, err)
+            if (deleteSourceFile) {
+                unlinkFile(sourceFile);
+            }
             // reject();
         })
         return extractPath
     }
 
-    extractStream(readStream, archiveType='.zip', extractPath, sourcePath) {//TODO: unlink source in a caller
+    async extractStream(readStream, archiveType='.zip', extractPath, sourceFile) {//TODO: unlink source in a caller
         let extractor = ARCHIVES_EXTRACTOR[archiveType];
-        return new Promise((resolve, reject) => {
+        return new Promise(async (resolve, reject) => {
             logger.debug(`Extracting stream: `, extractor)
-            return fse.emptyDir(extractPath).then(() => {
-                try {
-                    let outStream = extractor.extractionOutStream(extractPath);
-                    const pipe = readStream.pipe(outStream); //TODO: check if folder inside zip have different name
-                    pipe.on('close', async function () {
-                        logger.debug(`Extracting stream finished`)
-                        sourcePath && unlinkFile(sourcePath);
-                        resolve(outStream);
-                    });
-                    pipe.on('error', async function (err) {
-                        logger.debug(`Extracting stream error:`, err)
-                        sourcePath && unlinkFile(sourcePath);
-                        reject();
-                    })
-                } catch (e) {
+            if (!sourceFile || path.normalize(path.dirname(sourceFile)) !== path.normalize(extractPath)) {
+                await fse.emptyDir(extractPath)
+            }
+            try {
+                let outStream = extractor.extractionOutStream(extractPath);
+                const pipe = readStream.pipe(outStream); //TODO: check if folder inside zip have different name
+                pipe.on('close', async function () {
+                    logger.debug(`Extracting stream finished`)
+                    // sourceFile && unlinkFile(sourceFile); //TODO: is deleted in extract(); check
+                    resolve(outStream);
+                });
+                pipe.on('error', async function (err) {
+                    logger.debug(`Extracting stream error:`, err)
+                    // sourceFile && unlinkFile(sourceFile);
+                    reject();
+                })
+            } catch (e) {
                     reject(e);
                 }
             })
-        })
     }
 
     gzip(sourcePath, filter, targetFileName) {

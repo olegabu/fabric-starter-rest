@@ -27,7 +27,6 @@
     "channel.js": "0.0.2",
     "chmod-plus": "0.0.3",
     "cors": "^2.8.5",
-    "docker-compose": "^0.23.5",
     "enumify": "^1.0.4",
     "envsub": "^3.1.0",
     "express": "^4.17.1",
@@ -64,6 +63,7 @@
   },
   "devDependencies": {
     "cucumber": "^6.0.5",
+    "docker-compose": "^0.23.10",
     "express-swagger-generator": "^1.1.15",
     "jest": "^25.5.4",
     "mocha": "^7.2.0",

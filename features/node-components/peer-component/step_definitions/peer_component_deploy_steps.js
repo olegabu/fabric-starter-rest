@@ -6,16 +6,16 @@ Given('Org name is {string}, domain is {string}, primary host is {string}', func
     return 'pending';
 });
 
-Given('Primary Orderer is running on {string}', function (ordererAddr) {
+Given('Primary Orderer is running on {string} host', function (ordererAddr) {
 
 });
 
-Given('FabricCA is running on {string}', function (string) {
+Given('FabricCA is running on {string} host', function (string) {
     // Write code here that turns the phrase above into concrete actions
     return 'pending';
 });
 
-Given('Primary node is running on {string}', function (string) {
+Given('Primary node is running on {string} host', function (string) {
     // Write code here that turns the phrase above into concrete actions
     return 'pending';
 });
