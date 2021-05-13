@@ -24,10 +24,10 @@ class NodeComponentsManager {
 
     constructor(fabricStarterRuntime) {
         this.fabricStarterRuntime = fabricStarterRuntime
-        COMPONENT_TYPE['RAFT3']=new Raft3ComponentType(fabricStarterRuntime)
-        COMPONENT_TYPE['RAFT']=new RaftComponentType(fabricStarterRuntime)
-        COMPONENT_TYPE['FabricCA']=new FabricCAComponentType(fabricStarterRuntime)
-        COMPONENT_TYPE['PEER']=new PeerComponentType(fabricStarterRuntime)
+        COMPONENT_TYPE['RAFT3'] = new Raft3ComponentType(fabricStarterRuntime)
+        COMPONENT_TYPE['RAFT'] = new RaftComponentType(fabricStarterRuntime)
+        COMPONENT_TYPE['FabricCA'] = new FabricCAComponentType(fabricStarterRuntime)
+        COMPONENT_TYPE['PEER'] = new PeerComponentType(fabricStarterRuntime)
     }
 
     saveOrgConfig(org, bootstrap, enroll) {
@@ -50,32 +50,36 @@ class NodeComponentsManager {
         res.setHeader('Transfer-Encoding', 'chunked')
 
         await async.eachSeries(topology, async component => {
-            const componentType = COMPONENT_TYPE[_.get(component, 'componentType')];
-            if (componentType) {
-                const stdout = await componentDeployer.deploy(org, bootstrap, component, componentType)//TODO: pass callback or res
-                await new Promise((resolve, reject)=>{
-                    if (!stdout) {
-                        return resolve()
-                    }
-                    stdout.on('data', data=>{
-                        try {
-                            res.write(data)
-                        } catch (e) {
-                            logger.debug('Error writing chunk', e)
-                            reject(e)
-                        }
-                    })
-                    stdout.once('end', ()=>{
-                        // logger.debug('\n\n\n\n END \n\n\n\n')
-                        resolve()
-                    })
-                })
-                /*if (this.isTargetSameHost(org, component)) {
-                    await componentType.deployLocal(org, bootstrap, component)
-                } else {
-                    await componentType.deployRemote(org, bootstrap, component)
-                }*/
+            const componentTypeName = _.get(component, 'componentType');
+            const componentType = COMPONENT_TYPE[componentTypeName];
+            if (!componentType) {
+                logger.info(`ComponentType not found: ${componentTypeName}.`)
+                return
             }
+            const stdout = await componentDeployer.deploy(org, bootstrap, component, componentType)//TODO: pass callback or res
+            await new Promise((resolve, reject) => {
+                if (!stdout) {
+                    return resolve()
+                }
+                stdout.on('data', data => {
+                    try {
+                        res.write(data)
+                    } catch (e) {
+                        logger.debug('Error writing chunk', e)
+                        reject(e)
+                    }
+                })
+                stdout.once('end', () => {
+                    // logger.debug('\n\n\n\n END \n\n\n\n')
+                    resolve()
+                })
+            })
+            /*if (this.isTargetSameHost(org, component)) {
+                await componentType.deployLocal(org, bootstrap, component)
+            } else {
+                await componentType.deployRemote(org, bootstrap, component)
+            }*/
+
             await util.sleep(4000);
         })
         // res.end()
@@ -94,6 +98,7 @@ class NodeComponentsManager {
         const componentIp = _.get(component, 'values.componentIp');
         return _.isEmpty(componentIp) || _.isEqual(orgIp, componentIp);
     }
+
     async startupNode(env) {
         if (_.get(env, 'ORDERER_NAME')) cfg.setOrdererName(env.ORDERER_NAME)
         if (_.get(env, 'ORDERER_DOMAIN')) cfg.setOrdererDomain(env.ORDERER_DOMAIN)
@@ -191,7 +196,6 @@ class NodeComponentsManager {
         let result = fabricCLI.execShellCommand(cmd, cfg.YAMLS_DIR, env);
         return result;
     }
-
 
 
     deleteContainers(containersList, env) {

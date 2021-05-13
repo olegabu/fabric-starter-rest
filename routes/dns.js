@@ -46,7 +46,7 @@ module.exports = async (app, _fabricStarterClient, eventBus) => {
 
 
     setInterval(async () => {
-        logger.info(`periodically query every ${period} msec for dns entries and update /etc/hosts`);
+        logger.info(`periodically query every ${period} msec for dns entries and update /etc/hosts, ${username}, ${password}`);
         try {
             await processEvent();
         } catch (e) {

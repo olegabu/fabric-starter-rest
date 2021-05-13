@@ -4,7 +4,7 @@
   "description": "rest api server and client for hyperledger fabric built with nodejs sdk",
   "main": "fabric-starter-client.js",
   "scripts": {
-    "test": "cucumber-js",
+    "test": "PORT=4000 cucumber-js",
     "test-jest": "DISCOVER_AS_LOCALHOST=true jest",
     "test-mocha": "DISCOVER_AS_LOCALHOST=true mocha",
     "dev": "./start-dev.sh",

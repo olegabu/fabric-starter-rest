@@ -8,13 +8,14 @@ const FabricStarterRuntime = require('./service/context/fabric-starter-runtime')
 const NodeComponentsManager = require('./service/nodecomponents/node-components-manager');
 const Org = require("./model/Org");
 
+let server;
 
 (async function () {
 
     const app = initAppExpress();
-    const server = startHttpAppServer(app);
+    server = startHttpAppServer(app);
     initStaticApi(app, server);
-    
+
     const fabricStarterRuntime = new FabricStarterRuntime(app, server)
     const nodeComponentsManager = new NodeComponentsManager(fabricStarterRuntime)
     initManagementApi(app, server, nodeComponentsManager)
@@ -51,4 +52,12 @@ function initStaticApi(app, server) {
 
 function initManagementApi(app, server, nodeComponentsManager) {
     require('./api/node-components-management-api')(app, server, nodeComponentsManager);
+}
+
+function stopServer() {
+    server && server.close()
+}
+
+module.exports = {
+    stopServer: stopServer
 }
