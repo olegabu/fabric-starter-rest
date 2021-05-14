@@ -181,3 +181,11 @@ services:
     #      - ${FABRIC_STARTER_HOME:-.}/container-scripts:/etc/hyperledger/container-scripts # for local debug
     command: sh -c 'npm start'
 
+
+  host-dns-helper:
+    image: ${DOCKER_REGISTRY:-docker.io}/olegabu/fabric-starter-rest:${FABRIC_STARTER_VERSION:-baas-test}
+    volumes:
+      - ${FABRIC_STARTER_HOME:-.}/crypto-config/hosts:/etc/common_hosts
+    extra_hosts:
+      - "peer2.org1.example.test:host-gateway"
+    command: sh -c "cat /etc/hosts | grep host.docker.internal >> /etc/common_hosts"
