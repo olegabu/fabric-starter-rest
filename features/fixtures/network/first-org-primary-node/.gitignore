@@ -1,6 +1,7 @@
 ledger/orderer/etcdraft/**/*.tmp
 ledger/orderer/etcdraft/**/*.wal
 
+crypto-config
 ledger
 webapp
 appstore

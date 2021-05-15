@@ -183,9 +183,10 @@ services:
 
 
   host-dns-helper:
+    container_name: host-dns-helper
     image: ${DOCKER_REGISTRY:-docker.io}/olegabu/fabric-starter-rest:${FABRIC_STARTER_VERSION:-baas-test}
     volumes:
       - ${FABRIC_STARTER_HOME:-.}/crypto-config/hosts:/etc/common_hosts
     extra_hosts:
-      - "peer2.org1.example.test:host-gateway"
-    command: sh -c "cat /etc/hosts | grep host.docker.internal >> /etc/common_hosts"
+      - "component-ip-addr:host-gateway"
+    command: sh -c "truncate --size 0 /etc/common_hosts; cat /etc/hosts | grep component-ip-addr >> /etc/common_hosts;"

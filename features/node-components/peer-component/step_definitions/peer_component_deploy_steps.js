@@ -5,15 +5,7 @@ const NodeComponentsManager = require('../../../../service/nodecomponents/node-c
 const {Given, When, Then, BeforeAll, AfterAll} = require('cucumber');
 const httpService = require('../../../../service/http/http-service');
 
-const org = {
-    "orgId": "org1",
-    "domain": "example.test",
-    "orgIp": "-",
-    "masterIp": "-",
-    "peer0Port": "17051",
-    "peerName": "peer0",
-    "enrollSecret": "adminpw",
-}
+
 
 let app;
 BeforeAll(async function () {
@@ -25,7 +17,15 @@ AfterAll(function () {
 })
 
 Given('On primary node org is configured with orgIp=primaryIp={string}', function (primaryIp) {
-    this.org = _.assign(org, {orgIp: primaryIp, masterIp: primaryIp})
+    this.org = {
+        "orgId": "org1",
+        "domain": "example.test",
+        "orgIp": primaryIp,
+        "masterIp": primaryIp,
+        "peer0Port": "17051",
+        "peerName": "peer0",
+        "enrollSecret": "adminpw",
+    }
     return 'success';
 });
 

@@ -11,7 +11,7 @@ Feature: Peer component deployment
     User can deploy another peer for same org on a new (secondary) node in remote mode
     Given On primary node org is configured with orgIp=primaryIp="primary"
 
-    When User configures topology for component peer "peer2" and componentIp="172.17.0.1"
+    When User configures topology for component peer "peer2" and componentIp="component-ip-addr"
     And  User makes POST /node/components request to primary node API agent
 
     Then Peer "peer2" is enrolled to CA
