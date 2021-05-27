@@ -6,7 +6,6 @@ const {Given, When, Then, BeforeAll, AfterAll} = require('cucumber');
 const httpService = require('../../../../service/http/http-service');
 
 
-
 let app;
 BeforeAll(async function () {
     app = require('../../../../app')
@@ -25,6 +24,7 @@ Given('On primary node org is configured with orgIp=primaryIp={string}', functio
         "peer0Port": "17051",
         "peerName": "peer0",
         "enrollSecret": "adminpw",
+        "ordererIp": '127.0.0.1'
     }
     return 'success';
 });
@@ -51,10 +51,11 @@ When('User configures topology for component peer {string} and componentIp={stri
 When('User makes POST \\/node\\/components request to primary node API agent', async function () {
 
 
-        const response = await httpService.postMultipart('http://localhost:14000/node/components', {
-            org: this.org,
+        const fields = {
+            org: JSON.stringify(this.org),
             components: JSON.stringify([this.peerComponent])
-        })
+        };
+        const response = await httpService.postMultipart('http://localhost:14000/node/components', fields)
         return 'pending';
     }
 );

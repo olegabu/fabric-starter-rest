@@ -1,16 +1,15 @@
 const fs = require('fs-extra')
 const path = require('path')
+const _ = require('lodash')
 const {Given, When, Then, } = require('cucumber');
 const composeUtil = require('../../lib/docker-compose')
 const archiverManager = require('../../../service/archive-manager')
 
 
-
-Given('first-org-primary-node org1.example.test is up', {timeout: 10 * 1000}, async function () {
+Given('first-org-primary-node org1.example.test is up', {timeout: 15 * 1000}, async function () {
     const fixtureDir = path.join(__dirname, 'first-org-primary-node');
     await unzipRaftWALFiles(fixtureDir)
-    await composeUtil.upAllInWorkDir(fixtureDir, {commandOptions: ['--force-recreate']})
-
+    await composeUtil.upServicesInWorkDir(fixtureDir, _.split(process.env.PRIMARY_NODE_SERVICES, ','),{commandOptions: ['--force-recreate']})
     return 'success';
 })
 

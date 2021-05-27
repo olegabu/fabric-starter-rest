@@ -116,7 +116,7 @@ class PeerComponentType {
             if (!_.isEmpty(component.files)) {
                 await archives.extractUploadedArchive(component.files[0], cfg.ORG_CRYPTO_DIR, name => _.split(name, 'peer0').join(cfg.peerName)) //TODO: use master peerName
             }
-            await fabricCLI.downloadOrdererMSP('orderer', ordererDomain)//TODO: pass orderer in component config
+            await fabricCLI.downloadOrdererMSP('orderer', ordererDomain, org.ordererWwwPort, org.ordererIp)//TODO: pass orderer in component config
         }
 
         await this.fabricStarterRuntime.setOrg(Org.fromConfig(cfg))//TODO: check if org is changed
@@ -198,7 +198,7 @@ class PeerComponentType {
 
     async deployRemote(org, bootstrap, component, env) {
 
-        const remoteOrg = Org.fromOrg(org, {peerName: _.get(component, 'name')})
+        const remoteOrg = Org.fromOrg(org, {peerName: _.get(component, 'name')}) //TODO: pass ordererName\Domain ?
         component = await this.attachMspFileIfAbsent(component);
         return await remoteComponentRequest.requestRemoteComponentDeployment(remoteOrg, component)
     }

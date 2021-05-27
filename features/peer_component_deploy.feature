@@ -7,7 +7,7 @@ Feature: Peer component deployment
   Background: Remote Main node "org1.example.test" is started (orderer, peer, api).
     Given first-org-primary-node org1.example.test is up
 
-  Scenario: Second peer deployment on remote secondary node.
+  Scenario: Second peer for existing org deployment on remote secondary node.
     User can deploy another peer for same org on a new (secondary) node in remote mode
     Given On primary node org is configured with orgIp=primaryIp="primary"
 

@@ -64,6 +64,8 @@ services:
     command: peer node start
     container_name: ${PEER_NAME:-peer0}.${ORG:-org1}.${DOMAIN:-example.com}
     restart: always
+    ports:
+      - ${PEER0_PORT:-7051}:${PEER0_PORT:-7051}
     environment:
       - CORE_PEER_ID=${PEER_NAME:-peer0}.${ORG:-org1}.${DOMAIN:-example.com}
       - CORE_PEER_LOCALMSPID=${ORG:-org1}
@@ -190,3 +192,25 @@ services:
     extra_hosts:
       - "component-ip-addr:host-gateway"
     command: sh -c "truncate --size 0 /etc/common_hosts; cat /etc/hosts | grep component-ip-addr >> /etc/common_hosts;"
+
+
+  www.peer:
+    container_name: www.peer
+    image: ${DOCKER_REGISTRY:-docker.io}/nginx
+    restart: always
+    environment:
+      - ORG=${ORG:-org1}
+      - DOMAIN=${DOMAIN:-example.com}
+      - NGINX_ENVSUBST_TEMPLATE_DIR=/etc/nginx/templates/http
+    depends_on:
+      - pre-install
+    logging:
+      options:
+        max-size: "${LOG_FILES_MAX_SIZE:-10m}"
+        max-file: "1"
+    volumes:
+      - ${FABRIC_STARTER_HOME:-.}/crypto-config/node-certs:/usr/share/nginx/html/node-certs:ro
+      - ${FABRIC_STARTER_HOME:-.}/crypto-config/peerOrganizations/${ORG:-org1}.${DOMAIN:-example.com}/msp:/usr/share/nginx/html/msp:ro
+      - ${FABRIC_STARTER_HOME:-.}/crypto-config/node-certs/${ORG:-org1}.${DOMAIN:-example.com}/msp/well-known:/usr/share/nginx/html/.well-known:ro
+      - nginx_templates:/etc/nginx/templates
+      - admin_app:/usr/src/app/admin

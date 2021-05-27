@@ -20,11 +20,11 @@ jest.mock('../../http/FormDataFactory', () => {
 
 const TEST_REMOTE_PROTOCOL = 'http'
 const TEST_REMOTE_HOST = 'remotehost'
-const TEST_REMOTE_PORT = 4443
+const TEST_REMOTE_COMMUNICATION_PORT = 4443
 
 test('deploy remote component request', async () => {
 
-    const scope = nock(`${TEST_REMOTE_PROTOCOL}://${TEST_REMOTE_HOST}:${TEST_REMOTE_PORT}`)
+    const scope = nock(`${TEST_REMOTE_PROTOCOL}://${TEST_REMOTE_HOST}:${TEST_REMOTE_COMMUNICATION_PORT}`)
         .matchHeader('content-type', /^multipart\/form-data;.*/)
         .post('/node/components', body => {
             checkMultipartData(body, 'form-data; name="org"');
@@ -39,7 +39,7 @@ test('deploy remote component request', async () => {
             name: 'peer0',
             componentType: 'PEER',
             componentIp: TEST_REMOTE_HOST,
-            externalPort: TEST_REMOTE_PORT,
+            externalPort: TEST_REMOTE_COMMUNICATION_PORT,
             communicationProtocol: TEST_REMOTE_PROTOCOL,
             componentName: 'peer0.org1.example.com'
         },

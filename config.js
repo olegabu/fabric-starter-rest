@@ -17,7 +17,7 @@ const ordererBatchTimeout = process.env.ORDERER_BATCH_TIMEOUT || '2';
 
 const systemChannelId = process.env.SYSTEM_CHANNEL_ID || "orderer-system-channel";
 
-const NODE_CONFIG_FILE = 'node-config.json'
+const NODE_CONFIG_FILE = `node-config${process.env.DEBUG_INSTANCE && '-' + process.env.DEBUG_INSTANCE}.json`
 const persistedConfig = fs.readJsonSync(NODE_CONFIG_FILE, {throws: false}) || {}
 
 module.exports = {
@@ -40,7 +40,7 @@ module.exports = {
 
     WEBAPPS_DIR: process.env.WEBAPPS_DIR || "webapps",
     MIDDLWARE_DIR: process.env.MIDDLWARE_DIR || "./routes",
-    APPSTORE_DIR: process.env.APPSTORE || "./appstore",
+    APPSTORE_DIR: process.env.APPSTORE_DIR || "./appstore",
 
     UI_LISTEN_BLOCK_OPTS: process.env.UI_LISTEN_BLOCK_OPTS === "true" || process.env.UI_LISTEN_BLOCK_OPTS,
 

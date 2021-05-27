@@ -29,31 +29,48 @@ const dnsLookup = nodeUtil.promisify(dns.lookup)
 
 class FabricCLI {
 
-    async downloadCerts(orgName, domain, server, nameDomain , wwwPort) {
+    async downloadCerts(orgName, domain, server, nameDomain, wwwPort, wwwIp) {
         // const orgDomain = orgName ? `${orgName}.${domain}` : domain;
-        let wwwHost = `www.${server}`;
+
+        let wwwHost = wwwIp
 
         try {
-            let dnsInfo = await dnsLookup(wwwHost, 4);
-            const wwwIp = dnsInfo.address
+            if (!wwwIp) {
+                wwwHost = `www.${server}`;
+                let dnsInfo = await dnsLookup(wwwHost, 4);
+                wwwIp = dnsInfo.address
+            }
 
-            if (!_.isEqual(wwwIp, cfg.myIp) && !_.startsWith(wwwIp, '172')) {
+
+/*            if (!_.isEqual(wwwIp, cfg.myIp) && !_.startsWith(wwwIp, '172')) {
                 wwwPort = wwwPort || 80;
                 await util.checkRemotePort(wwwHost, wwwPort); //TODO: same host orderer port is not available when in docker
                 certsManager.forEachCertificate(orgName, domain,
                     (certificateSubDir, fullCertificateDirectoryPath, certificateFileName, directoryPrefixConfig) => {
                         shell.exec(`/usr/bin/wget ${WGET_OPTS} --directory-prefix ${fullCertificateDirectoryPath} http://${wwwHost}:${wwwPort || 80}/node-certs/${nameDomain}/msp/${certificateSubDir}/${certificateFileName}`);
                     });
-            }
+            }*/
+
+            await this.downloadCertsFromWwwServer(orgName, domain, nameDomain, wwwIp, wwwPort)
         } catch(err) {
             logger.error(`Download certificates. Server not found ${wwwHost}`)
             throw new Error(`Download certificates. Server not found ${wwwHost}`)
         }
     }
 
+    async downloadCertsFromWwwServer(orgName, domain, nameDomain, wwwIp, wwwPort) {
+        if (!(_.isEqual(wwwIp, cfg.myIp) || _.startsWith(wwwIp, '172'))) {
+            wwwPort = wwwPort || 80;
+            await util.checkRemotePort(wwwIp, wwwPort); //TODO: same host orderer port is not available when in docker
+            certsManager.forEachCertificate(orgName, domain,
+                (certificateSubDir, fullCertificateDirectoryPath, certificateFileName, directoryPrefixConfig) => {
+                    shell.exec(`/usr/bin/wget ${WGET_OPTS} --directory-prefix ${fullCertificateDirectoryPath} http://${wwwIp}:${wwwPort}/node-certs/${nameDomain}/msp/${certificateSubDir}/${certificateFileName}`);
+                });
+        }
+    }
 
-    async downloadOrdererMSP(ordererName=cfg.ordererName, ordererDomain=cfg.ordererDomain, wwwPort = cfg.ordererWwwPort, ) {
-        await this.downloadCerts(null, ordererDomain, ordererDomain, `${ordererName}.${ordererDomain}`, wwwPort);
+    async downloadOrdererMSP(ordererName=cfg.ordererName, ordererDomain=cfg.ordererDomain, wwwPort = cfg.ordererWwwPort, ordererIp) {
+        await this.downloadCerts(null, ordererDomain, ordererDomain, `${ordererName}.${ordererDomain}`, wwwPort, ordererIp);
     }
 
     async downloadOrgMSP(orgObj, domain = cfg.domain) {

@@ -11,10 +11,11 @@ class Org {
         let org = {
             orgId: _.get(body, 'orgId'),
             orgIp: _.get(body, 'orgIp'),
+            masterIp: _.get(body, 'masterIp'),
+            ordererIp: _.get(body, 'ordererIp'),
             domain: _.get(body, 'domain', cfg.domain),
             peer0Port: _.get(body, 'peerPort', _.get(body, 'peer0Port')) || cfg.DEFAULT_PEER0PORT,
             wwwPort: _.get(body, 'wwwPort'),
-            masterIp: _.get(body, 'masterIp'),
             peerName: _.get(body, 'peerName')
         };
         logger.debug("Org from http", org)
@@ -29,7 +30,8 @@ class Org {
             peer0Port: cfg.peer0Port,
             peerName: cfg.peerName,
             masterIp: cfg.masterIp,
-            bootstrapIp: cfg.bootstrapIp
+            bootstrapIp: cfg.bootstrapIp,
+            ordererIp: cfg.ordererIp
         };
         logger.debug("Org from config", org)
         return org
