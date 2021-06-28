@@ -11,6 +11,12 @@ volumes:
   nginx_templates:
   admin_app:
 
+networks:
+  default:
+    external: false
+    name: fabric-starter_test
+
+
 x-ca:
   &ca-defaults
   image: ${DOCKER_REGISTRY:-docker.io}/hyperledger/fabric-ca:${FABRIC_VERSION:-1.4.8}
@@ -118,11 +124,11 @@ services:
       # the following setting starts chaincode containers on the same
       # bridge network as the peers
       # https://docs.docker.com/compose/networking/
-      - CORE_VM_DOCKER_HOSTCONFIG_NETWORKMODE=fabric-starter_default
+      - CORE_VM_DOCKER_HOSTCONFIG_NETWORKMODE=fabric-starter_test
       - CORE_VM_DOCKER_ATTACHSTDOUT=true
       #    - FABRIC_LOGGING_SPEC=peer=DEBUG:endorser=DEBUG:nodeCmd=DEBUG:committer=DEBUG
-      - CORE_CHAINCODE_BUILDER=${DOCKER_REGISTRY:-docker.io}/${CORE_CHAINCODE_BUILDER:-hyperledger/fabric-ccenv}:${FABRIC_VERSION:-latest}
-      - CORE_CHAINCODE_JAVA_RUNTIME=${DOCKER_REGISTRY:-docker.io}/${CORE_CHAINCODE_JAVA_RUNTIME:-hyperledger/fabric-javaenv}:${FABRIC_VERSION:-latest}
+      - CORE_CHAINCODE_BUILDER=${DOCKER_REGISTRY:-docker.io}/${CORE_CHAINCODE_BUILDER:-hyperledger/fabric-ccenv}:${FABRIC_VERSION:-1.4.8}
+      - CORE_CHAINCODE_JAVA_RUNTIME=${DOCKER_REGISTRY:-docker.io}/${CORE_CHAINCODE_JAVA_RUNTIME:-hyperledger/fabric-javaenv}:${FABRIC_VERSION:-1.4.8}
       - CORE_CHAINCODE_LOGGING_LEVEL=DEBUG
       - CORE_CHAINCODE_LOGGING_SHIM=debug
       - CORE_CHAINCODE_EXECUTETIMEOUT=300s
