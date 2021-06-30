@@ -67,7 +67,7 @@ function addCA(t, org, caAddress) {
       verify: false
     },
     tlsCACerts: {
-      path: `${cfg.ORG_CRYPTO_DIR}/ca/ca.${org}.${cfg.domain}-cert.pem`
+      path: `${cfg.ORG_CRYPTO_DIR}/ca/ca.${org}.${cfg.domain}-cert.pem` //TODO: tlsca?
     },
     registrar: [
       {

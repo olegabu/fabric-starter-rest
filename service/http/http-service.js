@@ -7,6 +7,10 @@ const https = require("https");
 const logger = cfg.log4js.getLogger('HttpService')
 const FormDataFactory = require('./FormDataFactory');
 
+function withTimeout(opts) {
+    return {timeout: cfg.CHAINCODE_PROCESSING_TIMEOUT,  ...opts, }
+}
+
 class HttpService {
 
     constructor() {
@@ -21,7 +25,7 @@ class HttpService {
 
     async postMultipart(url, fields, files, opts) {
         logger.debug(`postMultipart. Request:${url}`, fields, _.map(files, f => f.fieldname))
-        let response = await this.agent.postMultipart(url, fields, files, opts);
+        let response = await this.agent.postMultipart(url, fields, files, withTimeout(opts));
         logger.debug('postMultipart. Response:', this.extractResponse(response))
         return response.data
     }
@@ -56,7 +60,21 @@ class AxiosAgent {
 
     async postMultipart(url, fields, files, opts) {
         const {formData, formDataHeaders} = FormDataFactory.createFormData(fields, files)
-        return await this.instance.post(url, formData, _.assign({}, opts, {headers: formDataHeaders}))
+        opts = {
+            ...opts,
+            onDownloadProgress: progressEvent => {
+                const dataChunk = progressEvent.currentTarget.response;
+                // dataChunk contains the data that have been obtained so far (the whole data so far)..
+                // So here we do whatever we want with this partial data..
+                // In my case I'm storing that on a redux store that is used to
+                // render a table, so now, table rows are rendered as soon as
+                // they are obtained from the endpoint.
+            }
+        }
+        return await this.instance.post(url, formData, _.assign({}, opts, {headers: formDataHeaders})).catch(e => {
+            console.log(e)
+            return {}
+        })
     }
 
 }

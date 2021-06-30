@@ -53,13 +53,19 @@ class FabricStarterRuntime {
         // fabric client
         this.defaultFabricStarterClient = new FabricStarterClient();
         try {
+            await this.defaultFabricStarterClient.loginOrRegister(cfg.ENROLL_ID, cfg.enrollSecret);
+        } catch(e) {
+            logger.debug(e)
+        }
+
+        try {
             const tlsNetworkConfigProvider = require('../../network');
             this.tlsFabricStarterClient = new FabricStarterClient(tlsNetworkConfigProvider(cfg.tlsCas, 'tls'));
-            await this.defaultFabricStarterClient.loginOrRegister(cfg.ENROLL_ID, cfg.enrollSecret);
             await this.tlsFabricStarterClient.loginOrRegister(cfg.ENROLL_ID, cfg.enrollSecret);
         } catch(e) {
             logger.debug(e)
         }
+
     }
 
     async initSocketServer() {

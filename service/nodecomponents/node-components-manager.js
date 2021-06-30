@@ -46,7 +46,7 @@ class NodeComponentsManager {
 
         // await this.fabricStarterRuntime.setOrg(Org.fromConfig(cfg))//TODO: check if org is changed
 
-        res.setHeader('Content-Type', 'text/html; charset=utf-8');
+        res.setHeader('Content-Type', 'text/plain; charset=utf-8');
         res.setHeader('Transfer-Encoding', 'chunked')
 
         await async.eachSeries(topology, async component => {

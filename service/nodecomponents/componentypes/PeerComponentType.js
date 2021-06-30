@@ -137,13 +137,15 @@ class PeerComponentType {
         await fs.emptyDir(path.join(adminMSPDir, 'signcerts'))
         await fs.outputFile(path.join(adminMSPDir, 'signcerts', `Admin@${org.orgId}.${org.domain}-cert.pem`), enrollAdmin.certificate, {encoding: 'binary'})
 
-        await this.fabricStarterRuntime.setOrg(Org.fromConfig(cfg))//TODO: check if org is changed
+//        await this.fabricStarterRuntime.setOrg(Org.fromConfig(cfg))//TODO: check if org is changed
 
 
         let subjectName = `${componentName}.${cfg.org}.${cfg.domain}`;
         const peerDir = path.join(cfg.ORG_CRYPTO_DIR, 'peers', subjectName)
         const tlsFabricStarterClient = this.fabricStarterRuntime.getTLSFabricStarterClient();
         try {
+            let tlsEnrollAdmin = await tlsFabricStarterClient.enroll('admin', cfg.enrollSecret);
+            await tlsFabricStarterClient.loginOrRegister(cfg.ENROLL_ID, cfg.enrollSecret);
             await tlsFabricStarterClient.register(subjectName, cfg.enrollSecret, cfg.org, 'peer')
         } catch (e) {
             console.log(e)

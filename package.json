@@ -4,9 +4,10 @@
   "description": "rest api server and client for hyperledger fabric built with nodejs sdk",
   "main": "fabric-starter-client.js",
   "scripts": {
-    "pretest": "PORT=4000 node app.js & ",
-    "test": "cucumber-js ",
+    "pretest": "PORT=4000 CRYPTO_CONFIG_DIR=features/fixtures/network/first-org-primary-node/crypto-config-peer2 ENROLL_ID=admin node app.js & ",
+    "test": "npm run cucumber || true",
     "posttest": "pkill -f node",
+    "cucumber": "cucumber-js",
     "test-jest": "DISCOVER_AS_LOCALHOST=true jest",
     "test-mocha": "DISCOVER_AS_LOCALHOST=true mocha",
     "dev": "./start-dev.sh",

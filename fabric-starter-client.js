@@ -27,6 +27,7 @@ class FabricStarterClient {
         this.networkConfig = networkConfig || networkConfigProvider(cfg.cas);
         logger.info('constructing with network config:', JSON.stringify(this.networkConfig));
         this.client = Client.loadFromConfig(this.networkConfig); // or networkConfigFile
+
         this.peer = this.client.getPeersForOrg()[0];
         // this.org = this.networkConfig.client.organization; //todo:?
         this.channelsInitializationMap = new Map();
@@ -58,6 +59,7 @@ class FabricStarterClient {
     async login(username, password) {
         if (cfg.AUTH_MODE === 'CA') {
             await this.checkClientInitialized();
+            this.client.getStateStore() && this.client.getStateStore().setValue(cfg.ENROLL_ID, '')
             this.user = await this.client.setUserContext({username: username, password: password}, true);
         } else if (cfg.AUTH_MODE === 'ADMIN') {
             if (cfg.ENROLL_ID !== username || cfg.enrollSecret !== password) {

@@ -17,7 +17,7 @@ const ordererBatchTimeout = process.env.ORDERER_BATCH_TIMEOUT || '2';
 
 const systemChannelId = process.env.SYSTEM_CHANNEL_ID || "orderer-system-channel";
 
-const NODE_CONFIG_FILE = `node-config${process.env.DEBUG_INSTANCE && '-' + process.env.DEBUG_INSTANCE}.json`
+const NODE_CONFIG_FILE = `node-config${process.env.DEBUG_INSTANCE ? '-' + process.env.DEBUG_INSTANCE : ''}.json`
 const persistedConfig = fs.readJsonSync(NODE_CONFIG_FILE, {throws: false}) || {}
 
 module.exports = {

@@ -4,18 +4,18 @@ const assert = require('assert');
 const NodeComponentsManager = require('../../../../service/nodecomponents/node-components-manager');
 const {Given, When, Then, BeforeAll, AfterAll} = require('cucumber');
 const httpService = require('../../../../service/http/http-service');
-
+const util = require('../../../../util')
 
 let app;
-BeforeAll(async function () {
-    app = require('../../../../app')
-})
+// BeforeAll(async function () {
+//     app = require('../../../../app')
+// })
+//
+// AfterAll(function () {
+//     app.stopServer()
+// })
 
-AfterAll(function () {
-    app.stopServer()
-})
-
-Given('On primary node org is configured with orgIp=primaryIp={string}', function (primaryIp) {
+Given('The org is configured with orgIp=primaryIp={string}', function (primaryIp) {
     this.org = {
         "orgId": "org1",
         "domain": "example.test",
@@ -30,7 +30,7 @@ Given('On primary node org is configured with orgIp=primaryIp={string}', functio
 });
 
 
-When('User configures topology for component peer {string} and componentIp={string}', function (peerName, componentIp) {
+When('User creates topology for component peer {string} and componentIp={string}', function (peerName, componentIp) {
         this.peerComponent = {
             values: {
                 name: peerName,
@@ -48,9 +48,9 @@ When('User configures topology for component peer {string} and componentIp={stri
     }
 );
 
-When('User makes POST \\/node\\/components request to primary node API agent', async function () {
+When('User makes POST \\/node\\/components request to primary node API agent', {timeout: 500 * 1000}, async function () {
 
-
+        await util.sleep(3000)
         const fields = {
             org: JSON.stringify(this.org),
             components: JSON.stringify([this.peerComponent])

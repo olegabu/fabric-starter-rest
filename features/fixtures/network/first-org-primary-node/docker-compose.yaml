@@ -78,6 +78,8 @@ services:
   ca:
     << : *ca-defaults
     container_name: ca.${ORG:-org1}.${DOMAIN:-example.com}
+    ports:
+      - 7054:7054
     environment:
       - FABRIC_CA_HOME=/etc/hyperledger/fabric-ca-server/ca
       - FABRIC_CA_SERVER_LDAP_USERFILTER=(cn=%s)
@@ -93,6 +95,8 @@ services:
   tlsca:
     << : *ca-defaults
     container_name: tlsca.${ORG:-org1}.${DOMAIN:-example.com}
+    ports:
+      - 7055:7055
     environment:
       - FABRIC_CA_HOME=/etc/hyperledger/fabric-ca-server/tls
       - FABRIC_CA_SERVER_PORT=${FABRIC_TLS_CA_PORT:-7055}
