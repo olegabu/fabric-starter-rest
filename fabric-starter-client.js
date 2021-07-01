@@ -59,7 +59,7 @@ class FabricStarterClient {
     async login(username, password) {
         if (cfg.AUTH_MODE === 'CA') {
             await this.checkClientInitialized();
-            this.client.getStateStore() && this.client.getStateStore().setValue(cfg.ENROLL_ID, '')
+            this.client.getStateStore() && this.client.getStateStore().setValue(username, '')
             this.user = await this.client.setUserContext({username: username, password: password}, true);
         } else if (cfg.AUTH_MODE === 'ADMIN') {
             if (cfg.ENROLL_ID !== username || cfg.enrollSecret !== password) {

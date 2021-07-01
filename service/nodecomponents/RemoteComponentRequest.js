@@ -18,7 +18,7 @@ class RemoteComponentRequest {
 
         const url = `${remoteProtocol}://${remoteHost}:${remotePort}/node/components`;
         logger.debug('Remote request to', url)
-        return await httpService.postMultipart(url, {org: remoteOrg, components: [componentValues]}, files)
+        return await httpService.postMultipart(url, {org: remoteOrg, components: [componentValues]}, files, {headers: {'Transfer-encoding': ''}})
     }
 }
 

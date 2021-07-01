@@ -1,6 +1,5 @@
 const fs = require('fs-extra');
 const path = require('path');
-const stream  = require('stream');
 const _ = require('lodash');
 const ConcatStream = require('stream3-concat');
 const fabricCLI = require('../../../fabric-cli');
@@ -15,6 +14,7 @@ const remoteComponentRequest = require('../RemoteComponentRequest');
 const mspManager = require('../../../service/msp/msp-manager');
 const Files = require("../../../model/Files");
 const Component = require("../../../model/Component");
+const StreamConcatWaiting = require('../../../util/stream/stream-concat-waiting')
 
 
 class PeerComponentType {
@@ -62,6 +62,7 @@ class PeerComponentType {
                         let logResult = fabricCLI.execShellCommand(`${cmd} -f`, cfg.YAMLS_DIR, env, () => {});
                         combinedStream.add(logResult)
                         combinedStream.remove(delayedStream)
+                        // combinedStream.end()
                     } else {
                         waitLogStream(combinedStream, count--)
                     }
@@ -74,7 +75,11 @@ class PeerComponentType {
         const result = new ConcatStream([upResult]);
         result.add(delayedStream)
 
+        // const result = new StreamConcatWaiting(upResult)
+
         waitLogStream(result, 20)
+
+
 
         return result;
     }
@@ -145,7 +150,6 @@ class PeerComponentType {
         const tlsFabricStarterClient = this.fabricStarterRuntime.getTLSFabricStarterClient();
         try {
             let tlsEnrollAdmin = await tlsFabricStarterClient.enroll('admin', cfg.enrollSecret);
-            await tlsFabricStarterClient.loginOrRegister(cfg.ENROLL_ID, cfg.enrollSecret);
             await tlsFabricStarterClient.register(subjectName, cfg.enrollSecret, cfg.org, 'peer')
         } catch (e) {
             console.log(e)
@@ -202,7 +206,8 @@ class PeerComponentType {
 
         const remoteOrg = Org.fromOrg(org, {peerName: _.get(component, 'name')}) //TODO: pass ordererName\Domain ?
         component = await this.attachMspFileIfAbsent(component);
-        return await remoteComponentRequest.requestRemoteComponentDeployment(remoteOrg, component)
+        const newVar = await remoteComponentRequest.requestRemoteComponentDeployment(remoteOrg, component);
+        return newVar
     }
 
     isMasterHost(org) {

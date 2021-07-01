@@ -71,7 +71,7 @@ class AxiosAgent {
                 // they are obtained from the endpoint.
             }
         }
-        return await this.instance.post(url, formData, _.assign({}, opts, {headers: formDataHeaders})).catch(e => {
+        return await this.instance.post(url, formData, _.merge({}, opts, {headers: formDataHeaders})).catch(e => {
             console.log(e)
             return {}
         })

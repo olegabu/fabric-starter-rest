@@ -64,7 +64,7 @@ module.exports = function (app, server, nodeComponentsManager) {
         const {org, enroll} = parseOrg(req.body.org)
         const bootstrap = parseBootstrap(req.body.org) //todo: use req.body.bootstrap
         const components = parseTopology(req.body.components, req.files)
-        let result = await nodeComponentsManager.deployTopology(org, enroll, bootstrap, components, res);
+        let stdout = await nodeComponentsManager.deployTopology(org, enroll, bootstrap, components, res);
 
 
         res.end()
