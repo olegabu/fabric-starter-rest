@@ -1,7 +1,6 @@
 const fs = require('fs-extra');
 const path = require('path');
 const _ = require('lodash');
-const ConcatStream = require('stream3-concat');
 const fabricCLI = require('../../../fabric-cli');
 const ctUtils = require('../component-manager-utils')
 const cfg = require('../../../config.js');
@@ -39,12 +38,13 @@ class PeerComponentType {
         var stream = require('stream');
         var util = require('util');
 
-        function DelayedStream(){//todo
+        function DelayedStream() {//todo
             stream.Readable.call(this);
         }
+
         util.inherits(DelayedStream, stream.Readable);
 
-        DelayedStream.prototype._read = function(obj){
+        DelayedStream.prototype._read = function (obj) {
             // setTimeout(()=>{
             //     this.push(null)
             // }, 15000)
@@ -55,16 +55,19 @@ class PeerComponentType {
 
         function waitLogStream(combinedStream, count) {
             try {
-                count > 0 && setTimeout(() => {
-                    cmd = `docker logs ${postInstallContainerName}`
+                if (count === 0) {
+                    combinedStream.complete()
+                    return
+                }
+                setTimeout(() => {
+                    const cmd = `docker logs ${postInstallContainerName}`
                     let shellResult = fabricCLI.execShellCommand(cmd, cfg.YAMLS_DIR, env);
-                    if (!shellResult.isError()) {
-                        let logResult = fabricCLI.execShellCommand(`${cmd} -f`, cfg.YAMLS_DIR, env, () => {});
-                        combinedStream.add(logResult)
-                        combinedStream.remove(delayedStream)
-                        // combinedStream.end()
+                    if (shellResult.isError()) {
+                        waitLogStream(combinedStream, count - 1)
                     } else {
-                        waitLogStream(combinedStream, count--)
+                        let logResult = fabricCLI.execShellCommand(`${cmd} -f`, cfg.YAMLS_DIR, env, () => {
+                        });
+                        combinedStream.add(logResult)
                     }
                 }, 1000)
             } catch (e) {
@@ -72,13 +75,21 @@ class PeerComponentType {
             }
         }
 
-        const result = new ConcatStream([upResult]);
-        result.add(delayedStream)
+        // const result = new ConcatStream([upResult]);
+        // result.add(delayedStream)
 
-        // const result = new StreamConcatWaiting(upResult)
+        const result = new StreamConcatWaiting()
+        result.addWithWait(upResult)
+        cmd = `docker logs ${postInstallContainerName}`
 
-        waitLogStream(result, 20)
+        await result.waitFortStream(20, () => {
+            let shellResult = fabricCLI.execShellCommand(cmd, cfg.YAMLS_DIR, env);
+            if (!shellResult.isError()) {
+                return fabricCLI.execShellCommand(`${cmd} -f`, cfg.YAMLS_DIR, env, () => {});
+            }
+        })
 
+        // waitLogStream(result, 20)
 
 
         return result;

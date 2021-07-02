@@ -13,6 +13,8 @@ const RaftComponentType = require("./componentypes/RaftComponentType");
 const FabricCAComponentType = require("./componentypes/FabricCAComponentType");
 const PeerComponentType = require("./componentypes/PeerComponentType");
 const componentDeployer = require("./ComponentDeployer");
+const StreamConcatWaiting = require('../../util/stream/stream-concat-waiting')
+
 
 const COMPONENT_TYPE = {
     'RAFT3': Raft3ComponentType,
@@ -49,6 +51,30 @@ class NodeComponentsManager {
         res.setHeader('Content-Type', 'text/plain; charset=utf-8');
         res.setHeader('Transfer-Encoding', 'chunked')
 
+        const stdout = new StreamConcatWaiting()
+
+        stdout.on('data', data => {
+            try {
+                const write = res.write(data);
+                if (!write) {
+                    console.log(write)
+                    stdout.pause()
+                    res.on('drain', () => {
+                        stdout.resume()
+                    })
+                }
+            } catch (e) {
+                logger.debug('Error writing chunk', e)
+            }
+        })
+
+        stdout.once('end', () => {
+            let answ = res.write('\n\n\n\n END \n\n\n\n', null, (a) => {
+                console.log(a)
+            })
+            console.log(answ)
+        })
+
         await async.eachSeries(topology, async component => {
             const componentTypeName = _.get(component, 'componentType');
             const componentType = COMPONENT_TYPE[componentTypeName];
@@ -56,24 +82,43 @@ class NodeComponentsManager {
                 logger.info(`ComponentType not found: ${componentTypeName}.`)
                 return
             }
-            const stdout = await componentDeployer.deploy(org, bootstrap, component, componentType)//TODO: pass callback or res
+            const out = await componentDeployer.deploy(org, bootstrap, component, componentType)//TODO: pass callback or res
+            // stdout.addWithWait(out)
+
+            res.on('error', (a) => {
+                console.log(a)
+            })
+            out.on('error', (a) => {
+                console.log(a)
+            })
             await new Promise((resolve, reject) => {
-                if (!stdout) {
-                    return resolve()
-                }
-                stdout.on('data', data => {
+                out.on('data', data => {
                     try {
-                        res.write(data)
+                        const write = res.write(data, (a) => {
+                            console.log(a)
+                        });
+                        if (!write) {
+                            out.pause()
+                            res.once('drain', () => {
+                                out.resume()
+                            })
+                            res.once('resume', () => {
+                                out.resume()
+                            })
+                        }
+
+
                     } catch (e) {
                         logger.debug('Error writing chunk', e)
                         reject(e)
                     }
                 })
-                stdout.once('end', () => {
+                out.on('end', () => {
                     // logger.debug('\n\n\n\n END \n\n\n\n')
                     resolve()
                 })
             })
+
             /*if (this.isTargetSameHost(org, component)) {
                 await componentType.deployLocal(org, bootstrap, component)
             } else {
@@ -88,6 +133,17 @@ class NodeComponentsManager {
             logger.error('Error deploying topology:', topology, err)
             throw new Error('Error deploying topology:', topology)
         })*/
+
+        await new Promise(async (resolve, reject) => {
+            for (let i = 0; i < 20; i++) {
+                if (stdout.finished) {
+                    return resolve()
+                }
+                res.write(`Wait ${i}`)
+                await util.sleep(1000)
+            }
+            return reject()
+        })
 
         await this.fabricStarterRuntime.tryInitRuntime(Org.fromConfig(cfg))
 

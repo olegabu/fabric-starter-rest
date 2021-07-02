@@ -1,25 +1,68 @@
 const stream = require('stream');
 const util = require('util');
 const ConcatStream = require('stream3-concat');
+const cfg = require('../../config.js');
+const logger = cfg.log4js.getLogger('StreamConcatWaiting');
 
-class StreamConcatWaiting {
+class StreamConcatWaiting extends ConcatStream {
 
     constructor(streams) {
-        streams = makeArray(streams);
-        this.stream = new ConcatStream(streams);
-        waitStream(this)
+        try {
+            const emptyWaitingStream = new WaitingStream()
+            super(emptyWaitingStream)
+            if (streams) {
+                super.add(streams)
+            } else {
+                this.waitingStream = emptyWaitingStream
+            }
+        } catch (e) {
+            console.log(e)
+        }
     }
 
     add(stream) {
-        this.stream.add(stream)
-        waitStream(this)
+        super.add(stream)
+        this.complete()
     }
 
-    end() {
+    addWithWait(stream) {
+        super.add(stream)
+        this._resetWaitStream(this)
+    }
+
+    complete() {
         if (this.waitingStream) {
-            this.stream.remove(this.waitingStream)
+            this.remove(this.waitingStream)
         }
         this.waitingStream = null
+    }
+
+    async waitFortStream(times, producerFunc) {
+        return new Promise((resolve, reject)=>{
+            if (times === 0) {
+                this.complete()
+                return resolve()
+            }
+            setTimeout(() => {
+                let streamResult = producerFunc && producerFunc()
+                if (streamResult) {
+                    this.addWithWait(streamResult)
+                    resolve()
+                } else {
+                    this.waitFortStream(times - 1, producerFunc)
+                    resolve()
+                }
+            }, 1000)
+        })
+    }
+
+    _resetWaitStream() {
+        const waitingStream = new WaitingStream()
+        super.add(waitingStream)
+        if (this.waitingStream) {
+            this.remove(this.waitingStream)
+        }
+        this.waitingStream = waitingStream
     }
 }
 
@@ -28,24 +71,6 @@ class WaitingStream extends stream.Readable {
     _read(obj) {
         // hang
     };
-}
-
-function waitStream(scope) {
-    const waitingStream = new WaitingStream()
-    scope.stream.add(waitingStream)
-
-    if (scope.waitingStream) {
-        scope.stream.remove(scope.waitingStream)
-    }
-    scope.waitingStream = waitingStream
-}
-
-
-function makeArray(streams) {
-    if (!Array.isArray(streams)) {
-        streams = [streams]
-    }
-    return streams;
 }
 
 module.exports = StreamConcatWaiting
