@@ -60,14 +60,49 @@ module.exports = function (app, server, nodeComponentsManager) {
 
         // let s = req.files['file'][0].originalname.substring(0, req.files['file'][0].originalname.length - 4);
         // let filePath = req.files['file'][0].path;
-        logger.debug('\nPOST /node/components', req.body, req.files)
+        logger.debug('\nPOST /node/components', req.headers, req.body, req.files)
         const {org, enroll} = parseOrg(req.body.org)
         const bootstrap = parseBootstrap(req.body.org) //todo: use req.body.bootstrap
         const components = parseTopology(req.body.components, req.files)
         let stdout = await nodeComponentsManager.deployTopology(org, enroll, bootstrap, components, res);
 
+        setTimeout(()=>{
+            if (!stdout.destroyed) {
+                try {
+                    stdout.close()
+                    logger.info('Deployment stream is closed by timeout')
+                } catch (e) {
+                    console.log(e)
+                }
+            }
+        }, 40000)
 
-        res.end()
+        if (req.headers['x-transfer-encode']!=='chunked') {
+            res.setHeader('Content-type', 'application/octet-stream')
+
+            return stdout.pipe(res)
+        }
+
+
+
+        res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+        res.setHeader('Transfer-Encoding', 'chunked')
+
+        stdout.on('data', data => {
+            try {
+                const write = res.write(data);
+            } catch (e) {
+                logger.debug('Error writing chunk', e)
+            }
+        })
+
+        stdout.once('end', () => {
+            let answ = res.write('\n\n\n\n END \n\n\n\n', null, (a) => {
+                console.log(a)
+            })
+            console.log(answ)
+            res.end()
+        })
     }))
 
     function parseOrg(reqObj) {

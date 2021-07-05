@@ -1,3 +1,4 @@
+const fse = require('fs-extra');
 const path = require('path');
 const _ = require('lodash');
 const assert = require('assert');
@@ -55,7 +56,20 @@ When('User makes POST \\/node\\/components request to primary node API agent', {
             org: JSON.stringify(this.org),
             components: JSON.stringify([this.peerComponent])
         };
-        const response = await httpService.postMultipart('http://localhost:14000/node/components', fields)
+        const TEST_FILE_NAME = 'post_component_stream.log'
+        await fse.remove(TEST_FILE_NAME)
+        const response = await httpService.postMultipart('http://localhost:14000/node/components', fields, null, /*{responseType: 'stream'}*/)
+        setTimeout(() => {
+            if (!response.destroyed) {
+                throw new Error('Deployment is not completed in timeout')
+            }
+        }, 15000)
+        response.pipe(fse.createWriteStream(TEST_FILE_NAME))
+        setTimeout(async () => {
+            if (! await fse.pathExists(TEST_FILE_NAME)) {
+                throw new Error('Empty stream output')
+            }
+        }, 10000)
         return 'pending';
     }
 );

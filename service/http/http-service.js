@@ -71,10 +71,11 @@ class AxiosAgent {
                 // they are obtained from the endpoint.
             }
         }
-        return await this.instance.post(url, formData, _.merge({}, opts, {headers: formDataHeaders})).catch(e => {
-            console.log(e)
+        const response = await this.instance.post(url, formData, _.merge({}, opts, {headers: formDataHeaders, responseType: 'stream'})).catch(e => {
+            console.log(e, fields)
             return {}
-        })
+        });
+        return response
     }
 
 }

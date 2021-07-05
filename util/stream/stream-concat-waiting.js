@@ -37,19 +37,19 @@ class StreamConcatWaiting extends ConcatStream {
         this.waitingStream = null
     }
 
-    async waitFortStream(times, producerFunc) {
+    async waitFortStream(period, producerFunc, notLast) {
         return new Promise((resolve, reject)=>{
-            if (times === 0) {
+            if (period === 0) {
                 this.complete()
                 return resolve()
             }
             setTimeout(() => {
                 let streamResult = producerFunc && producerFunc()
                 if (streamResult) {
-                    this.addWithWait(streamResult)
+                    notLast ? this.addWithWait(streamResult) : this.add(streamResult)
                     resolve()
                 } else {
-                    this.waitFortStream(times - 1, producerFunc)
+                    this.waitFortStream(period - 1, producerFunc)
                     resolve()
                 }
             }, 1000)

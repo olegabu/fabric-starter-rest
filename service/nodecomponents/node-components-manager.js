@@ -48,21 +48,14 @@ class NodeComponentsManager {
 
         // await this.fabricStarterRuntime.setOrg(Org.fromConfig(cfg))//TODO: check if org is changed
 
-        res.setHeader('Content-Type', 'text/plain; charset=utf-8');
-        res.setHeader('Transfer-Encoding', 'chunked')
-
+        // res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+        // res.setHeader('Transfer-Encoding', 'chunked')
+        //
         const stdout = new StreamConcatWaiting()
-
+/*
         stdout.on('data', data => {
             try {
                 const write = res.write(data);
-                if (!write) {
-                    console.log(write)
-                    stdout.pause()
-                    res.on('drain', () => {
-                        stdout.resume()
-                    })
-                }
             } catch (e) {
                 logger.debug('Error writing chunk', e)
             }
@@ -73,79 +66,37 @@ class NodeComponentsManager {
                 console.log(a)
             })
             console.log(answ)
-        })
-
-        await async.eachSeries(topology, async component => {
-            const componentTypeName = _.get(component, 'componentType');
-            const componentType = COMPONENT_TYPE[componentTypeName];
-            if (!componentType) {
-                logger.info(`ComponentType not found: ${componentTypeName}.`)
-                return
-            }
-            const out = await componentDeployer.deploy(org, bootstrap, component, componentType)//TODO: pass callback or res
-            // stdout.addWithWait(out)
-
-            res.on('error', (a) => {
-                console.log(a)
-            })
-            out.on('error', (a) => {
-                console.log(a)
-            })
-            await new Promise((resolve, reject) => {
-                out.on('data', data => {
-                    try {
-                        const write = res.write(data, (a) => {
-                            console.log(a)
-                        });
-                        if (!write) {
-                            out.pause()
-                            res.once('drain', () => {
-                                out.resume()
-                            })
-                            res.once('resume', () => {
-                                out.resume()
-                            })
-                        }
-
-
-                    } catch (e) {
-                        logger.debug('Error writing chunk', e)
-                        reject(e)
-                    }
-                })
-                out.on('end', () => {
-                    // logger.debug('\n\n\n\n END \n\n\n\n')
-                    resolve()
-                })
-            })
-
-            /*if (this.isTargetSameHost(org, component)) {
-                await componentType.deployLocal(org, bootstrap, component)
-            } else {
-                await componentType.deployRemote(org, bootstrap, component)
-            }*/
-
-            await util.sleep(4000);
-        })
-        // res.end()
-
-        /*.catch(err => {
-            logger.error('Error deploying topology:', topology, err)
-            throw new Error('Error deploying topology:', topology)
         })*/
 
-        await new Promise(async (resolve, reject) => {
-            for (let i = 0; i < 20; i++) {
-                if (stdout.finished) {
-                    return resolve()
+        setImmediate(async ()=> {
+
+            await async.eachSeries(topology, async component => {
+                const componentTypeName = _.get(component, 'componentType');
+                const componentType = COMPONENT_TYPE[componentTypeName];
+                if (!componentType) {
+                    logger.info(`ComponentType not found: ${componentTypeName}.`)
+                    return
                 }
-                res.write(`Wait ${i}`)
-                await util.sleep(1000)
-            }
-            return reject()
+
+                const out = await componentDeployer.deploy(org, bootstrap, component, componentType, () => {
+                }) //TODO: pass callback or res
+                stdout.addWithWait(out)
+
+                await new Promise((resolve, reject) => {
+                    out.on('end', () => {
+                        resolve()
+                    })
+                })
+
+
+                await util.sleep(4000);
+            })
+            stdout.complete()
+
+            await this.fabricStarterRuntime.tryInitRuntime(Org.fromConfig(cfg))
         })
 
-        await this.fabricStarterRuntime.tryInitRuntime(Org.fromConfig(cfg))
+        return stdout;
 
     }
 
