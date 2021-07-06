@@ -4,14 +4,15 @@
   "description": "rest api server and client for hyperledger fabric built with nodejs sdk",
   "main": "fabric-starter-client.js",
   "scripts": {
-    "preintegration": "node -r dotenv/config app.js & ",
+    "preintegration": "DOTENV_CONFIG_PATH=features/fixtures/network/.test-network-env CRYPTO_CONFIG_DIR=features/fixtures/network/first-org-primary-node/crypto-config-peer2 node -r dotenv/config app.js & ",
     "integration": "npm run cucumber || true",
     "postintegration": "pkill -f node",
     "cucumber": "cucumber-js",
     "test-jest": "DISCOVER_AS_LOCALHOST=true jest",
     "test-mocha": "DISCOVER_AS_LOCALHOST=true mocha",
     "dev": "./start-dev.sh",
-    "start": "node app.js"
+    "start": "node app.js",
+    "dev-test": "PEER0_PORT=17051 CRYPTO_CONFIG_DIR=features/fixtures/network/first-org-primary-node/crypto-config cucumber-js features/service/storage/ledger-storage-test.feature"
   },
   "jest": {
     "verbose": true,
@@ -26,6 +27,7 @@
   "dependencies": {
     "async": "^3.2.0",
     "axios": "^0.21.1",
+    "base64-stream": "^1.0.0",
     "body-parser": "^1.19.0",
     "channel.js": "0.0.2",
     "chmod-plus": "0.0.3",

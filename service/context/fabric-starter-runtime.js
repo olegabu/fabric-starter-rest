@@ -7,6 +7,7 @@ const cfg = require('../../config');
 const logger = cfg.log4js.getLogger('NodeRuntime');
 const appManager = require('../../app-manager');
 const IntegrationService = require('../../service/integration-service');
+const LedgerStorage = require('../storage/ledger-storage')
 const util = require('../../util');
 
 class FabricStarterRuntime {
@@ -45,6 +46,8 @@ class FabricStarterRuntime {
             await this.initApi();
             this.integrationService = new IntegrationService(this)
             this.initIntegrationApi()
+            this.storageService= new LedgerStorage(this.defaultFabricStarterClient, cfg.DNS_CHANNEL, cfg.DNS_CHAINCODE, 'chaincodes')
+            this.initStorage(this)
             this.initialized = true
         }
     }
@@ -106,6 +109,10 @@ class FabricStarterRuntime {
         require('../../api/integration-api')(this.app, this.server, this.integrationService)
     }
 
+    initStorage(fabricStarterRuntime) {
+        require('../../api/storage-api')(fabricStarterRuntime.app, fabricStarterRuntime.server, fabricStarterRuntime.storageService)
+    }
+
 
     addNetwork(name, dltNetwork) {
         this.deactivateNetwork(name);
@@ -148,6 +155,7 @@ class FabricStarterRuntime {
     getTLSFabricStarterClient() {
         return this.tlsFabricStarterClient
     }
+
 }
 
 module.exports = FabricStarterRuntime

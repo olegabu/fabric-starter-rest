@@ -101,6 +101,18 @@ module.exports = async function(app, server, fabricStarterRuntime) {
   }));
 
   /**
+   * Query chaincodes packages saved in a storage and ready for install
+   * @route GET /storage/chaincodes
+   * @group chaincodes - Queries and operations on chaincode
+   * @returns {object} 200 - Array of chaincode package objects
+   * @returns {Error}  default - Unexpected error
+   * @security JWT
+   */
+  app.get('/storage/chaincodes', asyncMiddleware(async(req, res, next) => {
+    res.json(await req.fabricStarterClient.queryInstalledChaincodes());
+  }));
+
+  /**
    * Install chaincode
    * @route POST /chaincodes
    * @group chaincodes - Queries and operations on chaincode
