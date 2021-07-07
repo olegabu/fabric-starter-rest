@@ -4,7 +4,7 @@
   "description": "rest api server and client for hyperledger fabric built with nodejs sdk",
   "main": "fabric-starter-client.js",
   "scripts": {
-    "preintegration": "DOTENV_CONFIG_PATH=features/fixtures/network/.test-network-env CRYPTO_CONFIG_DIR=features/fixtures/network/first-org-primary-node/crypto-config-peer2 node -r dotenv/config app.js & ",
+    "preintegration": "DOTENV_CONFIG_PATH=features/fixtures/network/.test-network-env CRYPTO_CONFIG_DIR=features/fixtures/network/first-org-primary-node/crypto-config-peer2 node -r dotenv/config app.js dotenv_config_path=features/fixtures/network/.test-network-env & ",
     "integration": "npm run cucumber || true",
     "postintegration": "pkill -f node",
     "cucumber": "cucumber-js",

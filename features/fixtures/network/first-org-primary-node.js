@@ -7,10 +7,11 @@ const archiverManager = require('../../../service/archive-manager')
 const util = require('../../../util')
 
 
-Given('peer0.org1.example.test and node is up', {timeout: 50 * 1000}, async function () {
+Given('peer0.org1.example.test and node is up, services {string}', {timeout: 50 * 1000}, async function (servicesList) {
     const fixtureDir = path.join(__dirname, 'first-org-primary-node');
     await unzipRaftWALFiles(fixtureDir)
-    await composeUtil.upServicesInWorkDir(fixtureDir, _.split(process.env.PRIMARY_NODE_SERVICES, ','),{commandOptions: ['--force-recreate']})
+    const servicesToStart = _.split(process.env.PRIMARY_NODE_SERVICES || servicesList, ',');
+    await composeUtil.upServicesInWorkDir(fixtureDir, servicesToStart,{commandOptions: ['--force-recreate']})
     await util.sleep(5000) //todo: use docker wait
     return 'success';
 })
