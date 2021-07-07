@@ -7,6 +7,7 @@ const cfg = require('../../config');
 const logger = cfg.log4js.getLogger('NodeRuntime');
 const appManager = require('../../app-manager');
 const IntegrationService = require('../../service/integration-service');
+const ChaincodeService = require('../../service/chaincode/chaincode-service');
 const LedgerStorage = require('../storage/ledger-storage')
 const util = require('../../util');
 
@@ -43,11 +44,12 @@ class FabricStarterRuntime {
             await this.initSocketServer();
             this.initApps()
             this.initJwtApi()
+            this.chaincodeService = new ChaincodeService(this)
             await this.initApi();
             this.integrationService = new IntegrationService(this)
             this.initIntegrationApi()
-            this.storageService= new LedgerStorage(this.defaultFabricStarterClient, cfg.DNS_CHANNEL, cfg.DNS_CHAINCODE, 'chaincodes')
-            this.initStorage(this)
+            this.storageService = new LedgerStorage(this, cfg.DNS_CHANNEL, cfg.DNS_CHAINCODE, 'chaincodes')
+            this.initStorageApi(this)
             this.initialized = true
         }
     }
@@ -57,7 +59,7 @@ class FabricStarterRuntime {
         this.defaultFabricStarterClient = new FabricStarterClient();
         try {
             await this.defaultFabricStarterClient.loginOrRegister(cfg.ENROLL_ID, cfg.enrollSecret);
-        } catch(e) {
+        } catch (e) {
             logger.debug(e)
         }
 
@@ -65,7 +67,7 @@ class FabricStarterRuntime {
             const tlsNetworkConfigProvider = require('../../network');
             this.tlsFabricStarterClient = new FabricStarterClient(tlsNetworkConfigProvider(cfg.tlsCas, 'tls'));
             await this.tlsFabricStarterClient.loginOrRegister(cfg.ENROLL_ID, cfg.enrollSecret);
-        } catch(e) {
+        } catch (e) {
             logger.debug(e)
         }
 
@@ -102,14 +104,14 @@ class FabricStarterRuntime {
     }
 
     async initApi() {
-        await require('../../api')(this.app, this.server, this)
+        await require('../../api')(this.app, this.server, this, this.chaincodeService)
     }
 
     initIntegrationApi() {
         require('../../api/integration-api')(this.app, this.server, this.integrationService)
     }
 
-    initStorage(fabricStarterRuntime) {
+    initStorageApi(fabricStarterRuntime) {
         require('../../api/storage-api')(fabricStarterRuntime.app, fabricStarterRuntime.server, fabricStarterRuntime.storageService)
     }
 

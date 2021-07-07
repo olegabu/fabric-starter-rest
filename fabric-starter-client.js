@@ -364,7 +364,7 @@ class FabricStarterClient {
         return channelEventHub;
     }
 
-    async installChaincode(chaincodeId, chaincodePath, version, language, baseDir) {
+    async installChaincodeOld(chaincodeId, chaincodePath, version, language, baseDir) {
         const peer = this.peer;
         const client = this.client;
         let fsClient = this;
@@ -403,6 +403,39 @@ class FabricStarterClient {
                         return reject(e);
                     }
                 });
+        });
+    }
+
+
+    async installChaincode(chaincodeId, chaincodePath, version, language) {
+        let that = this;
+        return new Promise(async (resolve, reject) => {
+
+            // let chaincodePath = language === 'golang' ? chaincodeId : path.resolve(/*__dirname,*/ chaincodePath, chaincodeId);
+            /*
+                                const chaincodePackageFile = fabricCLI.packageChaincodeWithInstantiationPolicy(chaincodeId, fullChaincodePath, version, language)
+                                const proposal = {
+                                    targets: peer,
+                                    chaincodePackage: fs.readFileSync(chaincodePackageFile)
+                                }
+            */
+            let proposal = {
+                targets: that.peer,
+                chaincodeId: chaincodeId,
+                chaincodePath: /*language === 'golang' ? chaincodeId :*/ chaincodePath,
+                chaincodeVersion: version || '1.0',
+                chaincodeType: language || 'node',
+            };
+
+            try {
+                const result = await that.client.installChaincode(proposal);
+                that.errorCheck(result);
+                let msg = `Chaincode ${chaincodeId}:${version} successfully installed`;
+                logger.info(msg);
+                resolve(msg);
+            } catch (e) {
+                return reject(e);
+            }
         });
     }
 

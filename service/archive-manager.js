@@ -92,13 +92,13 @@ class ArchiveManager {
         // return await this.extract(uploadedFile.path, uploadedFile.originalname, extractPath)
     }
 
-    extractTarTransform(sourcePath, transform = (name => name)) {
+    extractTarTransform(sourcePath, transformFunc = (name => name)) {
         const readStream = fse.createReadStream(sourcePath);
         return readStream.pipe(tt.extract({gzip: true}))
             .pipe(tt.transform({
                 onEntry(entry) {
                     let headers = entry.headers
-                    const newName = transform(headers.name)
+                    const newName = transformFunc(headers.name)
                     headers = {...headers, name: newName}
                     this.push({...entry, headers});
                 }

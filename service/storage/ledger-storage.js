@@ -9,8 +9,8 @@ const PAYLOAD_PROP = 'payload'
 
 class LedgerStorage {
 
-    constructor(fabricStarterClient, channel, chaincode, storageKey) {
-        this.fabricStarterClient = fabricStarterClient
+    constructor(fabricStarterRuntime, channel, chaincode, storageKey) {
+        this.fabricStarterRuntime = fabricStarterRuntime
         this.channel = channel
         this.chaincode = chaincode
         this.storageKey = storageKey
@@ -24,7 +24,7 @@ class LedgerStorage {
         const payload = await streamUtils.streamToString(stream.pipe(new Base64Encode()));
         const chaincodes = await this._loadChaincodesData();
         chaincodes[chaincodeId] = {...metadata, [PAYLOAD_PROP]: payload}
-        return this.fabricStarterClient.invoke(this.channel, this.chaincode, 'put', [this.storageKey, JSON.stringify(chaincodes)], null, true)
+        return this.fabricStarterRuntime.getDefaultFabricStarterClient().invoke(this.channel, this.chaincode, 'put', [this.storageKey, JSON.stringify(chaincodes)], null, true)
     }
 
     async getChaincodesList() {
@@ -39,7 +39,7 @@ class LedgerStorage {
     }
 
     async _loadChaincodesData() {
-        const chaincodesStr = await this.fabricStarterClient.query(this.channel, this.chaincode, 'get', JSON.stringify([this.storageKey]));
+        const chaincodesStr = await this.fabricStarterRuntime.getDefaultFabricStarterClient().query(this.channel, this.chaincode, 'get', JSON.stringify([this.storageKey]));
         let chaincodes = {}
         try {
             chaincodes = JSON.parse(chaincodesStr)

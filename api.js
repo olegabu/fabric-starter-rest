@@ -1,4 +1,4 @@
-module.exports = async function(app, server, fabricStarterRuntime) {
+module.exports = async function(app, server, fabricStarterRuntime, chaincodeService) {
 
   const fs = require("fs");
   const path = require('path');
@@ -19,9 +19,9 @@ module.exports = async function(app, server, fabricStarterRuntime) {
     {name: 'args', maxCount: 1},{name: 'chaincodeType', maxCount: 1},{name: 'chaincodeId', maxCount: 1},
     {name: 'chaincodeVersion', maxCount: 1},{name: 'waitForTransactionEvent', maxCount: 1},{name: 'policy', maxCount: 1}]);
 
-
   const channelManager = require('./channel-manager');
   const appManager = require('./app-manager');
+  const fileUtils = require('./util/fileUtils')
 
 // serve admin and custom web apps as static
   const express = require("express");
@@ -85,7 +85,7 @@ module.exports = async function(app, server, fabricStarterRuntime) {
    * @returns {Error}  default - Unexpected error
    */
   app.get('/config', (req, res) => {//todo: remove
-    res.json(fabricStarterClient.getNetworkConfig());
+    res.json(req.fabricStarterClient.getNetworkConfig());
   });
 
   /**
@@ -127,9 +127,19 @@ module.exports = async function(app, server, fabricStarterRuntime) {
    * @consumes multipart/form-data
    */
   app.post('/chaincodes', fileUpload, asyncMiddleware(async(req, res, next) => {
+    let fileUploadObj = _.get(req, "files.file[0]");
+
+    const fileName = _.get(fileUploadObj, 'originalname');
+    const fileBaseName = fileUtils.getFileBaseName(fileName);
+    const archiveType = path.extname(fileName)
+
+    res.json(await chaincodeService
+        .installChaincode(fileBaseName, {...req.body, archiveType}, fileUploadObj.path))
+/*
     res.json(await req.fabricStarterClient.installChaincode(
       req.files['file'][0].originalname.substring(0, req.files['file'][0].originalname.length - 4),
       req.files['file'][0].path, req.body.version, req.body.language, uploadDir));
+*/
   }));
 
     /**

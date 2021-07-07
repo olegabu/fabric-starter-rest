@@ -8,11 +8,12 @@
     const logger = cfg.log4js.getLogger('AppManager');
     const archives = require('./service/archive-manager');
     const fabricCLI = require('./fabric-cli');
+    const fileUtils = require('./util/fileUtils')
 
     class AppManager {
 
         async provisionWebApp(fileObj) {
-            let baseFileName = this.getFileBaseName(fileObj);
+            let baseFileName = fileUtils.getFileBaseName(fileObj.originalname);
             const appFolderPath = path.join(cfg.WEBAPPS_DIR, baseFileName);
 
             return archives.extract(fileObj.path, fileObj.originalname, cfg.WEBAPPS_DIR, true)
@@ -56,9 +57,9 @@
             expressApp.use(`/${cfg.WEBAPPS_DIR}/${appContext}`, express.static(appFolder));
         }
 
-        async redeployAllAppstoreApps(expressApp){
+        async redeployAllAppstoreApps(expressApp) {
             let appsCfgs = await this.loadAppStoreConfig();
-            _.each(appsCfgs, cfg=>{
+            _.each(appsCfgs, cfg => {
                 this.deployAppstoreApp(cfg.name, cfg.folder, cfg.port);
             })
         }
@@ -66,7 +67,7 @@
 
         async provisionAppstoreApp(expressApp, fileObj) {
             try {
-                let baseFileName = this.getFileBaseName(fileObj);
+                let baseFileName = fileUtils.getFileBaseName(fileObj);
                 const appFolderPath = path.join(cfg.APPSTORE_DIR, baseFileName);
                 logger.debug("Provisioning Appstore app", appFolderPath, fileObj);
                 let extractPath = await archives.extract(fileObj.path, fileObj.originalname, appFolderPath, true);
@@ -137,13 +138,6 @@
             const appCfgFile = path.join(cfg.APPSTORE_DIR, "./deployed-apps.cfg");
             return appCfgFile;
         }
-
-
-        getFileBaseName(fileObj) {
-            const fileBaseName = path.basename(fileObj.originalname, path.extname(fileObj.originalname));
-            return fileBaseName;
-        }
-
 
     }
 

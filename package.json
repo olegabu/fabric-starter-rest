@@ -63,6 +63,7 @@
     "tape-promise": "^4.0.0",
     "tar": "^6.1.0",
     "tar-transform": "^1.0.0",
+    "tmp-promise": "^3.0.2",
     "unzipper": "^0.10.5",
     "url-parse-lax": "^3.0.0",
     "x509": "^0.3.4"
