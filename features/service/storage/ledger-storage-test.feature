@@ -6,7 +6,7 @@ Feature: Storing chaincodes and apps in ledger
     #"host-dns-helper,ca,orderer,peer"
 
   Scenario: Organization can save chaincode package in blockchain for using by other orgs
-    Endpoint POST /storage/chaincodes is used fot storing the package in ledger
+  Endpoint POST /storage/chaincodes is used fot storing the package in ledger
     Given No package with id "test-chaincode" present
     When User invokes POST /storage/chaincodes with params chaincodeId="test-chaincode", version="1", upload package payload
     Then subkey "test-chaincode" should appear in ledger object, and contain object like {version=1, package:base64data}

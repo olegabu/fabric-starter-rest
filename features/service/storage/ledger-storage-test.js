@@ -42,7 +42,10 @@ Then('subkey {string} should appear in ledger object, and contain object like \\
 
 Then('the list of chaincodes is returned without payload and contains {string}', async function (chaincodeId) {
     const chaincodesList = await this.storageService.getChaincodesList()
-    assert.deepStrictEqual(chaincodesList[0], {chaincodeId: chaincodeId, version: '1'}, 'Chaincode list contains chaincode data without payload')
+    assert.deepStrictEqual(chaincodesList[0], {
+        chaincodeId: chaincodeId,
+        version: '1'
+    }, 'Chaincode list contains chaincode data without payload')
     return 'success';
 });
 

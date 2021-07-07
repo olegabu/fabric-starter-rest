@@ -8,7 +8,7 @@ Feature: Peer component deployment
     Given peer0.org1.example.test and node is up, services ""
 
   Scenario: Deploy peer2 in remote mode (from peer0's node).
-    User can deploy another peer for same org on a new (secondary) node remotely from peer0's node
+  User can deploy another peer for same org on a new (secondary) node remotely from peer0's node
     Given The org is configured with orgIp=primaryIp="primary"
 
     When User creates topology for component peer "peer2" and componentIp="component-ip-addr"

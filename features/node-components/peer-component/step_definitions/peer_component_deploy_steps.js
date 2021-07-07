@@ -66,7 +66,7 @@ When('User makes POST \\/node\\/components request to primary node API agent', {
         }, 15000)
         response.pipe(fse.createWriteStream(TEST_FILE_NAME))
         setTimeout(async () => {
-            if (! await fse.pathExists(TEST_FILE_NAME)) {
+            if (!await fse.pathExists(TEST_FILE_NAME)) {
                 throw new Error('Empty stream output')
             }
         }, 10000)

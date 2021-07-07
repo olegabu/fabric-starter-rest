@@ -1,7 +1,7 @@
 const fs = require('fs-extra')
 const path = require('path')
 const _ = require('lodash')
-const {Given, When, Then, } = require('cucumber');
+const {Given, When, Then,} = require('cucumber');
 const composeUtil = require('../../lib/docker-compose')
 const archiverManager = require('../../../service/archive-manager')
 const util = require('../../../util')
@@ -11,7 +11,7 @@ Given('peer0.org1.example.test and node is up, services {string}', {timeout: 50 
     const fixtureDir = path.join(__dirname, 'first-org-primary-node');
     await unzipRaftWALFiles(fixtureDir)
     const servicesToStart = _.split(process.env.PRIMARY_NODE_SERVICES || servicesList, ',');
-    await composeUtil.upServicesInWorkDir(fixtureDir, servicesToStart,{commandOptions: ['--force-recreate']})
+    await composeUtil.upServicesInWorkDir(fixtureDir, servicesToStart, {commandOptions: ['--force-recreate']})
     await util.sleep(5000) //todo: use docker wait
     return 'success';
 })

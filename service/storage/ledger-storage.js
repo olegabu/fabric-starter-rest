@@ -3,9 +3,9 @@ const _ = require('lodash')
 const {Base64Encode, Base64Decode} = require('base64-stream')
 const cfg = require('../../config');
 const logger = cfg.log4js.getLogger('LedgerStorage');
-const streamUtils= require('../../util/stream/streams')
+const streamUtils = require('../../util/stream/streams')
 
-const PAYLOAD_PROP='payload'
+const PAYLOAD_PROP = 'payload'
 
 class LedgerStorage {
 
@@ -23,7 +23,7 @@ class LedgerStorage {
     async store(chaincodeId, metadata, stream) {
         const payload = await streamUtils.streamToString(stream.pipe(new Base64Encode()));
         const chaincodes = await this._loadChaincodesData();
-        chaincodes[chaincodeId] = {...metadata, [PAYLOAD_PROP]:payload}
+        chaincodes[chaincodeId] = {...metadata, [PAYLOAD_PROP]: payload}
         return this.fabricStarterClient.invoke(this.channel, this.chaincode, 'put', [this.storageKey, JSON.stringify(chaincodes)], null, true)
     }
 
@@ -32,9 +32,9 @@ class LedgerStorage {
         return _.map(chaincodeData, (val, key) => {
             delete val[PAYLOAD_PROP]
             return {
-                    chaincodeId: key,
-                    ...val
-                }
+                chaincodeId: key,
+                ...val
+            }
         })
     }
 
