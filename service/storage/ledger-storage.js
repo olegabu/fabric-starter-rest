@@ -16,7 +16,7 @@ class LedgerStorage {
         this.storageKey = storageKey
     }
 
-    storeAsFile(chaincodeId, metadata, filePath) {
+    storeFromFile(chaincodeId, metadata, filePath) {
         return this.store(chaincodeId, fs.createReadStream(filePath))
     }
 
@@ -36,6 +36,14 @@ class LedgerStorage {
                 ...val
             }
         })
+    }
+
+    async getChaincodeWithStream(chaincodeId) {
+        const chaincodes = await this._loadChaincodesData();
+        const payload = _.get(chaincodes, chaincodeId, PAYLOAD_PROP)
+        const stream = streamUtils.stringToStream(payload)
+        delete payload[PAYLOAD_PROP]
+        return  {...payload, stream}
     }
 
     async _loadChaincodesData() {

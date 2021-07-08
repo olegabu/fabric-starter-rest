@@ -33,8 +33,7 @@ module.exports = function (app, server, ledgerStorage) {
 
     app.post('/storage/chaincodes', fileUpload, asyncMiddleware(async (req, res) => {
         let fileUploadObj = _.get(req, "files.file[0]");
-        await ledgerStorage.storeAsFile(req.body.chaincodeId, req.body, fileUploadObj.path
-            )
+        await ledgerStorage.storeFromFile(req.body.chaincodeId, req.body, fileUploadObj.path)
         res.send(req.body)
     }));
 

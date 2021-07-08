@@ -8,11 +8,11 @@
     "integration": "npm run cucumber || true",
     "postintegration": "pkill -f node",
     "cucumber": "cucumber-js",
-    "test-jest": "DISCOVER_AS_LOCALHOST=true jest",
+    "test": "DISCOVER_AS_LOCALHOST=true jest",
     "test-mocha": "DISCOVER_AS_LOCALHOST=true mocha",
     "dev": "./start-dev.sh",
     "start": "node app.js",
-    "dev-test": "PEER0_PORT=17051 CRYPTO_CONFIG_DIR=features/fixtures/network/first-org-primary-node/crypto-config cucumber-js features/service/storage/ledger-storage-test.feature"
+    "dev-test": "PEER0_PORT=17051 CRYPTO_CONFIG_DIR=features/fixtures/network/first-org-primary-node/crypto-config cucumber-js --name ^Upload large packages$ features/service/storage/ledger-storage-test.feature"
   },
   "jest": {
     "verbose": true,

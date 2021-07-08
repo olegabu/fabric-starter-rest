@@ -1,4 +1,4 @@
-module.exports = async function(app, server, fabricStarterRuntime, chaincodeService) {
+module.exports = async function(app, server, fabricStarterRuntime, chaincodeService, storageService) {
 
   const fs = require("fs");
   const path = require('path');
@@ -126,7 +126,7 @@ module.exports = async function(app, server, fabricStarterRuntime, chaincodeServ
    * @security JWT
    * @consumes multipart/form-data
    */
-  app.post('/chaincodes', fileUpload, asyncMiddleware(async(req, res, next) => {
+  app.post('/chaincodes', fileUpload, asyncMiddleware(async (req, res, next) => {
     let fileUploadObj = _.get(req, "files.file[0]");
 
     const fileName = _.get(fileUploadObj, 'originalname');
@@ -135,14 +135,17 @@ module.exports = async function(app, server, fabricStarterRuntime, chaincodeServ
 
     res.json(await chaincodeService
         .installChaincode(fileBaseName, {...req.body, archiveType}, fileUploadObj.path))
-/*
-    res.json(await req.fabricStarterClient.installChaincode(
-      req.files['file'][0].originalname.substring(0, req.files['file'][0].originalname.length - 4),
-      req.files['file'][0].path, req.body.version, req.body.language, uploadDir));
-*/
   }));
 
-    /**
+  app.post('/chaincodes/shared/:chaincodeId', asyncMiddleware(async (req, res, next) => {
+
+    storageService.
+    res.json(await chaincodeService
+        .installChaincode(fileBaseName, {...req.body, archiveType}, fileUploadObj.path))
+  }));
+
+
+  /**
    * Query channels joined by the first peer of my organization
    * @route GET /channels
    * @group channels - Queries and operations on channels

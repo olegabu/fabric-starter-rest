@@ -153,14 +153,14 @@ class ArchiveManager {
             })
     }
 
-    gzip(sourcePath, filter, targetFileName) {
-        logger.debug(`gzip path: ${sourcePath} to ${targetFileName}`, filter && ` with filter ${filter}`)
-        const excludeFileFilterRegExp = new RegExp(filter);
+    gzip(sourceDir, excludeRegexp, includeFiles=['./']) {
+        logger.debug(`gzip path: ${sourceDir} to stream`, excludeRegexp && ` excluding ${excludeRegexp}`)
+        const excludeFileFilterRegExp = new RegExp(excludeRegexp);
         const tarOrig = tar.c(
             {
 //                [targetFileName ? 'file' : '']: targetFileName,
                 gzip: true, // this will perform the compression too
-                cwd: sourcePath,
+                cwd: sourceDir,
                 filter: (path, stat) => {
                     logger.debug('gzip add:', path);
                     if (excludeFileFilterRegExp.test(path)) {
@@ -170,7 +170,7 @@ class ArchiveManager {
                     return true
                 }
             },
-            ['./'],
+            includeFiles
         );
         // const converted = tarOrig.pipe(tar.t({
         //     onentry: e=>{if (_.includes(e.header.path, 'peer')) console.log('T'); e.header.path=_.replace(e.header.path, 'peer', 'neer')}

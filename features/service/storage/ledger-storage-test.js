@@ -7,12 +7,12 @@ const streamUtils = require('../../../util/stream/streams')
 
 const FabricStarterClient = require('../../../fabric-starter-client')
 const LedgerStorage = require('../../../service/storage/ledger-storage')
+const archiveManager = require('../../../service/archive-manager')
 
 
 let fabricStarterClient
 
-
-Given('No package with id {string} present', {timeout: 30 * 1000}, async function (chaincodeId) {
+Given('Empty chaincode storage', {timeout: 30 * 1000}, async function () {
     fabricStarterClient = new FabricStarterClient();
     await fabricStarterClient.init();
     await fabricStarterClient.loginOrRegister('admin', cfg.enrollSecret);
@@ -49,4 +49,13 @@ Then('the list of chaincodes is returned without payload and contains {string}',
     return 'success';
 });
 
+
+When('Save large package to storage', {timeout: 60 * 1000}, async function () {
+
+    this.storageService = new LedgerStorage({getDefaultFabricStarterClient: ()=>fabricStarterClient}, cfg.DNS_CHANNEL, cfg.DNS_CHAINCODE, 'chaincodes')
+    const stream = await archiveManager.gzip('./', null, ['lib-fabric-gost.so']);
+    const stored = await this.storageService.store("test-chaincode", {archiveType:'.tgz'}, stream);
+
+    return 'pending';
+});
 

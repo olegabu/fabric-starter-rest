@@ -45,11 +45,11 @@ class FabricStarterRuntime {
             this.initApps()
             this.initJwtApi()
             this.chaincodeService = new ChaincodeService(this)
-            await this.initApi();
-            this.integrationService = new IntegrationService(this)
-            this.initIntegrationApi()
             this.storageService = new LedgerStorage(this, cfg.DNS_CHANNEL, cfg.DNS_CHAINCODE, 'chaincodes')
             this.initStorageApi(this)
+            await this.initApi(this.chaincodeService, this.storageService);
+            this.integrationService = new IntegrationService(this)
+            this.initIntegrationApi()
             this.initialized = true
         }
     }
@@ -103,8 +103,8 @@ class FabricStarterRuntime {
         require('../../api/jwt-api')(this.app, this.server, this.defaultFabricStarterClient);
     }
 
-    async initApi() {
-        await require('../../api')(this.app, this.server, this, this.chaincodeService)
+    async initApi(chaincodeService, storageService) {
+        await require('../../api')(this.app, this.server, this, chaincodeService, storageService)
     }
 
     initIntegrationApi() {
