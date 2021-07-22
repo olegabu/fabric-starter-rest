@@ -66,7 +66,7 @@ module.exports = function (app, server, nodeComponentsManager) {
         const components = parseTopology(req.body.components, req.files)
         let stdout = await nodeComponentsManager.deployTopology(org, enroll, bootstrap, components, res);
 
-        setTimeout(()=>{
+        setTimeout(() => {
             if (!stdout.destroyed) {
                 try {
                     stdout.close()
@@ -77,12 +77,12 @@ module.exports = function (app, server, nodeComponentsManager) {
             }
         }, 40000)
 
-        if (req.headers['x-transfer-encode']!=='chunked') {
+        res.status(200)
+        if (req.headers['x-transfer-encode'] !== 'chunked') {
             res.setHeader('Content-type', 'application/octet-stream')
 
-            return stdout.pipe(res)
+            return stdout && stdout.pipe(res) || res.end()
         }
-
 
 
         res.setHeader('Content-Type', 'text/plain; charset=utf-8');

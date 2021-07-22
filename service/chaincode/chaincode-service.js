@@ -18,7 +18,7 @@ class ChaincodeService {
     }
 
 
-    async installChaincodeFromStream(chaincodeId, metadata = {}, stream, opts = {tmpRootDir: '/tmp'}) {
+    async installChaincodeFromStream(chaincodeId, metadata = {}, stream, opts = {tmpRootDir: tmp.tmpdir}) {
         let tmpDir = await tmp.dir({dir: opts.tmpRootDir, unsafeCleanup: true})
         let extractDir = metadata.language === 'golang' ? opts.gopath || DEFAULT_GO_PATH : tmpDir.path //path.join(tmpDir, 'tmpSubdirIfFlatArchive')
 

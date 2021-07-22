@@ -1,6 +1,7 @@
 const fs = require('fs-extra')
 const path = require('path')
 const _ = require('lodash')
+const tmp = require('tmp-promise');
 const streams = require('../../../util/stream/streams')
 const {Base64Encode, Base64Decode} = require('base64-stream')
 const fileUtils = require('../../../util/fileUtils');
@@ -32,7 +33,7 @@ const chaincodeService = new ChaincodeService(fabricStarterRuntimeMock);
 
 
 const TEST_CHAINCODE_ID = 'testChaincode';
-const TEST_TMP_ROOT_DIR = '/tmp/test-tmp-dir'
+const TEST_TMP_ROOT_DIR = path.join(tmp.tmpdir, 'test-tmp-dir')
 
 
 const TEST_CHAINCODE_ARCHIVE = 'UEsDBAoAAAAAAPyA6FIAAAAAAAAAAAAAAAAOABwAdGVzdENoYWluY29kZS9VVAkAA6z45mDF+OZg' +

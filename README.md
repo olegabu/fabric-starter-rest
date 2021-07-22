@@ -16,20 +16,22 @@ docker-compose -f docker-compose-orderer.yaml -f orderer-ports.yaml up
 
 docker-compose -f docker-compose.yaml -f ports.yaml up
 ```
-Test.
+###Test.
 ```bash
 npm test
 ```
-Develop: run REST server with `nodemon` to reload on changes.
+###Develop
+run REST server with `nodemon` to reload on changes.
 ```bash
 npm run dev
 ```
-Serve. Run REST server.
+###Serve. 
+Run REST server.
 ```bash
 npm start
 ```
-Build docker image.
-First pull latest base rest image:
+###Build docker image.
+First pull latest _base_ rest image:
 ```bash
 docker pull olegabu/fabric-starter-rest:latest-base
 ```
@@ -51,7 +53,7 @@ docker build -t olegabu/fabric-starter-rest --build-arg FABRIC_STARTER_VERSION=l
 ```
 
 
-#### Use Custom (external) admin dashboard.
+### Use Custom (external) admin dashboard.
 
 Prepare `admin-webapp.tgz` file with built alternate admin webapp, and copy it to `fabric-starter-rest` folder 
 ```bash
