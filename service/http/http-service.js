@@ -2,13 +2,12 @@ const fs = require('fs');
 const FormData = require('form-data');
 const axios = require('axios');
 const _ = require('lodash');
-const cfg = require('../../config.js')
 const https = require("https");
-const logger = cfg.log4js.getLogger('HttpService')
+const logger = require('../../util/log/log4js-configured').getLogger('HttpService')
 const FormDataFactory = require('./FormDataFactory');
 
-function withTimeout(opts) {
-    return {timeout: cfg.CHAINCODE_PROCESSING_TIMEOUT,  ...opts, }
+function withTimeout(opts, timeout) {
+    return {timeout: timeout,  ...opts, }
 }
 
 class HttpService {
@@ -25,7 +24,8 @@ class HttpService {
 
     async postMultipart(url, fields, files, opts) {
         logger.debug(`postMultipart. Request:${url}`, fields, _.map(files, f => f.fieldname))
-        let response = await this.agent.postMultipart(url, fields, files, withTimeout(opts));
+        // let response = await this.agent.postMultipart(url, fields, files, withTimeout(opts, cfg.CHAINCODE_PROCESSING_TIMEOUT));
+        let response = await this.agent.postMultipart(url, fields, files, opts);
         logger.debug('postMultipart. Response:', this.extractResponse(response))
         return response.data
     }

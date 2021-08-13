@@ -11,12 +11,6 @@ volumes:
   nginx_templates:
   admin_app:
 
-networks:
-  default:
-    external: false
-    name: fabric-starter_test
-
-
 x-ca:
   &ca-defaults
   image: ${DOCKER_REGISTRY:-docker.io}/hyperledger/fabric-ca:${FABRIC_VERSION:-1.4.8}
@@ -130,9 +124,9 @@ services:
       # the following setting starts chaincode containers on the same
       # bridge network as the peers
       # https://docs.docker.com/compose/networking/
-      - CORE_VM_DOCKER_HOSTCONFIG_NETWORKMODE=fabric-starter_test
+      - CORE_VM_DOCKER_HOSTCONFIG_NETWORKMODE=fabric-starter_default
       - CORE_VM_DOCKER_ATTACHSTDOUT=true
-      #    - FABRIC_LOGGING_SPEC=peer=DEBUG:endorser=DEBUG:nodeCmd=DEBUG:committer=DEBUG
+      - FABRIC_LOGGING_SPEC=peer=DEBUG:endorser=DEBUG:nodeCmd=DEBUG:committer=DEBUG:grpc=debug
       - CORE_CHAINCODE_BUILDER=${DOCKER_REGISTRY:-docker.io}/${CORE_CHAINCODE_BUILDER:-hyperledger/fabric-ccenv}:${FABRIC_VERSION:-1.4.8}
       - CORE_CHAINCODE_JAVA_RUNTIME=${DOCKER_REGISTRY:-docker.io}/${CORE_CHAINCODE_JAVA_RUNTIME:-hyperledger/fabric-javaenv}:${FABRIC_VERSION:-1.4.8}
       - CORE_CHAINCODE_LOGGING_LEVEL=DEBUG
@@ -244,10 +238,11 @@ services:
     container_name: host-dns-helper
     image: ${DOCKER_REGISTRY:-docker.io}/olegabu/fabric-starter-rest:${FABRIC_STARTER_VERSION:-baas-test}
     volumes:
-      - ${FABRIC_STARTER_HOME:-.}/crypto-config/hosts:/etc/common_hosts
+      - ${FABRIC_STARTER_HOME:-.}/crypto-config/hosts:/etc/peer0_hosts
+      - ${FABRIC_STARTER_HOME:-.}/peer2/crypto-config/hosts:/etc/peer2_hosts
     extra_hosts:
-      - "component-ip-addr:host-gateway"
-    command: sh -c "truncate --size 0 /etc/common_hosts; cat /etc/hosts | grep component-ip-addr >> /etc/common_hosts;"
+      - "second-peer-ip-addr:host-gateway"
+    command: sh -c "truncate --size 0 /etc/peer0_hosts /etc/peer2_hosts; cat /etc/hosts | grep second-peer-ip-addr >> /etc/peer0_hosts; cat /etc/hosts | grep second-peer-ip-addr >> /etc/peer2_hosts;"
 
 
   www.peer:
@@ -255,7 +250,7 @@ services:
     image: ${DOCKER_REGISTRY:-docker.io}/nginx
     restart: always
     ports:
-      - ${WWW_PORT:-79}:80
+      - ${WWW_PORT:-80}:80
     environment:
       - ORG=${ORG:-org1}
       - DOMAIN=${DOMAIN:-example.com}
@@ -272,3 +267,9 @@ services:
       - ${FABRIC_STARTER_HOME:-.}/crypto-config/node-certs/${ORG:-org1}.${DOMAIN:-example.com}/msp/well-known:/usr/share/nginx/html/.well-known:ro
       - nginx_templates:/etc/nginx/templates
       - admin_app:/usr/src/app/admin
+
+
+networks:
+  default:
+    external: false
+    name: fabric-starter_default

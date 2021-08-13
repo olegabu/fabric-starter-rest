@@ -2,7 +2,7 @@ const fs = require('fs-extra')
 const path = require('path')
 const _ = require('lodash')
 const {Given, When, Then,} = require('cucumber');
-const composeUtil = require('../../lib/docker-compose')
+const composeUtil = require('../../support/docker-compose')
 const archiverManager = require('../../../service/archive-manager')
 const util = require('../../../util')
 

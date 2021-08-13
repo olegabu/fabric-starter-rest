@@ -19,7 +19,7 @@ class ChannelManager {
     }
 
     async applyConfigToChannel(channelId, currentChannelConfigFile, configUpdateRes, fabricClient, admin) {
-        await fabricCLI.downloadOrdererMSP();
+        await fabricCLI.downloadOrdererMSP(); //todo: try/catch ?
         let channelGroupConfig = await fabricCLI.translateChannelConfig(currentChannelConfigFile);
         logger.debug(`Got channel config ${channelId}:`, channelGroupConfig);
 

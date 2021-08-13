@@ -1,8 +1,7 @@
 const fs = require('fs');
 const FormData = require('form-data');
 const _ = require('lodash');
-const cfg = require('../../config.js')
-const logger = cfg.log4js.getLogger('FormDataFactory')
+const logger = require('../../util/log/log4js-configured').getLogger('FormDataFactory')
 
 class FormDataFactory {
 

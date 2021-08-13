@@ -4,9 +4,8 @@ const _ = require('lodash');
 const unzip = require('unzipper');
 const tar = require('tar');
 const tt = require("tar-transform");
-const cfg = require('../config.js');
 const {ReadEntry} = require("tar");
-const logger = cfg.log4js.getLogger('ArchiveManager');
+const logger = require('../util/log/log4js-configured').getLogger('ArchiveManager');
 
 function unlinkFile(path) {
     try {

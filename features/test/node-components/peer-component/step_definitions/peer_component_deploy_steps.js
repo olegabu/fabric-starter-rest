@@ -2,21 +2,12 @@ const fse = require('fs-extra');
 const path = require('path');
 const _ = require('lodash');
 const assert = require('assert');
-const NodeComponentsManager = require('../../../../service/nodecomponents/node-components-manager');
 const {Given, When, Then, BeforeAll, AfterAll} = require('cucumber');
-const httpService = require('../../../../service/http/http-service');
-const util = require('../../../../util')
+const httpService = require('../../../../../service/http/http-service');
+const util = require('../../../../../util')
 
-let app;
-// BeforeAll(async function () {
-//     app = require('../../../../app')
-// })
-//
-// AfterAll(function () {
-//     app.stopServer()
-// })
 
-Given('The org is configured with orgIp=primaryIp={string}', function (primaryIp) {
+Given('Org masterIp \\(peer0) is configured as with orgIp=masterIp={string}', function (primaryIp) {
     this.org = {
         "orgId": "org1",
         "domain": "example.test",
@@ -49,7 +40,7 @@ When('User creates topology for component peer {string} and componentIp={string}
     }
 );
 
-When('User makes POST \\/node\\/components request to primary node API agent', {timeout: 500 * 1000}, async function () {
+When('User makes POST \\/node\\/components request to primary peer0 node API agent', {timeout: 500 * 1000}, async function () {
 
         await util.sleep(3000)
         const fields = {

@@ -2,9 +2,12 @@
 ORG=org1
 DOMAIN=example.test
 PORT=4000
+ORDERER_WWW_PORT=80
 ENROLL_ID=admin
 FABRIC_VERSION=1.4.4
 FABRIC_STARTER_VERSION=baas-test
-TEMPLATES_DIR=../fabric-starter-baas/templates
+TEMPLATES_DIR=../fabric-starter/templates
 CRYPTO_CONFIG_DIR=features/fixtures/network/first-org-primary-node/crypto-config
 DEBUG_INSTANCE=integration-test
+DOCKER_COMPOSE_EXTRA_ARGS="-f https/docker-compose-https-ports.yaml"
+BOOTSTRAP_SERVICE_URL=http

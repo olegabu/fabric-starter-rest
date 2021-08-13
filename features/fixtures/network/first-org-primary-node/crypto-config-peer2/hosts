@@ -1,4 +1,0 @@
-# replaced by writeFile  
-# replaced by writeFile
- 
-primary orderer.example.test www.example.test ca.org1.example.test tlsca.org1.example.test peer0.org1.example.test

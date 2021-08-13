@@ -2,8 +2,7 @@ const fs = require('fs');
 const path = require('path');
 const net = require('net');
 const _ = require('lodash');
-const cfg = require('./config.js');
-const logger = cfg.log4js.getLogger('util');
+const logger = require('./util/log/log4js-configured').getLogger('util')
 
 class Util {
 
@@ -25,7 +24,7 @@ class Util {
         });
     }
 
-    async retryOperation(nTimes, fn) {
+    async retryOperation(nTimes, period, fn) {
         return new Promise(async (resolve, reject) => {
             if (nTimes <= 0) return reject('Retried invocation unsuccessful');
             try {
@@ -36,15 +35,13 @@ class Util {
                 if (nTimes === 1) {
                     reject(err);
                 }
-                await this.sleep(cfg.CHANNEL_LISTENER_UPDATE_TIMEOUT);
-                return await this.retryOperation(nTimes - 1, fn);
+                await this.sleep(period);
+                return await this.retryOperation(nTimes - 1, period, fn);
             }
         });
     }
 
     filterOrderersOut(organizations) {
-        let ordererNames = [cfg.HARDCODED_ORDERER_NAME, `${cfg.HARDCODED_ORDERER_NAME}.${cfg.ordererDomain}`, `${cfg.ordererName}.${cfg.ordererDomain}`];
-        const differenceWith = _.differenceWith(organizations, ordererNames, (org, rejectOrg) => org.id === rejectOrg);
         return _.filter(organizations,
             o => !_.includes(_.get(o, 'id'), 'orderer')
                 && !_.includes(_.get(o, 'id'), 'osn')
@@ -91,7 +88,11 @@ class Util {
     }
 
     writeHostFile(keyValueHostRecords) {
-        const file = path.join(cfg.CRYPTO_CONFIG_DIR, 'hosts')
+
+    }
+
+    writeHostFile(keyValueHostRecords, dir) {
+        const file = path.join(dir, 'hosts')
         if (this.existsAndIsFile(file)) {
             try {
                 const currHostsLines = fs.readFileSync(file, 'utf-8').split('\n');

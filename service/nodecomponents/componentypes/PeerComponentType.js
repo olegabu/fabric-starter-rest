@@ -128,7 +128,7 @@ class PeerComponentType {
         if (!this.isMasterHost(org)) {
             cfg.setPeerName(componentName)
             localEnv = _.assign(localEnv, {MASTER_IP: org.masterIp})
-            util.writeHostFile({[org.masterIp]: `orderer.${ordererDomain} www.${ordererDomain} ca.${org.orgId}.${org.domain} tlsca.${org.orgId}.${org.domain} peer0.${org.orgId}.${org.domain}`}) //TODO: peer0 -> peerName
+            util.writeHostFile({[org.masterIp]: `orderer.${ordererDomain} www.${ordererDomain} ca.${org.orgId}.${org.domain} tlsca.${org.orgId}.${org.domain} peer0.${org.orgId}.${org.domain}`}, cfg.CRYPTO_CONFIG_DIR) //TODO: peer0 -> peerName
             if (!_.isEmpty(component.files)) {
                 await archives.extractUploadedArchive(component.files[0], cfg.ORG_CRYPTO_DIR, name => _.split(name, 'peer0').join(cfg.peerName)) //TODO: use master peerName
             }
@@ -197,7 +197,7 @@ class PeerComponentType {
 
 
         let cmd = `docker-compose -f docker-compose.yaml -f docker-compose-couchdb.yaml ${cfg.DOCKER_COMPOSE_EXTRA_ARGS} up `
-            + ` -d --force-recreate --no-deps pre-install www.local couchdb.peer peer cli.peer post-install `;//www.peer
+            + ` -d --force-recreate --no-deps pre-install www.local couchdb.peer peer cli.peer post-install ` ;//www.peer`
         let upResult = fabricCLI.execShellCommand(cmd, cfg.YAMLS_DIR, localEnv, () => {
         });
 

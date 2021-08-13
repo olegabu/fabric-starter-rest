@@ -105,7 +105,7 @@ class RaftComponentType {
     }
 
     updateDnsInfo(remoteIp, remoteOrdererDomain) {
-        util.writeHostFile({[remoteIp]: `orderer.${remoteOrdererDomain} raft1.${remoteOrdererDomain} raft2.${remoteOrdererDomain}`})
+        util.writeHostFile({[remoteIp]: `orderer.${remoteOrdererDomain} raft1.${remoteOrdererDomain} raft2.${remoteOrdererDomain}`}, cfg.CRYPTO_CONFIG_DIR)
     }
 }
 

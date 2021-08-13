@@ -9,10 +9,11 @@ Feature: Peer component deployment
 
   Scenario: Deploy peer2 in remote mode (from peer0's node).
   User can deploy another peer for same org on a new (secondary) node remotely from peer0's node
-    Given The org is configured with orgIp=primaryIp="primary"
+    Given Org masterIp (peer0) is configured as with orgIp=masterIp="api.org1.example.test:3000"
+#    Given Org masterIp (peer0) is configured as with orgIp=masterIp="192.168.65.2:14000"
 
-    When User creates topology for component peer "peer2" and componentIp="component-ip-addr"
-    And  User makes POST /node/components request to primary node API agent
+    When User creates topology for component peer "peer2" and componentIp="second-peer-ip-addr"
+    And  User makes POST /node/components request to primary peer0 node API agent
 
     Then Peer "peer2" is enrolled to CA
     Then Peer "peer2" is enrolled to TLSCA

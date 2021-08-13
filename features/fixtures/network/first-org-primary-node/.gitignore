@@ -1,8 +1,8 @@
 ledger/orderer/etcdraft/**/*.tmp
 ledger/orderer/etcdraft/**/*.wal
 
-crypto-config
-crypto-config-peer2
+./crypto-config
+peer2/crypto-config
 ledger
 webapp
 appstore

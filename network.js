@@ -5,7 +5,7 @@ const certsManager = require('./certs-manager');
 
 
 
-function addOrg(t, org) {
+function addOrg(t, org, peerName) {
   if(!t.organizations) {
     t.organizations = {};
   }
@@ -13,7 +13,8 @@ function addOrg(t, org) {
     // mspid: `${org}MSP`,
     mspid: `${org}`,
     peers: [
-      `${cfg.peerName}.${org}.${cfg.domain}:${cfg.peer0Port}`
+      // `${cfg.peerName}.${org}.${cfg.domain}:${cfg.peer0Port}`
+      `${peerName}`
     ]
   };
 
@@ -39,15 +40,16 @@ function addOrg(t, org) {
     }
 }
 
-function addPeer(t, org, i, peerAddress) {
-  if(!t.peers) {
+function addPeer(t, org, i, peerName, peerUrl=null) {
+  if (!t.peers) {
     t.peers = {};
   }
-    const peerName = peerAddress; //`peer${i}.${org}.${cfg.domain}:${cfg.peer0Port}`;
-    t.peers[peerName] = {
-    url: `grpcs://${peerAddress}`,
+  // const [peerName, url] = _.split(peerAddress, '=');
+  // const peerName = peerAddress; //`peer${i}.${org}.${cfg.domain}:${cfg.peer0Port}`;
+  t.peers[peerName] = {
+    url: `grpcs://${peerUrl || peerName}`,
     grpcOptions: {
-       'ssl-target-name-override': `${cfg.peerName}.${org}.${cfg.domain}`, //`peer${i}.${org}.${cfg.domain}`,
+      'ssl-target-name-override': `${cfg.peerName}.${org}.${cfg.domain}`, //`peer${i}.${org}.${cfg.domain}`,
       //'ssl-target-name-override': 'localhost',
     },
     tlsCACerts: {
@@ -141,9 +143,10 @@ module.exports = function (cas, storeSubPath='') {
   }
 
   Object.keys(orgs).forEach(k => {
-    addOrg(t, k);
+    const [peerName, peerUrl] = _.split(orgs[k], '=');
+    addOrg(t, k, peerName);
     // if (!cfg.isOrderer) {
-      addPeer(t, k, 0, orgs[k]); //TODO: different peer names are in addOrg and addPeer
+      addPeer(t, k, 0, peerName, peerUrl); //TODO: different peer names are in addOrg and addPeer
     // }
   });
 

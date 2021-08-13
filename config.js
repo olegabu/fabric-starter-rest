@@ -1,7 +1,6 @@
 const fs = require('fs-extra');
-const log4js = require('log4js');
-log4js.configure({appenders: {stdout: {type: 'stdout'}}, categories: {default: {appenders: ['stdout'], level: 'ALL'}}});
-const logger = log4js.getLogger('config.js');
+const log4jsConfigured = require('./util/log/log4js-configured');
+const logger = log4jsConfigured.getLogger('config.js');
 
 const gostConfig = require('./gost-deps/crypto-suit-config');
 
@@ -17,11 +16,11 @@ const ordererBatchTimeout = process.env.ORDERER_BATCH_TIMEOUT || '2';
 
 const systemChannelId = process.env.SYSTEM_CHANNEL_ID || "orderer-system-channel";
 
-const NODE_CONFIG_FILE = `node-config${process.env.DEBUG_INSTANCE ? '-' + process.env.DEBUG_INSTANCE : ''}.json`
+const NODE_CONFIG_FILE = process.env.NODE_CONFIG_FILE || `node-config${process.env.DEBUG_INSTANCE ? '-' + process.env.DEBUG_INSTANCE : ''}.json`
 const persistedConfig = fs.readJsonSync(NODE_CONFIG_FILE, {throws: false}) || {}
 
 module.exports = {
-    log4js: log4js,
+    log4js:  log4jsConfigured, //TODO: remove from config, use directly
     systemChannelId: systemChannelId,
     ENROLL_ID: ENROLL_ID,
     CRYPTO_CONFIG_DIR: cryptoConfigPath,

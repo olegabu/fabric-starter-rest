@@ -18,8 +18,8 @@ module.exports = async (app, _fabricStarterClient, eventBus) => {
 
     const channel = cfg.DNS_CHANNEL //process.env.DNS_CHANNEL || 'common';
     const chaincodeName = cfg.DNS_CHAINCODE //process.env.DNS_CHAINCODE || 'dns';
-    const username = process.env.DNS_USERNAME || 'serviceUser';
-    const password = process.env.DNS_PASSWORD || 'servicePass';
+    const username = process.env.DNS_USERNAME || process.env.ENROLL_USER || 'admin';
+    const password = process.env.DNS_PASSWORD || process.env.ENROLL_SECRET || 'servicePass';
     // const skip = !process.env.MULTIHOST;
     const period = process.env.DNS_PERIOD || 60000;
 
@@ -81,7 +81,7 @@ module.exports = async (app, _fabricStarterClient, eventBus) => {
             let dnsRecords = await getChaincodeData("dns");
             if (dnsRecords) {
                 dnsRecords = filterOutByIp(dnsRecords, cfg.myIp);
-                util.writeHostFile(dnsRecords);
+                util.writeHostFile(dnsRecords, cfg.CRYPTO_CONFIG_DIR);
                 // util.writeFile(ORDERER_HOSTS_FILE, dnsRecords);
             }
 

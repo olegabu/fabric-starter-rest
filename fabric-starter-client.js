@@ -59,7 +59,7 @@ class FabricStarterClient {
     async login(username, password) {
         if (cfg.AUTH_MODE === 'CA') {
             await this.checkClientInitialized();
-            this.client.getStateStore() && this.client.getStateStore().setValue(username, '')
+            this.clearUsersPreviousLoginCache(username);
             this.user = await this.client.setUserContext({username: username, password: password}, true);
         } else if (cfg.AUTH_MODE === 'ADMIN') {
             if (cfg.ENROLL_ID !== username || cfg.enrollSecret !== password) {
@@ -69,6 +69,10 @@ class FabricStarterClient {
         } else {
             throw Error("AUTH_MODE is not defined.");
         }
+    }
+
+    clearUsersPreviousLoginCache(username) {
+        this.client.getStateStore() && this.client.getStateStore().setValue(username, '')
     }
 
     async checkClientInitialized() {
@@ -565,9 +569,10 @@ class FabricStarterClient {
         } else {
             proposal.targets = [this.peer];
         }
-        logger.debug("Proposal", proposal);
+        const logArgs = _.map(proposal.args, a => _.toString(a).substring(0, 250) + (_.size(a) > 250 ? ' ...' : ''))
+        logger.debug("Proposal", ({...proposal, args: logArgs}))
 
-        return await util.retryOperation(cfg.INVOKE_RETRY_COUNT, async function () {
+        return await util.retryOperation(cfg.INVOKE_RETRY_COUNT, cfg.CHANNEL_LISTENER_UPDATE_TIMEOUT, async function () {
             const txId = fsClient.client.newTransactionID(/*true*/);
 
             proposal.txId = txId;
