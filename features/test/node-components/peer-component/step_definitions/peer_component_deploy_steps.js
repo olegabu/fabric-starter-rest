@@ -7,7 +7,7 @@ const httpService = require('../../../../../service/http/http-service');
 const util = require('../../../../../util')
 
 
-Given('Org masterIp \\(peer0) is configured as with orgIp=masterIp={string}', function (primaryIp) {
+Given('Org masterIp \\(peer0) is configured with orgIp=masterIp={string}', function (primaryIp) {
     this.org = {
         "orgId": "org1",
         "domain": "example.test",

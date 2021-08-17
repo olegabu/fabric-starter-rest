@@ -11,3 +11,4 @@ CRYPTO_CONFIG_DIR=features/fixtures/network/first-org-primary-node/crypto-config
 DEBUG_INSTANCE=integration-test
 DOCKER_COMPOSE_EXTRA_ARGS="-f https/docker-compose-https-ports.yaml"
 BOOTSTRAP_SERVICE_URL=http
+BOOTSTRAP_EXTERNAL_PORT=14000

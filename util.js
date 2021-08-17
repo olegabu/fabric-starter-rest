@@ -87,10 +87,6 @@ class Util {
         return result;
     }
 
-    writeHostFile(keyValueHostRecords) {
-
-    }
-
     writeHostFile(keyValueHostRecords, dir) {
         const file = path.join(dir, 'hosts')
         if (this.existsAndIsFile(file)) {
