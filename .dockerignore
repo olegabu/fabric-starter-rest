@@ -12,3 +12,4 @@ examples/
 package-lock.json
 webapps/*
 bin/
+features
