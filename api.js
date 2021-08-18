@@ -221,7 +221,7 @@ module.exports = function(app, server) {
     res.json("OK");
   }));
 
-    /**
+  /**
    * Query channels joined by the first peer of my organization
    * @route GET /channels
    * @group channels - Queries and operations on channels
