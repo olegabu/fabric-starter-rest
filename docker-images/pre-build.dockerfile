@@ -1,6 +1,8 @@
 ARG DOCKER_REGISTRY
 ARG FABRIC_STARTER_VERSION
-FROM ${DOCKER_REGISTRY:-docker.io}/olegabu/fabric-tools-extended:${FABRIC_STARTER_VERSION:-latest}
+ARG FABRIC_STARTER_REPOSITORY
+
+FROM ${DOCKER_REGISTRY:-docker.io}/${FABRIC_STARTER_REPOSITORY:-olegabu}/fabric-tools-extended:${FABRIC_STARTER_VERSION:-latest}
 
 MAINTAINER olegabu
 
@@ -29,7 +31,7 @@ RUN sudo curl -L "https://github.com/docker/compose/releases/download/1.27.4/doc
     && chmod +x /usr/local/bin/docker-compose
 
 # default admin webapp
-RUN git clone https://github.com/olegabu/fabric-starter-admin-web.git --branch stable --depth 1 admin && npm install aurelia-cli@0.35.1 -g \
+RUN git clone https://github.com/${FABRIC_STARTER_REPOSITORY:-olegabu}/fabric-starter-admin-web.git --branch stable --depth 1 admin && npm install aurelia-cli@0.35.1 -g \
 && cd admin && npm install && au build --env prod && rm -rf node_modules
 
 # pre-install node modules
