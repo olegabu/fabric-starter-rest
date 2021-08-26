@@ -9,6 +9,7 @@ const urlParseLax = require('url-parse-lax');
 const chmodPlus = require('chmod-plus');
 const fabricCLI = require('./fabric-cli');
 const util = require('./util');
+const localDns = require('./util/local-dns');
 const certsManager = require('./certs-manager');
 const channelManager = require('./channel-manager');
 //const networkConfigFile = '../crypto-config/network.json'; // or .yaml
@@ -293,8 +294,8 @@ class FabricStarterClient {
 
     async checkOrgDns(orgObj) {
         let chaincodeList = await this.queryInstantiatedChaincodes(cfg.DNS_CHANNEL);
-        if (!chaincodeList || !chaincodeList.chaincodes.find(i => i.name === "dns"))
-            return;
+        // if (!chaincodeList || !chaincodeList.chaincodes.find(i => i.name === "dns"))
+        //     return;
         const dns = await this.query(cfg.DNS_CHANNEL, cfg.DNS_CHAINCODE, "get", '["dns"]', {targets: []});
         try {
             // let dnsRecordsList = dns && dns.length && JSON.parse(dns[0]);
@@ -305,9 +306,10 @@ class FabricStarterClient {
             if (orgIp){
                 await this.invoke(cfg.DNS_CHANNEL, cfg.DNS_CHAINCODE, "registerOrg", [JSON.stringify(orgObj)], {targets: []}, true)
                     .then(() => util.sleep(cfg.DNS_UPDATE_TIMEOUT));
+                await localDns.updateLocalDnsStorageFromChaincode(this)
             }
         } catch (e) {
-            logger.warn("Unparseable", dns);
+            logger.warn("Error on dns info:", dns, e);
         }
     }
     async constructChannel(channelId, optionalPeer) {

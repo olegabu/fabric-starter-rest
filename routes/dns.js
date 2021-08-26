@@ -15,11 +15,12 @@ module.exports = async (app, _fabricStarterClient, eventBus) => {
     const util = require('../util');
     const cfg = require('../config.js');
     const certsManager = require('../certs-manager');
+    const localDns = require('../util/local-dns');
 
     const channel = cfg.DNS_CHANNEL //process.env.DNS_CHANNEL || 'common';
     const chaincodeName = cfg.DNS_CHAINCODE //process.env.DNS_CHAINCODE || 'dns';
     const username = process.env.DNS_USERNAME || process.env.ENROLL_USER || 'admin';
-    const password = process.env.DNS_PASSWORD || process.env.ENROLL_SECRET || 'servicePass';
+    const password = process.env.DNS_PASSWORD || process.env.ENROLL_SECRET || 'adminpw';
     // const skip = !process.env.MULTIHOST;
     const period = process.env.DNS_PERIOD || 60000;
 
@@ -78,14 +79,17 @@ module.exports = async (app, _fabricStarterClient, eventBus) => {
         }
         inProcess = true;
         try {
+/*
             let dnsRecords = await getChaincodeData("dns");
             if (dnsRecords) {
                 dnsRecords = filterOutByIp(dnsRecords, cfg.myIp);
                 util.writeHostFile(dnsRecords, cfg.CRYPTO_CONFIG_DIR);
                 // util.writeFile(ORDERER_HOSTS_FILE, dnsRecords);
             }
+*/
+            await localDns.updateLocalDnsStorageFromChaincode(fabricStarterClient)
 
-            const osns = await getChaincodeData("osn");
+            const osns = await localDns.getChaincodeData(fabricStarterClient,"osn");
             if (osns) {
                 _.forEach(osns, async (osn, osnKey) => {
                     let ordererWwwPort = osn.wwwPort || cfg.ordererWwwPort;
@@ -136,7 +140,7 @@ module.exports = async (app, _fabricStarterClient, eventBus) => {
         });
     }
 
-    async function getChaincodeData(dataKey) {
+/*    async function getChaincodeData(dataKey) {
         let result = null;
         const dataResponses = await fabricStarterClient.query(channel, chaincodeName, 'get', `["${dataKey}"]`, {targets: process.env.DNS_QUERY_TARGET || `${cfg.peerName}.${cfg.org}.${cfg.domain}:${cfg.peer0Port}`});
         logger.debug(`dataResponses for ${dataKey}`, dataResponses);
@@ -153,5 +157,5 @@ module.exports = async (app, _fabricStarterClient, eventBus) => {
     function filterOutByIp(list, excludeIp) {
         delete list[excludeIp];
         return list;
-    }
+    }*/
 };

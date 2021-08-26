@@ -6,6 +6,7 @@ const logger = cfg.log4js.getLogger('OsmManager');
 const certsManager = require('./certs-manager');
 const fabricCLI = require('./fabric-cli');
 const util = require('./util');
+const localDns = require('./util/local-dns');
 
 class OsnManager {
 
@@ -30,6 +31,7 @@ class OsnManager {
     async registerOrdererInCommonChannel(orderer, fabricStarterClient) {
         await fabricStarterClient.invoke(cfg.DNS_CHANNEL, 'dns', 'registerOrderer', [JSON.stringify(orderer)], null, true)
             .then(() => util.sleep(cfg.DNS_UPDATE_TIMEOUT));
+        await localDns.updateLocalDnsStorageFromChaincode(fabricStarterClient)
     }
 
     updateConsenterConfig(newOrderer, channel) {
