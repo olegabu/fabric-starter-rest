@@ -4,7 +4,7 @@ const log4js = require('log4js');
 log4js.configure({appenders: {stdout: {type: 'stdout'}}, categories: {default: {appenders: ['stdout'], level: 'ALL'}}});
 const logger = log4js.getLogger('config.js');
 
-// const gostConfig=require('./gost-deps/crypto-suit-config');
+const gostConfig=require('./gost-deps/crypto-suit-config');
 
 const DEFAULT_PEER0PORT = '7051';
 const HARDCODED_ORDERER_NAME = process.env.HARDCODED_ORDERER_NAME || 'orderer';
@@ -107,12 +107,9 @@ module.exports = {
     CUSTOM_APP_PORTS: process.env.CUSTOM_APP_PORTS || '8080-8089',
     DEFAULT_PEER0PORT: DEFAULT_PEER0PORT,
     HARDCODED_ORDERER_NAME: HARDCODED_ORDERER_NAME,
-   // AUTH_MODE: process.env.AUTH_MODE || (process.env.CRYPTO_ALGORITHM==='GOST' ? 'ADMIN' : 'CA'),
-    AUTH_MODE: process.env.AUTH_MODE || 'CA',
-    // SIGNATURE_HASH_FAMILY: process.env.SIGNATURE_HASH_FAMILY || (process.env.CRYPTO_ALGORITHM ==='GOST' ? 'SM3' : 'SHA2'),
-    SIGNATURE_HASH_FAMILY: process.env.SIGNATURE_HASH_FAMILY || 'SHA2',
-    // CRYPTO_SUIT_CONFIG: process.env.CRYPTO_ALGORITHM==='GOST' ? gostConfig : {},
-    CRYPTO_SUIT_CONFIG: {},
+    AUTH_MODE: process.env.AUTH_MODE || (process.env.CRYPTO_ALGORITHM==='GOST' ? 'ADMIN' : 'CA'),
+    SIGNATURE_HASH_FAMILY: process.env.SIGNATURE_HASH_FAMILY || (process.env.CRYPTO_ALGORITHM ==='GOST' ? 'SM3' : 'SHA2'),
+    CRYPTO_SUIT_CONFIG: process.env.CRYPTO_ALGORITHM==='GOST' ? gostConfig : {},
 
     AUTH_JWT_EXPIRES_IN: ( /^\d+$/.test(process.env.AUTH_JWT_EXPIRES_IN) ? parseInt(process.env.AUTH_JWT_EXPIRES_IN) : process.env.AUTH_JWT_EXPIRES_IN) || '8h'
 };

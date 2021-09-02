@@ -1,0 +1,5 @@
+/store
+/channel/bin
+/channel/crypto-config/*
+/node_modules
+*.old
