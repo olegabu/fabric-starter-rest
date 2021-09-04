@@ -3,6 +3,7 @@ const path = require('path');
 const _ = require('lodash');
 const tmp = require('tmp-promise');
 const archives = require('../../service/archive-manager');
+const httpService = require('../http/http-service.js');
 const fileUtils = require('../../util/fileUtils');
 
 const DEFAULT_GO_PATH = '/opt/gopath/src'
@@ -17,6 +18,9 @@ class ChaincodeService {
         return this.installChaincodeFromStream(chaincodeId, metadata, fs.createReadStream(fileName), opts)
     }
 
+    async getInstantiatedChaincode(channelId) {
+        httpService.get('/channels')
+    }
 
     async installChaincodeFromStream(chaincodeId, metadata = {}, stream, opts = {tmpRootDir: tmp.tmpdir}) {
         let tmpDir = await tmp.dir({dir: opts.tmpRootDir, unsafeCleanup: true})

@@ -16,9 +16,15 @@ class HttpService {
         this.agent = new AxiosAgent()
     }
 
+    async get(url, opts) {
+        let response = await this.agent.get(url, opts);
+        logger.debug(`Http. Get request:${url}`, '\nResponse:', this.extractResponse(response))
+        return response.data
+    }
+
     async post(url, data, opts) {
         let response = await this.agent.post(url, data, opts);
-        logger.debug(`Http. Request:${url}`, data, '\nResponse:', this.extractResponse(response))
+        logger.debug(`Http. Post request:${url}`, data, '\nResponse:', this.extractResponse(response))
         return response.data
     }
 
