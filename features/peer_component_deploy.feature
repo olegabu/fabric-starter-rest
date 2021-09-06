@@ -4,8 +4,8 @@ Feature: Peer component deployment
   org: {"domain":"example.com","masterIp":"localhost","orgIp":"localhost","enrollSecret":"adminpw","orgId":"org1","REMOTE_ORDERER_DOMAIN":"example.com"}
   components: [{"values":{"updateCount":1,"domain":"example.com","masterIp":"localhost","orgIp":"localhost","enrollSecret":"adminpw","REMOTE_ORDERER_DOMAIN":"example.com","componentType":"PEER","name":"peer2","peerPort":"7051","BOOTSTRAP_PEER_NAME":"peer0","BOOTSTRAP_PEER_PORT":"7051"},"file_values":{}}]
 
-  Background: "peer0.org1.example.test" is started (orderer, peer, api).
-    Given peer0.org1.example.test and node is up, services ""
+  Background: Start node "peer0.org1.example.test" (orderer, peer, api).
+#    Given peer0.org1.example.test and node is up, services ""
 
   Scenario: Deploy peer2 in remote mode (from peer0's node).
   User can deploy another peer for same org on a new (secondary) node remotely from peer0's node

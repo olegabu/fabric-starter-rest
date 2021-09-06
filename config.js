@@ -16,8 +16,10 @@ const ordererBatchTimeout = process.env.ORDERER_BATCH_TIMEOUT || '2';
 
 const systemChannelId = process.env.SYSTEM_CHANNEL_ID || "orderer-system-channel";
 
-const NODE_CONFIG_FILE = process.env.NODE_CONFIG_FILE || `node-config${process.env.DEBUG_INSTANCE ? '-' + process.env.DEBUG_INSTANCE : ''}.json`
-const persistedConfig = fs.readJsonSync(NODE_CONFIG_FILE, {throws: false}) || {}
+const PEER_CONFIG_FILE = process.env.NODE_CONFIG_FILE || `node-config${process.env.DEBUG_INSTANCE ? '-' + process.env.DEBUG_INSTANCE : ''}.json`
+logger.info(`PEER_CONFIG_FILE: ${PEER_CONFIG_FILE}`);
+
+const persistedConfig = fs.readJsonSync(PEER_CONFIG_FILE, {throws: false}) || {}
 
 module.exports = {
     log4js:  log4jsConfigured, //TODO: remove from config, use directly
@@ -205,5 +207,5 @@ module.exports = {
 };
 
 function persistConfig() {
-    fs.outputJsonSync(NODE_CONFIG_FILE, persistedConfig)
+    fs.outputJsonSync(PEER_CONFIG_FILE, persistedConfig)
 }

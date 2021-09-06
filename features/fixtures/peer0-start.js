@@ -1,27 +1,21 @@
-const path = require("path");
-const _ = require("lodash");
-const compose = require("docker-compose");
-const util = require("../../util");
+const fs = require('fs-extra')
+const path = require('path')
+const _ = require('lodash')
+const {Given, When, Then,} = require('cucumber');
+const composeUtil = require('../support/docker-compose')
+const archiverManager = require('../../service/archive-manager')
+const util = require('../../util')
 
-module.exports = {
-    upServicesInWorkDir: upServicesInWorkDir
-}
+// TODO: deprecated, remove
 
-async function startPeer (peerName, orgDomain, servicesList) {
-    const fixtureDir = path.join(__dirname, `network/${orgDomain}/${peerName}`);
+Given('peer0.org1.example.test and node is up, services {string}', {timeout: 50 * 1000}, async function (servicesList) {
+    const fixtureDir = path.join(__dirname, 'network/org1.example.test/peer0');
     await unzipRaftWALFiles(fixtureDir)
     const servicesToStart = _.split(process.env.PRIMARY_NODE_SERVICES || servicesList, ',');
-    await upServicesInWorkDir(fixtureDir, servicesToStart, {commandOptions: ['--force-recreate']})
+    await composeUtil.upServicesInWorkDir(fixtureDir, servicesToStart, {commandOptions: ['--force-recreate']})
     await util.sleep(5000) //todo: use docker wait
-}
-
-
-async function upServicesInWorkDir(workDir, services, options) {
-
-    const optionsWithWorkDir = _.assign({cwd: workDir, log: true, env: {...process.env, PWD: workDir}}, options);
-    const nonEmptyServices = _.filter(services, s => !_.isEmpty(s))
-    _.isEmpty(nonEmptyServices) ? await compose.upAll(optionsWithWorkDir) : await compose.upMany(services, optionsWithWorkDir)
-}
+    return 'success';
+})
 
 async function unzipRaftWALFiles(fixtureDir) {
     const walName = '0000000000000000-0000000000000000'

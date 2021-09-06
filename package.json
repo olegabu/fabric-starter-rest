@@ -4,7 +4,9 @@
   "description": "rest api server and client for hyperledger fabric built with nodejs sdk",
   "main": "fabric-starter-client.js",
   "scripts": {
-    "preintegration": "DOTENV_CONFIG_PATH=features/fixtures/network/.test-network-env FABRIC_STARTER_PWD=$PWD/features/fixtures/network/first-org-primary-node/peer2 CRYPTO_CONFIG_DIR=features/fixtures/network/first-org-primary-node/peer2/crypto-config node -r dotenv/config app.js & ",
+    "start-peer0": "cd features/fixtures/network/org1.example.test; ./start-peer0.sh",
+    "start-peer2-agent": "DOTENV_CONFIG_PATH=features/fixtures/network/org1.example.test/peer2/.peer2-test-env FABRIC_STARTER_PWD=$PWD/features/fixtures/network/org1.example.com/peer2 node -r dotenv/config app.js",
+    "preintegration": "npm run start-peer2-agent &",
     "integration": "npm run cucumber features/peer_component_deploy.feature || true",
     "postintegration": "pkill -f node",
     "cucumber": "cucumber-js",
@@ -12,7 +14,7 @@
     "test-mocha": "DISCOVER_AS_LOCALHOST=true mocha",
     "dev": "./start-dev.sh",
     "start": "node app.js",
-    "dev-test": "cucumber-js features/test/service/storage/ledger-storage-test.feature"
+    "dev-test": "npm run start-peer0 && cucumber-js features/tests/ledger-storage-test.feature"
   },
   "jest": {
     "verbose": true,
