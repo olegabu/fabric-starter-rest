@@ -11,7 +11,8 @@ Feature: Peer component deployment
   User can deploy another peer for same org on a new (secondary) node remotely from peer0's node
 #    Given Org masterIp (peer0) is configured with orgIp=masterIp="api.org1.example.test:3000"
 #    Given Org masterIp (peer0) is configured with orgIp=masterIp="192.168.65.2:14000"
-    Given Org masterIp (peer0) is configured with orgIp=masterIp="192.168.2.1" #TODO
+    Given Org masterIp (peer0) is configured with orgIp=masterIp="172.17.0.1"
+      #TODO
 
     When User creates topology for component peer "peer2" and componentIp="second-peer-ip-addr"
     And  User makes POST /node/components request to primary peer0 node API agent

@@ -198,8 +198,7 @@ class PeerComponentType {
 
         let cmd = `docker-compose -f docker-compose.yaml -f docker-compose-couchdb.yaml ${cfg.DOCKER_COMPOSE_EXTRA_ARGS} up `
             + ` -d --force-recreate --no-deps pre-install www.local couchdb.peer peer cli.peer post-install ` ;//www.peer`
-        let upResult = fabricCLI.execShellCommand(cmd, cfg.YAMLS_DIR, localEnv, () => {
-        });
+        let upResult = fabricCLI.execShellCommand(cmd, cfg.YAMLS_DIR, localEnv, () => {});
 
         const postInstallContainerName = `post-install.${cfg.peerName}.${cfg.org}.${cfg.domain}`;
 

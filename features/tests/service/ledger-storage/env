@@ -4,4 +4,4 @@ PEER0_PORT=17051
 ORGS='"org1":"peer0.org1.example.test:17051=127.0.0.1:17051"'
 CAS='"org1":"127.0.0.1:7054"'
 PEER_CONFIG_FILE=features/test/service/storage/node-config.json
-CRYPTO_CONFIG_DIR=features/fixtures/network/org1.example.test/peer0/crypto-config
+CRYPTO_CONFIG_DIR=features/fixtures/network/org1.example.test/peer0.org1.example.test/crypto-config

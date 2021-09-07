@@ -54,7 +54,7 @@ When('User makes POST \\/node\\/components request to primary peer0 node API age
             if (!response.destroyed) {
                 throw new Error('Deployment is not completed in timeout')
             }
-        }, 15000)
+        }, 100000)
         response.pipe(fse.createWriteStream(TEST_FILE_NAME))
         setTimeout(async () => {
             if (!await fse.pathExists(TEST_FILE_NAME)) {

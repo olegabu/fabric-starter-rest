@@ -7,7 +7,7 @@ const logger = require('../../util/log/log4js-configured').getLogger('HttpServic
 const FormDataFactory = require('./FormDataFactory');
 
 function withTimeout(opts, timeout) {
-    return {timeout: timeout,  ...opts, }
+    return {timeout: timeout, ...opts,}
 }
 
 class HttpService {
@@ -77,7 +77,11 @@ class AxiosAgent {
                 // they are obtained from the endpoint.
             }
         }
-        const response = await this.instance.post(url, formData, _.merge({}, opts, {headers: formDataHeaders, responseType: 'stream'})).catch(e => {
+        const response = await this.instance.post(url, formData, _.merge({}, opts, {
+                headers: formDataHeaders,
+                responseType: 'stream'
+            })
+        ).catch(e => {
             console.log(e, fields)
             return {}
         });

@@ -16,7 +16,7 @@ const ordererBatchTimeout = process.env.ORDERER_BATCH_TIMEOUT || '2';
 
 const systemChannelId = process.env.SYSTEM_CHANNEL_ID || "orderer-system-channel";
 
-const PEER_CONFIG_FILE = process.env.NODE_CONFIG_FILE || `node-config${process.env.DEBUG_INSTANCE ? '-' + process.env.DEBUG_INSTANCE : ''}.json`
+const PEER_CONFIG_FILE = process.env.PEER_CONFIG_FILE || `node-config${process.env.DEBUG_INSTANCE ? '-' + process.env.DEBUG_INSTANCE : ''}.json`
 logger.info(`PEER_CONFIG_FILE: ${PEER_CONFIG_FILE}`);
 
 const persistedConfig = fs.readJsonSync(PEER_CONFIG_FILE, {throws: false}) || {}

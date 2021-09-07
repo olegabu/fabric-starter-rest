@@ -75,7 +75,7 @@ module.exports = function (app, server, nodeComponentsManager) {
                     console.log(e)
                 }
             }
-        }, 40000)
+        }, 100000)
 
         res.status(200)
         if (req.headers['x-transfer-encode'] !== 'chunked') {

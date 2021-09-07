@@ -4,17 +4,20 @@
   "description": "rest api server and client for hyperledger fabric built with nodejs sdk",
   "main": "fabric-starter-client.js",
   "scripts": {
-    "start-peer0": "cd features/fixtures/network/org1.example.test; ./start-peer0.sh",
-    "start-peer2-agent": "DOTENV_CONFIG_PATH=features/fixtures/network/org1.example.test/peer2/.peer2-test-env FABRIC_STARTER_PWD=$PWD/features/fixtures/network/org1.example.com/peer2 node -r dotenv/config app.js",
-    "preintegration": "npm run start-peer2-agent &",
-    "integration": "npm run cucumber features/peer_component_deploy.feature || true",
-    "postintegration": "pkill -f node",
-    "cucumber": "cucumber-js",
+    "start": "node app.js",
     "test": "DISCOVER_AS_LOCALHOST=true jest",
     "test-mocha": "DISCOVER_AS_LOCALHOST=true mocha",
+    "cucumber": "cucumber-js",
     "dev": "./start-dev.sh",
-    "start": "node app.js",
-    "dev-test": "npm run start-peer0 && cucumber-js features/tests/ledger-storage-test.feature"
+    "integration-start-peer0": "cd features/fixtures/network/org1.example.test; ./start-peer0.sh; cd ../",
+    "integration-start-peer2-agent": "DOTENV_CONFIG_PATH=features/fixtures/network/org1.example.test/peer2.org1.example.test/.peer2-test-env FABRIC_STARTER_PWD=$PWD/features/fixtures/network/org1.example.test/peer2.org1.example.test node -r dotenv/config app.js",
+    "integration-deploy-peer-component": "cucumber-js features/peer_component_deploy.feature || true",
+
+    "preintegration": "npm run integration-start-peer0 && sh -c 'npm run integration-start-peer2-agent &'",
+    "integration": "npm run integration-deploy-peer-component || true",
+    "postintegration-test": "pkill -f node",
+
+    "dev-test": "npm run integration-start-peer0 && sleep 3 && cucumber-js features/tests/ledger-storage-test.feature"
   },
   "jest": {
     "verbose": true,
