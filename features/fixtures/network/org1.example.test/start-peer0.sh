@@ -1,31 +1,41 @@
 #!/usr/bin/env bash
 
-docker rm -f -v $(docker ps -aq)
-docker volume rm ordererexampletest_orderer peer0org1exampletest_ledger peer0org1exampletest_admin_app peer0org1exampletest_admin_app
+main() {
+    docker rm -f -v $(docker ps -aq)
+    docker volume rm ordererexampletest_orderer peer0org1exampletest_ledger peer0org1exampletest_admin_app peer0org1exampletest_admin_app
 
-sleep 1
-pushd peer0.*
+    sleep 1
+    truncate --size 0 peer0.org1.example.test/crypto-config/hosts
+    truncate --size 0 peer2.org1.example.test/crypto-config/hosts
 
-sudo chown -R $USER ledger
-git clean -xf ledger
-git checkout ledger
+    pushd peer0.*
 
-pushd ledger/orderer/etcdraft/wal/common
-unzip 0000000000000000-0000000000000000.zip
-popd
+    gitCleanDir ledger
+    gitCleanDir crypto-config
 
-pushd ledger/orderer/etcdraft/wal/orderer-system-channel
-unzip 0000000000000000-0000000000000000.zip
-popd
+    pushd ledger/orderer/etcdraft/wal/common
+    unzip 0000000000000000-0000000000000000.zip
+    popd
 
-set -x
-docker network rm fabric-starter_test
-docker network create fabric-starter_test --subnet 172.172.0.0/16
-set +x
+    pushd ledger/orderer/etcdraft/wal/orderer-system-channel
+    unzip 0000000000000000-0000000000000000.zip
+    popd
 
-docker-compose up -d --force-recreate
+    set -x
+    docker network rm fabric-starter_test
+    docker network create fabric-starter_test --subnet 172.172.0.0/16
+    set +x
 
-popd
+    docker-compose up -d --force-recreate
 
+    popd
+}
 
+function gitCleanDir() {
+    local dir=${1:?Dir name is required}
+    sudo chown -R $USER "$dir"
+    git clean -xf "$dir"
+    git checkout "$dir"
+}
 
+main

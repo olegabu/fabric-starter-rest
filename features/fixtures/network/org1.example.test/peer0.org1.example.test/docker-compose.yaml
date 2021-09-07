@@ -23,6 +23,17 @@ x-ca:
 
 services:
 
+  host-dns-helper:
+    container_name: host-dns-helper
+    image: ${DOCKER_REGISTRY:-docker.io}/olegabu/fabric-starter-rest:${FABRIC_STARTER_VERSION:-baas-test}
+    volumes:
+      - ${FABRIC_STARTER_HOME:-.}/crypto-config/hosts:/etc/peer0_hosts
+      - ${FABRIC_STARTER_HOME:-.}/../peer2.org1.example.test/crypto-config/hosts:/etc/peer2_hosts
+    extra_hosts:
+      - "second-peer-ip-addr:host-gateway"
+    command: sh -c "truncate --size 0 /etc/peer0_hosts /etc/peer2_hosts; cat /etc/hosts | grep second-peer-ip-addr >> /etc/peer0_hosts; cat /etc/hosts | grep second-peer-ip-addr >> /etc/peer2_hosts;"
+
+
   orderer:
     container_name: ${ORDERER_NAME:-orderer}.${DOMAIN:-example.com}
     restart: always
@@ -232,18 +243,6 @@ services:
     #      - ${FABRIC_STARTER_HOME:-.}/templates:/etc/hyperledger/templates # for local debug
     #      - ${FABRIC_STARTER_HOME:-.}/container-scripts:/etc/hyperledger/container-scripts # for local debug
     command: sh -c 'npm start'
-
-
-  host-dns-helper:
-    container_name: host-dns-helper
-    image: ${DOCKER_REGISTRY:-docker.io}/olegabu/fabric-starter-rest:${FABRIC_STARTER_VERSION:-baas-test}
-    volumes:
-      - ${FABRIC_STARTER_HOME:-.}/crypto-config/hosts:/etc/peer0_hosts
-      - ${FABRIC_STARTER_HOME:-.}/peer2/crypto-config/hosts:/etc/peer2_hosts
-    extra_hosts:
-      - "second-peer-ip-addr:host-gateway"
-    command: sh -c "truncate --size 0 /etc/peer0_hosts /etc/peer2_hosts; cat /etc/hosts | grep second-peer-ip-addr >> /etc/peer0_hosts; cat /etc/hosts | grep second-peer-ip-addr >> /etc/peer2_hosts;"
-
 
   www.peer:
     container_name: www.peer
