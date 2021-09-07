@@ -5,7 +5,7 @@ ledger/orderer/etcdraft/**/*.wal
 #ledger
 
 peer0.org1.example.test/webapp
-appstore
+peer0.org1.example.test/appstore
 
 !*.tgz
 !*.zip

@@ -56,6 +56,7 @@ typings/
 
 # dotenv environment variables file
 features/node-components/peer-component/.env
+features/fixtures/network/org1.example.test/peer0.org1.example.test/ledger
 
 # next.js build output
 .next
