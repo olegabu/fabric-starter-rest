@@ -1,16 +1,26 @@
-=============== Sep 6, 2021 (UTC) ===============
-16:45:21.749415 log@legend F·NumFile S·FileSize N·Entry C·BadEntry B·BadBlock Ke·KeyError D·DroppedEntry L·Level Q·SeqNum T·TimeElapsed
-16:45:21.758827 db@open opening
-16:45:21.761199 version@stat F·[] S·0B[] Sc·[]
-16:45:21.773714 db@janitor F·2 G·0
-16:45:21.773736 db@open done T·14.894ms
-=============== Sep 6, 2021 (UTC) ===============
-16:56:35.431720 log@legend F·NumFile S·FileSize N·Entry C·BadEntry B·BadBlock Ke·KeyError D·DroppedEntry L·Level Q·SeqNum T·TimeElapsed
-16:56:35.431816 version@stat F·[] S·0B[] Sc·[]
-16:56:35.431824 db@open opening
-16:56:35.431856 journal@recovery F·1
-16:56:35.433688 journal@recovery recovering @1
-16:56:35.439860 memdb@flush created L0@2 N·41 S·1KiB "com..a\x00\x00,v7":"com..fb2,v20"
-16:56:35.440396 version@stat F·[1] S·1KiB[1KiB] Sc·[0.25]
-16:56:35.474866 db@janitor F·3 G·0
-16:56:35.474921 db@open done T·43.088926ms
+=============== Sep 7, 2021 (UTC) ===============
+14:33:37.420916 log@legend F·NumFile S·FileSize N·Entry C·BadEntry B·BadBlock Ke·KeyError D·DroppedEntry L·Level Q·SeqNum T·TimeElapsed
+14:33:37.430196 db@open opening
+14:33:37.433527 version@stat F·[] S·0B[] Sc·[]
+14:33:37.441063 db@janitor F·2 G·0
+14:33:37.441087 db@open done T·10.87236ms
+=============== Sep 7, 2021 (UTC) ===============
+14:53:09.498927 log@legend F·NumFile S·FileSize N·Entry C·BadEntry B·BadBlock Ke·KeyError D·DroppedEntry L·Level Q·SeqNum T·TimeElapsed
+14:53:09.499064 version@stat F·[] S·0B[] Sc·[]
+14:53:09.499078 db@open opening
+14:53:09.499136 journal@recovery F·1
+14:53:09.499747 journal@recovery recovering @1
+14:53:09.506866 memdb@flush created L0@2 N·41 S·1KiB "com..a\x00\x00,v6":"com..969,v29"
+14:53:09.507546 version@stat F·[1] S·1KiB[1KiB] Sc·[0.25]
+14:53:09.525401 db@janitor F·3 G·0
+14:53:09.525443 db@open done T·26.355122ms
+=============== Sep 7, 2021 (UTC) ===============
+14:57:42.569885 log@legend F·NumFile S·FileSize N·Entry C·BadEntry B·BadBlock Ke·KeyError D·DroppedEntry L·Level Q·SeqNum T·TimeElapsed
+14:57:42.570045 version@stat F·[1] S·1KiB[1KiB] Sc·[0.25]
+14:57:42.570059 db@open opening
+14:57:42.570122 journal@recovery F·1
+14:57:42.570733 journal@recovery recovering @3
+14:57:42.580128 memdb@flush created L0@5 N·1 S·135B "com..nfo,v43":"com..nfo,v43"
+14:57:42.589325 version@stat F·[2] S·1KiB[1KiB] Sc·[0.50]
+14:57:42.634524 db@janitor F·4 G·0
+14:57:42.634548 db@open done T·64.481502ms

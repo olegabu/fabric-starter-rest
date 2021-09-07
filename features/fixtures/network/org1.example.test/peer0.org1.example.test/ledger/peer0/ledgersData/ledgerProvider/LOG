@@ -1,16 +1,25 @@
-=============== Sep 6, 2021 (UTC) ===============
-16:45:21.647391 log@legend F·NumFile S·FileSize N·Entry C·BadEntry B·BadBlock Ke·KeyError D·DroppedEntry L·Level Q·SeqNum T·TimeElapsed
-16:45:21.650913 db@open opening
-16:45:21.654288 version@stat F·[] S·0B[] Sc·[]
-16:45:21.661126 db@janitor F·2 G·0
-16:45:21.661149 db@open done T·10.209066ms
-=============== Sep 6, 2021 (UTC) ===============
-16:56:35.257220 log@legend F·NumFile S·FileSize N·Entry C·BadEntry B·BadBlock Ke·KeyError D·DroppedEntry L·Level Q·SeqNum T·TimeElapsed
-16:56:35.257321 version@stat F·[] S·0B[] Sc·[]
-16:56:35.257329 db@open opening
-16:56:35.257366 journal@recovery F·1
-16:56:35.259060 journal@recovery recovering @1
-16:56:35.261461 memdb@flush created L0@2 N·3 S·5KiB "lcommon,v2":"und..Key,v1"
-16:56:35.263636 version@stat F·[1] S·5KiB[5KiB] Sc·[0.25]
-16:56:35.340307 db@janitor F·3 G·0
-16:56:35.340361 db@open done T·83.020073ms
+=============== Sep 7, 2021 (UTC) ===============
+14:33:37.327029 log@legend F·NumFile S·FileSize N·Entry C·BadEntry B·BadBlock Ke·KeyError D·DroppedEntry L·Level Q·SeqNum T·TimeElapsed
+14:33:37.330800 db@open opening
+14:33:37.333280 version@stat F·[] S·0B[] Sc·[]
+14:33:37.343031 db@janitor F·2 G·0
+14:33:37.343069 db@open done T·12.225295ms
+=============== Sep 7, 2021 (UTC) ===============
+14:53:09.378436 log@legend F·NumFile S·FileSize N·Entry C·BadEntry B·BadBlock Ke·KeyError D·DroppedEntry L·Level Q·SeqNum T·TimeElapsed
+14:53:09.378621 version@stat F·[] S·0B[] Sc·[]
+14:53:09.378637 db@open opening
+14:53:09.378707 journal@recovery F·1
+14:53:09.381543 journal@recovery recovering @1
+14:53:09.384175 memdb@flush created L0@2 N·3 S·5KiB "lcommon,v2":"und..Key,v1"
+14:53:09.387361 version@stat F·[1] S·5KiB[5KiB] Sc·[0.25]
+14:53:09.409300 db@janitor F·3 G·0
+14:53:09.409329 db@open done T·30.681211ms
+=============== Sep 7, 2021 (UTC) ===============
+14:57:42.465464 log@legend F·NumFile S·FileSize N·Entry C·BadEntry B·BadBlock Ke·KeyError D·DroppedEntry L·Level Q·SeqNum T·TimeElapsed
+14:57:42.465657 version@stat F·[1] S·5KiB[5KiB] Sc·[0.25]
+14:57:42.465673 db@open opening
+14:57:42.465746 journal@recovery F·1
+14:57:42.469345 journal@recovery recovering @3
+14:57:42.471911 version@stat F·[1] S·5KiB[5KiB] Sc·[0.25]
+14:57:42.484390 db@janitor F·3 G·0
+14:57:42.484437 db@open done T·18.749139ms
