@@ -25,6 +25,7 @@ main() {
 
 function gitCleanDir() {
     local dir=${1:?Dir name is required}
+    echo "Git clean PWD: $PWD"
     sudo chown -R $USER "$dir"
     git clean -xf "$dir"
     git checkout "$dir"

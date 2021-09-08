@@ -56,9 +56,9 @@ typings/
 
 # dotenv environment variables file
 features/node-components/peer-component/.env
-features/fixtures/network/org1.example.test/peer0.org1.example.test/ledger
-features/fixtures/network/org1.example.test/peer0.org1.example.test/crypto-config
-features/fixtures/network/org1.example.test/peer2.org1.example.test/crypto-config
+features/fixtures/network/fabric-*/org1.example.test/peer0.org1.example.test/ledger
+features/fixtures/network/fabric-*/org1.example.test/peer0.org1.example.test/crypto-config
+features/fixtures/network/fabric-*/org1.example.test/peer2.org1.example.test/crypto-config
 
 # next.js build output
 .next

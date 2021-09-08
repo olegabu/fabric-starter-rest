@@ -11,7 +11,7 @@ main() {
     local orgSubPathSanitized="${orgSubPath//./}"
 
     docker rm -f -v $(docker ps -aq)
-    docker volume rm orderer${domainSanitized}_orderer peer0${orgSubPathSanitized}_ledger peer0${orgSubPathSanitized}_admin_app peer0${orgSubPathSanitized}_nginx_templates
+    docker volume rm peer0${orgSubPathSanitized}_ledger peer0${orgSubPathSanitized}_admin_app peer0${orgSubPathSanitized}_nginx_templates
     sleep 0.5
 
     ./renew-org-folder.sh "${networkDefinitionPath}/${orgSubPath}"

@@ -1,0 +1,10 @@
+ledger/orderer/etcdraft/**/*.tmp
+ledger/orderer/etcdraft/**/*.wal
+
+
+fabric-*/org1.example.test/peer0.org1.example.test/webapp
+fabric-*/org1.example.test/peer0.org1.example.test/appstore
+
+!*.tgz
+!*.zip
+!*.log
