@@ -1,5 +1,5 @@
 # for integration tests
-PEER_CONFIG_FILE=features/fixtures/network/fabric-1x/org1.example.test/peer2.org1.example.test/node-config.json
+PEER_CONFIG_FILE=features/fixtures/network/fabric-2x/org1.example.test/peer2.org1.example.test/node-config.json
 
 ORG=org1
 PEER_NAME=peer2
@@ -8,7 +8,7 @@ DOMAIN=example.test
 FABRIC_STARTER_VERSION=baas-test
 
 TEMPLATES_DIR=../fabric-starter/templates
-CRYPTO_CONFIG_DIR=features/fixtures/network/fabric-1x/org1.example.test/peer2.org1.example.test/crypto-config
+CRYPTO_CONFIG_DIR=features/fixtures/network/fabric-2x/org1.example.test/peer2.org1.example.test/crypto-config
 
 DOCKER_COMPOSE_EXTRA_ARGS="-f https/docker-compose-https-ports.yaml"
 
