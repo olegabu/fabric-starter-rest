@@ -64,6 +64,11 @@ hfc-*
 
 .idea
 
+package-lock.json
 webapp/scripts
 webapp/src
 ./upload
+appstore/*
+!appstore/.keep
+custom-sources.tgz
+/webapps/
