@@ -3,10 +3,18 @@ version: '3.7'
 services:
   sdk:
     container_name: sdk.${ORG}.${DOMAIN}
-    image: ${FABRIC_STARTER_REPOSITORY:-olegabu}/fabric-rest-api:${FABRIC_STARTER_VERSION:-2x}
+    image: ${FABRIC_STARTER_REPOSITORY:-olegabu}/fabric-sdk-api:${FABRIC_STARTER_VERSION:-2x}
     ports:
       - ${SDK_PORT:-8080}:8080
     environment:
+      - ORG=${ORG-org1}
+      - DOMAIN=${DOMAIN:-example.com}
+      - PEER0_PORT=${PEER0_PORT:-7051}
       - CRYPTO_CONFIG_DIR=${CRYPTO_CONFIG_DIR:-/etc/hyperledger/crypto-config}
     volumes:
       - ${FABRIC_STARTER_HOME:-.}/crypto-config:/etc/hyperledger/crypto-config
+
+networks:
+  default:
+    external: false
+    name: fabric-starter_test

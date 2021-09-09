@@ -18,8 +18,20 @@ class HttpService {
 
     async get(url, opts) {
         let response = await this.agent.get(url, opts);
-        logger.debug(`Http. Get request:${url}`, '\nResponse:', this.extractResponse(response))
-        return response.data
+        // response = this.extractResponse(response);
+        logger.debug(`Http. Get request:${url}`, '\nResponse status:', response.status)
+
+        let data = response.data;
+        if (response.headers['transfer-encoding'] === 'chunked' && data && data.indexOf('data:') !== -1) {
+            data = _.trim(data.substring('data:'.length))
+            try {
+                return JSON.parse(data)
+            } catch (e) {
+                logger.debug("Chunked answer is not JSON:", response);
+                return {}
+            }
+        }
+        return data
     }
 
     async post(url, data, opts) {

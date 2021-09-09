@@ -10,6 +10,8 @@ const IntegrationService = require('../../service/integration-service');
 const ChaincodeService = require('../../service/chaincode/chaincode-service');
 const LedgerStorage = require('../storage/ledger-storage')
 const util = require('../../util');
+const Fabric1xAdapter = require('../../service/context/fabricversions/fabric-1x-adapter') // todo: load adapters automatically
+const Fabric2xAdapter = require('../../service/context/fabricversions/fabric-2x-adapter')
 
 class FabricStarterRuntime {
 
@@ -41,6 +43,7 @@ class FabricStarterRuntime {
             }
 
             logger.debug('Init runtime')
+            this.initFabricVersionAdapter(cfg.FABRIC_VERSION)
             await this.initSocketServer();
             this.initApps()
             this.initJwtApi()
@@ -158,6 +161,17 @@ class FabricStarterRuntime {
         return this.tlsFabricStarterClient
     }
 
+    initFabricVersionAdapter(version) {
+        if (_.startsWith(version, "2.")) {
+            this.fabricVersionAdapter = new Fabric2xAdapter(this)
+        } else if (_.startsWith(version, "1.")) {
+            this.fabricVersionAdapter = new Fabric1xAdapter(this)
+        }
+    }
+
+    getFabricVersionAdapter() {
+        return this.fabricVersionAdapter
+    }
 }
 
 module.exports = FabricStarterRuntime

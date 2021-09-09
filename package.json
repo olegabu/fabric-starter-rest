@@ -14,7 +14,7 @@
 
     "fabric-2x-start-peer0": "cd features/fixtures/network; ./start-peer0.sh fabric-2x; cd ../",
     "fabric-2x-start-peer2-agent": "DOTENV_CONFIG_PATH=features/fixtures/network/fabric-2x/org1.example.test/peer2.org1.example.test/.peer2-test-env FABRIC_STARTER_PWD=$PWD/features/fixtures/network/fabric-2x/org1.example.test/peer2.org1.example.test node -r dotenv/config app.js",
-    "fabric-2x-start-sdk-agent": "cd features/fixtures/network; ./start-peer0.sh fabric-2x; cd ../",
+    "fabric-2x-start-rest-sdk": "cd features/fixtures/sdk; ./start-sdk.sh 2x; cd ../",
 
     "integration-deploy-peer-component": "cucumber-js features/peer_component_deploy.feature || true",
 
@@ -22,9 +22,15 @@
     "integration": "npm run integration-deploy-peer-component || true",
     "postintegration-test": "pkill -f node",
 
-    "ledger-storage-test": "npm run fabric-1x-start-peer0 && sleep 3 && cucumber-js features/tests/ledger-storage-test.feature",
+    "ledger-storage-test": "npm run fabric-1x-start-peer0 && sleep 3 && cucumber-js features/ledger-storage-test.feature",
 
-    "dev-test": ""
+    "dev-test": "SDK_API_URL=http://localhost:8080 cucumber-js features/chaincode_sdk_interactions.feature"
+
+
+
+
+
+
   },
   "jest": {
     "verbose": true,

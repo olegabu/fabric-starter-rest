@@ -329,7 +329,7 @@ module.exports = async function(app, server, fabricStarterRuntime, chaincodeServ
   app.get('/channels/:channelId/chaincodes', asyncMiddleware(async(req, res, next) => {
     res.json(await req.fabricStarterClient.queryInstantiatedChaincodes(req.params.channelId));
   }));
-
+``
   /**
    * @typedef Instantiate
    * @property {string} chaincodeId.required - chaincode name - eg: reference
