@@ -11,7 +11,12 @@ class Fabric2xAdapter {
         return chaincodes
     }
 
-    async installChaincode(chaincodeId, metadata, streamOfTarGz, opts) {
+    async installChaincode(chaincodeId, metadata, streamOfArchive, opts) {
+        //TODO: return await this.fabricStarterRuntime.getDefaultFabricStarterClient()
+            //.installChaincode(chaincodeId, chaincodePath, version, language)
+    }
+
+    async installChaincodeAsExternalService(chaincodeId, metadata, streamOfArchive, opts) {
         //TODO: return await this.fabricStarterRuntime.getDefaultFabricStarterClient()
             //.installChaincode(chaincodeId, chaincodePath, version, language)
     }
