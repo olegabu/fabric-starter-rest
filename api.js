@@ -9,9 +9,10 @@ module.exports = function(app, server) {
   const cfg = require('./config.js');
   const logger = cfg.log4js.getLogger('api');
   const util = require('./util');
+  const x509util = require('./util/x509-util');
 
   const channelManager = require('./channel-manager');
-  const osnManager = require('./osn-manager');
+  const integrationService = require('./service/integration-service');
 
   // upload for chaincode and app installation
   const uploadDir = os.tmpdir() || './upload';
@@ -25,7 +26,7 @@ module.exports = function(app, server) {
   // fabric client
   const FabricStarterClient = require('./fabric-starter-client');
   const fabricStarterClient = new FabricStarterClient();
-  const webAppManager = require('./web-app-manager');
+  const appManager = require('./app-manager');
 
   // socket.io server to pass blocks to webapps
   const Socket = require('./rest-socket-server');
@@ -80,7 +81,7 @@ module.exports = function(app, server) {
 
 // require presence of JWT in Authorization Bearer header
   const jwtSecret = fabricStarterClient.getSecret();
-  app.use(jwt({secret: jwtSecret}).unless({path: ['/', '/users', '/domain', '/mspid', '/config', new RegExp('/api-docs'), '/api-docs.json', /\/webapp/, /\/webapps\/.*/,'/admin/', /\/admin\/.*/, '/msp/', /\/integration\/.*/]}));
+  app.use(jwt({secret: jwtSecret}).unless({path: ['/', '/users', /\/jwt\/.*/, '/domain', '/mspid', '/config', new RegExp('/api-docs'), '/api-docs.json', /\/webapp/, /\/webapps\/.*/,'/admin/', /\/admin\/.*/, '/msp/', /\/integration\/.*/]}));
 
 // use fabricStarterClient for every logged in user
   const mapFabricStarterClient = {};
@@ -104,7 +105,7 @@ module.exports = function(app, server) {
   });
 
   app.post('/cert', (req, res) => {
-    res.json(fabricStarterClient.decodeCert(req.body.cert));
+    res.json(x509util.decodeCert(req.body.cert));
   });
 
   /**
@@ -187,20 +188,37 @@ module.exports = function(app, server) {
    * @returns {object} 200 - User logged in and his JWT returned
    * @returns {Error}  default - Unexpected error
    */
-  app.post('/users', asyncMiddleware(async(req, res, next) => {
+  app.post('/users', asyncMiddleware(async (req, res, next) => {
     // let namePasswordKey=`${req.body.username}.${req.body.password}`;
     // if(!mapFabricStarterClient[namePasswordKey]) {
     // }
     mapFabricStarterClient[req.body.username] && mapFabricStarterClient[req.body.username].logoutUser(req.body.username);
-    mapFabricStarterClient[req.body.username]=new FabricStarterClient();
+    mapFabricStarterClient[req.body.username] = new FabricStarterClient();
     req.fabricStarterClient = mapFabricStarterClient[req.body.username];
     await req.fabricStarterClient.init();
 
     await req.fabricStarterClient.loginOrRegister(req.body.username, req.body.password || req.body.username);
 
-    const token = jsonwebtoken.sign({sub: req.fabricStarterClient.user.getName()}, jwtSecret);
+    let certSubject = x509util.getSubject(req.fabricStarterClient.user.getIdentity()._certificate);
+    let jwtPayload = _.assign({sub: req.fabricStarterClient.user.getName()}, certSubject);
+    const token = jsonwebtoken.sign(jwtPayload, jwtSecret, {expiresIn: cfg.AUTH_JWT_EXPIRES_IN});
     logger.debug('token', token);
     res.json(token);
+  }));
+
+  /**
+   * Verify JWT token.
+   * @route POST /jwt/verify
+   * @group auth - Authentication and verification
+   * @param {jwt} jwt.body.required
+   * @returns {object} 200 - JWT is correct
+   * @returns {Error}  500  - JWT is malformed or expired
+   */
+  app.post('/jwt/verify', asyncMiddleware(async (req, res, next) => {
+    logger.debug("Verifying JWT Token", req.body);
+    jsonwebtoken.verify(_.get(req,'body.jwt'), jwtSecret);
+    res.status(200);
+    res.json("OK");
   }));
 
   /**
@@ -347,51 +365,50 @@ module.exports = function(app, server) {
    */
   app.get('/network/orgs', asyncMiddleware(async(req, res, next) => {
     let storedOrgs = await req.fabricStarterClient.query(cfg.DNS_CHANNEL, cfg.DNS_CHAINCODE, "get", '["orgs"]');
-    let orgsArray =_.values(JSON.parse(_.get(storedOrgs,"[0]")));
+    let orgsArray =_.values(JSON.parse(_.get(storedOrgs,'[0]')||'[]'));
     res.json(orgsArray);
   }));
 
-
-  app.post('/service/accept/orgs', asyncMiddleware((req, res) => {
-    logger.info('Orgs to service request: ', req.body);
-    let orgMspIdsArray = _.isArray(req.body) ? req.body : [req.body];
-    this.orgsToAccept = _.concat(this.orgsToAccept || [], orgMspIdsArray);
-    res.json("OK")
+  app.post('/service/accept/orgs', asyncMiddleware(async (req, res) => {
+    res.json(integrationService.acceptOrg(req.body))
   }));
 
   app.get('/service/accepted/orgs', asyncMiddleware((req, res) =>{
-    res.json(this.orgsToAccept || []);
+    res.json(integrationService.acceptedOrgsList());
   }));
 
   app.post('/integration/service/orgs', asyncMiddleware(async (req, res) => {
-    logger.info('Integration service request: ', req.body);
-    let org = orgFromHttpBody(req.body);
-    if (!this.orgsToAccept || _.find(this.orgsToAccept, o => o.orgId === org.orgId)) {
-      let client = await createDefaultFabricClient();
-      return res.json(await client.addOrgToChannel(cfg.DNS_CHANNEL, org));
+    logger.info('Org integration service request: ', req.body);
+    try {
+      res.json(await integrationService.integrateOrg(orgFromHttpBody(req.body)))
+    } catch (e) {
+      logger.error(e);
+      res.status(401).json(e);
     }
-    res.status(301).json(`Org ${org.orgId} is not allowed`);
+  }));
+
+  app.post('/integration/dns/org', asyncMiddleware(async (req, res) => {
+    logger.info('Dns integration service request: ', req.body);
+    try {
+      res.json(await integrationService.registerOrgInDns(orgFromHttpBody(req.body)))
+    } catch (e) {
+      logger.error(e);
+      res.status(401).json(e);
+    }
   }));
 
   app.post('/integration/service/raft', asyncMiddleware(async (req, res, next) => {
     logger.info('Raft integration service request: ', req.body);
-    let orderer = ordererFromHttpBody(req.body);
-    if (!this.orgsToAccept || _.find(this.orgsToAccept, o=>o.domain===orderer.domain)) {
-      let client = await createDefaultFabricClient();
-      return res.json(await osnManager.OsnManager.addRaftConsenter(orderer, client));
+    try {
+      res.json(await integrationService.integrateOrderer(ordererFromHttpBody(req.body)))
+    } catch (e) {
+      logger.error(e);
+      res.status(401).json(e);
     }
-    res.status(301).json(`Orderer domain ${orderer.domain} is not allowed`);
   }));
 
-  async function createDefaultFabricClient() {
-    let client = new FabricStarterClient();
-    await client.init();
-    await client.loginOrRegister(cfg.enrollId, cfg.enrollSecret);
-    return client;
-  }
-
   function orgFromHttpBody(body) {
-    let org = {orgId: body.orgId, domain: body.domain, orgIp: body.orgIp, peer0Port: body.peerPort, wwwPort: body.wwwPort};
+    let org = {orgId: body.orgId, domain: body.domain || cfg.domain, orgIp: body.orgIp, peer0Port: body.peerPort, wwwPort: body.wwwPort};
     logger.info('Org: ', org);
 
     return org;
@@ -400,7 +417,7 @@ module.exports = function(app, server) {
   function ordererFromHttpBody(body) {
     let orderer = {
       ordererName: body.ordererName, domain: body.domain, ordererPort: body.ordererPort,
-      ordererIp: body.ordererIp, wwwPort: body.wwwPort
+      ordererIp: body.ordererIp, wwwPort: body.wwwPort, orgId: body.orgId, orgIp: body.ordererIp
     };
     logger.info('Orderer: ', orderer);
     return orderer;
@@ -589,7 +606,7 @@ module.exports = function(app, server) {
    * @security JWT
    */
   app.get('/applications', fileUpload, asyncMiddleware(async(req, res, next) => {
-    res.json(await webAppManager.getWebAppsList());
+    res.json(await appManager.getWebAppsList());
   }));
 
   /**
@@ -602,12 +619,11 @@ module.exports = function(app, server) {
    */
   app.post('/applications', fileUpload, asyncMiddleware(async (req, res, next) => {
       let fileUploadObj = _.get(req, "files.file[0]");
-      const fileBaseName = path.basename(fileUploadObj.originalname, path.extname(fileUploadObj.originalname));
-      res.json(await webAppManager.provisionWebAppFromPackage(fileUploadObj)
-          .then(extractParentPath => {
-              let appFolder=path.resolve(extractParentPath, fileBaseName);
-              webAppManager.redeployWebapp(app, fileBaseName, appFolder);
-              return webAppManager.getWebAppsList();
+      res.json(await appManager.provisionWebApp(fileUploadObj)
+          .then(appInf => {
+              // let appFolder=path.resolve(extractParentPath, fileBaseName);
+              appManager.redeployWebapp(app, appInf.context, appInf.folder);
+              return appManager.getWebAppsList();
       }));
   }));
 
@@ -619,8 +635,39 @@ module.exports = function(app, server) {
    * @returns {Error}  default - Unexpected error
    * @security JWT
    */
+  app.get('/appstore/app', fileUpload, asyncMiddleware(async(req, res, next) => {
+    const list = await appManager.getAppstoreList();
+    res.json(list);
+  }));
+
+
+  /**
+   * Deploy new integrated
+   * @route POST /appstore/app
+   * @group appstore - market applications
+   * @param {file} file.formData.required - folder with compiled application archived in zip - eg: coolwebapp.zip
+   * @returns {Error}  default - Unexpected error
+   * @security JWT
+   */
+  app.post('/appstore/app', fileUpload, asyncMiddleware(async (req, res, next) => {
+      let fileUploadObj = _.get(req, "files.file[0]");
+    res.json(await appManager.provisionAppstoreApp(app, fileUploadObj));
+  }));
+
+  app.get('/appstore/status/:appName', fileUpload, asyncMiddleware(async (req, res, next) => {
+    res.json(await appManager.getAppStatus(req.params.appName));
+  }));
+
+
+  /**
+   * Get list of deployed custom middlewares
+   * @route GET /middlewares
+   * @group middlewares - Middlewares
+   * @returns {Error}  default - Unexpected error
+   * @security JWT
+   */
   app.get('/middlewares', fileUpload, asyncMiddleware(async(req, res, next) => {
-      const list = await webAppManager.getMiddlewareList();
+      const list = await appManager.getMiddlewareList();
       res.json(list);
   }));
 
@@ -634,11 +681,11 @@ module.exports = function(app, server) {
    */
   app.post('/middlewares', fileUpload, asyncMiddleware(async (req, res, next) => {
       let fileUploadObj = _.get(req, "files.file[0]");
-      res.json(await webAppManager.provisionMiddleware(fileUploadObj)
-          .then(extractParentPath => {
+      res.json(await appManager.provisionMiddleware(fileUploadObj)
+          .then(() => {
               const route = require(extractParentPath);
               route(app, asyncMiddleware);
-              return webAppManager.getMiddlewareList();
+              return appManager.getMiddlewareList();
       }));
   }));
 
