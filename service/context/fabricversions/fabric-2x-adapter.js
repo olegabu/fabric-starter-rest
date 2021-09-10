@@ -3,8 +3,7 @@ const httpService = require('../../http/http-service.js');
 
 class Fabric2xAdapter {
 
-    constructor(fabricStarterRuntime) {
-        this.fabricStarterRuntime = fabricStarterRuntime
+    constructor() {
     }
 
     async getInstantiatedChaincodes(channelId) {

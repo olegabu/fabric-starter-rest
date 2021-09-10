@@ -4,10 +4,12 @@ const _ = require('lodash')
 const {Given, When, Then,} = require('cucumber');
 
 const ChaincodeService = require('../../../../service/chaincode/chaincode-service')
+const Fabric2xAdapter = require('../../../../service/context/fabricversions/fabric-2x-adapter')
 
+const fabricStarterRuntimeMock={
+    getFabricVersionAdapter : () => new Fabric2xAdapter()
+}
 
-let fabricStarterClient
-const starterRuntimeMock = {getDefaultFabricStarterClient: () => fabricStarterClient}
 
 
 Given('Chaincode {string} is instantiated \\(committed) on channel {string}', function (chaincodeName, channelId) {
@@ -16,7 +18,7 @@ Given('Chaincode {string} is instantiated \\(committed) on channel {string}', fu
 });
 
 When('Client requests list of instantiated chaincodes on channel {string}', async function (channelId) {
-    const chaincodeService = new ChaincodeService(this);
+    const chaincodeService = new ChaincodeService(fabricStarterRuntimeMock);
     this.instantiatedChaincodes = await chaincodeService.getInstantiatedChaincodes(channelId);
 
     return 'success';
