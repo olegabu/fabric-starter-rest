@@ -121,7 +121,6 @@ services:
   peer:
     image: ${DOCKER_REGISTRY:-docker.io}/hyperledger/fabric-peer:${FABRIC_VERSION:-1.4.8}
     working_dir: /opt/gopath/src/github.com/hyperledger/fabric/peer
-    command: peer node start
     container_name: ${PEER_NAME:-peer0}.${ORG:-org1}.${DOMAIN:-example.com}
     restart: always
     ports:
@@ -160,11 +159,14 @@ services:
       options:
         max-size: "${LOG_FILES_MAX_SIZE:-10m}"
         max-file: "1"
+    command: sh -c "sed  -i 's/\(\s*\)externalBuilders.*/\1externalBuilders:\ \[{\"path\":\"\/external\",\"name\":\"remote\",\"propagateEnvironment\":[\"CORE_PEER_ADDRESS\",\"ORG\",\"DOMAIN\",\"SDK_API_URL\"]}\]/' /etc/hyperledger/fabric/core.yaml; peer node start"
     volumes:
       - ${FABRIC_STARTER_HOME:-.}/crypto-config/peerOrganizations/${ORG:-org1}.${DOMAIN:-example.com}/peers/${PEER_NAME:-peer0}.${ORG:-org1}.${DOMAIN:-example.com}/:/etc/hyperledger/crypto/peer
       - ledger:/var/hyperledger/production/
       - ${FABRIC_STARTER_HOME:-.}/crypto-config/hosts:/etc/hosts
       - /var/run/docker.sock:/host/var/run/docker.sock
+      - ./external-builders:/external
+
 
 
   api:
