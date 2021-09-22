@@ -19,7 +19,7 @@ Given('Chaincode {string} is instantiated \\(committed) on channel {string}', fu
 
 When('Client requests list of instantiated chaincodes on channel {string}', async function (channelId) {
     const chaincodeService = new ChaincodeService(fabricStarterRuntimeMock);
-    this.instantiatedChaincodes = await chaincodeService.getInstantiatedChaincodes(channelId);
+    const newVar = this.instantiatedChaincodes = await chaincodeService.getInstantiatedChaincodes(channelId);
 
     return 'success';
 });
