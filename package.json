@@ -24,6 +24,7 @@
     "express": "^4.17.1",
     "express-jwt": "^5.3.1",
     "fabric-ca-client": "^1.4.4",
+    "fabric-client": "1.4.4",
     "ffi": "^2.3.0",
     "fs-extra": "^8.1.0",
     "glob": "^7.1.4",
