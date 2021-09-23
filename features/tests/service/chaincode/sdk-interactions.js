@@ -41,17 +41,10 @@ Given('No chaincode {string} is installed', function (chaincodeName) {
     return 'success'; //TODO: remove chaincode
 });
 
-When('Web-client requests installation chaincode {string} as external service', async function (chaincodeName) {
-    const fabricStarterRuntime = new FabricStarterRuntime(app)
-    await fabricStarterRuntime.tryInitRuntime({orgId: 'org1', domain: 'example.com', peer0Port: '7051'})
+When('Web-client requests installation of chaincode {string} as external service', async function (chaincodeName) {
 
-    await request(app)
-        .post("/chaincodes/external")
-        .set("Content-type", "multipart/form-data")
-        .field('version', '1.0')
-        .attach(Files.componentFileName('peer0'), Buffer.from(chaincodeName), `${chaincodeName}.tar.gz`)
-        .expect(200)
-    return 'pending';
+    const installRes = await new Fabric2xAdapter().installChaincodeAsExternalService(chaincodeName, "1.0");
+
 });
 
 

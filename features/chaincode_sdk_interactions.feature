@@ -12,7 +12,7 @@ Feature: Chaincode operations are to be delegated to SDk container
   Scenario: Install chaincode as external service
   For Fabric v.2x "lifecycle" feature is used
     Given No chaincode "test" is installed
-    When Web-client requests installation chaincode "test" as external service
+    When Web-client requests installation of chaincode "test" as external service
     Then Exec install on peer
     And Run chaincode on the target host "localhost"
 

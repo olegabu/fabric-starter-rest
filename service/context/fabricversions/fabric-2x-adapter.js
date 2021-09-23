@@ -42,10 +42,10 @@ class Fabric2xAdapter {
         //.installChaincode(chaincodeId, chaincodePath, version, language)
     }
 
-    async installChaincodeAsExternalService(chaincodeId, version, opts) {
+    async installChaincodeAsExternalService(chaincodeName, version, opts) {
         // const eventSource = new EventSource(`http://${cfg.SDK_API_URL}/externalchaincode/channel/${channelId}/chaincodes`);
         const sdkHostPort = _.split(cfg.SDK_API_URL, ":");
-        const installResult = await httpService.postMultipart(`http://${cfg.SDK_API_URL}/externalchaincode/install/${chaincodeId}/${version}`,
+        const installResult = await httpService.postMultipart(`http://${cfg.SDK_API_URL}/externalchaincode/install/${chaincodeName}/${version}`,
             {host: _.get(sdkHostPort, '[0]'), port: _.get(sdkHostPort, '[1]')})
 
         return installResult;

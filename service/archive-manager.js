@@ -76,6 +76,7 @@ const ARCHIVES_EXTRACTOR = {
     '.zip': new UnzipExtractor(),
     '.tar': new TarExtractor(),
     '.tgz': new TarGzExtractor(),
+    '.gz': new TarGzExtractor(),
 };
 
 
