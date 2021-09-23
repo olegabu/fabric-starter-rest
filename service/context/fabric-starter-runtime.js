@@ -1,5 +1,6 @@
 const glob = require('glob');
 const path = require('path');
+const _ = require('lodash');
 
 const FabricStarterClient = require('../../fabric-starter-client');
 const RestSocketServer = require('../../rest-socket-server');

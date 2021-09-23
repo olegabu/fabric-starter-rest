@@ -5,7 +5,7 @@ const request = require('supertest')
 const nodeComponentsApi = require('../node-components-management-api')
 const Files = require("../../model/Files");
 
-const app = require('../../test/jest/test-express')
+const app = require('../../test/app/test-express-app')
 
 const NodeComponentsManager = jest.genMockFromModule("../../service/nodecomponents/node-components-manager")
 const componentsManagerMock = new NodeComponentsManager();

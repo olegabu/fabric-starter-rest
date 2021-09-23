@@ -3,7 +3,9 @@ const path = require('path')
 const _ = require('lodash')
 
 function getFileBaseName(fileName) {
-    const fileBaseName = path.basename(fileName, path.extname(fileName));
+    let fileBaseName = path.basename(fileName, path.extname(fileName));
+    fileBaseName = path.basename(fileBaseName, '.tar');
+    fileBaseName = path.basename(fileBaseName, '.gz');
     return fileBaseName;
 }
 

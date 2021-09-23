@@ -11,7 +11,6 @@ const Org = require("./model/Org");
 let server;
 
 (async function () {
-
     const app = initAppExpress();
     server = startHttpAppServer(app);
     initStaticApi(app, server);

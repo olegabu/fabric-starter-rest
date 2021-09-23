@@ -19,7 +19,7 @@
     "integration": "npm run integration-deploy-peer-component || true",
     "postintegration-test": "pkill -f node",
     "ledger-storage-test": "npm run fabric-1x-start-peer0 && sleep 3 && cucumber-js features/ledger-storage-test.feature",
-    "dev-test": "SDK_API_URL=http://localhost:8080 cucumber-js features/chaincode_sdk_interactions.feature"
+    "dev-test": "SDK_API_URL=http://localhost:8080 cucumber-js features/chaincode_sdk_interactions.feature --name ^Install chaincode as external service$"
   },
   "jest": {
     "verbose": true,

@@ -134,12 +134,35 @@ module.exports = async function(app, server, fabricStarterRuntime, chaincodeServ
     const archiveType = path.extname(fileName)
 
     res.json(await chaincodeService
-        .installChaincode(fileBaseName, {...req.body, archiveType}, fileUploadObj.path))
+        .installChaincodeAsExternalService(fileBaseName, {...req.body, archiveType}, fileUploadObj.path))
+  }));
+
+  /**
+   * Install chaincode as external service
+   * @route POST /chaincodes/external
+   * @group chaincodes - Queries and operations on chaincode
+   * @param {string} channelId.formData.required - channel - eg: common
+   * @param {string} version.formData (default 1.0) - chaincode version - eg: 1.0
+   * @param {file} file.formData.required - chaincode source code archived in tar.gz - eg: chaincode_example02.tar.gz
+   * @returns {object} 200 - Chaincode installed
+   * @returns {Error}  default - Unexpected error
+   * @security JWT
+   * @consumes multipart/form-data
+   */
+  app.post('/chaincodes/external', fileUpload, asyncMiddleware(async (req, res, next) => {
+    let fileUploadObj = _.get(req, "files.file[0]");
+
+    const fileName = _.get(fileUploadObj, 'originalname');
+    const fileBaseName = fileUtils.getFileBaseName(fileName);
+    const archiveType = path.extname(fileName)
+
+    res.json(await chaincodeService
+        .installChaincodeAsExternalService(fileBaseName, {...req.body, archiveType}, fileUpload.stream/*, fileUploadObj.path*/))
   }));
 
   app.post('/chaincodes/shared/:chaincodeId', asyncMiddleware(async (req, res, next) => {
 
-    storageService.
+    // storageService.
     res.json(await chaincodeService
         .installChaincode(fileBaseName, {...req.body, archiveType}, fileUploadObj.path))
   }));
@@ -327,7 +350,9 @@ module.exports = async function(app, server, fabricStarterRuntime, chaincodeServ
    * @security JWT
    */
   app.get('/channels/:channelId/chaincodes', asyncMiddleware(async(req, res, next) => {
-    res.json(await req.fabricStarterClient.queryInstantiatedChaincodes(req.params.channelId));
+    // res.json(await req.fabricStarterClient.queryInstantiatedChaincodes(req.params.channelId));
+    const newVar = await chaincodeService.getInstantiatedChaincodes(_.get(req,'params.channelId')/*, req.fabricStarterClient*/);
+    res.json(newVar)
   }));
 ``
   /**

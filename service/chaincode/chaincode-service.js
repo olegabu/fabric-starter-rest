@@ -6,7 +6,8 @@ class ChaincodeService {
     }
 
     async getInstantiatedChaincodes(channelId) {
-        return await this.fabricStarterRuntime.getFabricVersionAdapter().getInstantiatedChaincodes(channelId)
+        const chaincodes = await this.fabricStarterRuntime.getFabricVersionAdapter().getInstantiatedChaincodes(channelId);
+        return {"chaincodes": chaincodes}
     }
 
     async installChaincode(chaincodeId, metadata = {}, fileName, opts) {
@@ -14,9 +15,18 @@ class ChaincodeService {
     }
 
     async installChaincodeFromStream(chaincodeId, metadata = {}, stream, opts) {
-      return await this.fabricStarterRuntime.getFabricVersionAdapter()
-          .installChaincode(chaincodeId, metadata, stream, opts)
+        return this._getFabricVersionAdapter().installChaincode(chaincodeId, metadata, stream, opts)
     }
+
+    async installChaincodeAsExternalService(chaincodeId, metadata={}, opts) {
+        return this._getFabricVersionAdapter().installChaincodeAsExternalService(chaincodeId, metadata.version)
+    }
+
+
+    _getFabricVersionAdapter() {
+        return this.fabricStarterRuntime.getFabricVersionAdapter();
+    }
+
 }
 
 module.exports = ChaincodeService
