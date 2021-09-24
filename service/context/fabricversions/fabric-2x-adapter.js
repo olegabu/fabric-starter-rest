@@ -2,6 +2,7 @@ const EventSource = require('eventsource')
 const _ = require('lodash');
 const cfg = require('../../../config');
 const httpService = require('../../http/http-service.js');
+const streamUtils = require('../../../util/stream/streams');
 const logger = require('../../../util/log/log4js-configured').getLogger('HttpService')
 
 class Fabric2xAdapter {
@@ -40,15 +41,36 @@ class Fabric2xAdapter {
     async installChaincode(chaincodeId, metadata, streamOfArchive, opts) {
         //TODO: return await this.fabricStarterRuntime.getDefaultFabricStarterClient()
         //.installChaincode(chaincodeId, chaincodePath, version, language)
+        throw new Error("not implemented")
     }
 
     async installChaincodeAsExternalService(chaincodeName, version, opts) {
         // const eventSource = new EventSource(`http://${cfg.SDK_API_URL}/externalchaincode/channel/${channelId}/chaincodes`);
         const sdkHostPort = _.split(cfg.SDK_API_URL, ":");
         const installResult = await httpService.postMultipart(`http://${cfg.SDK_API_URL}/externalchaincode/install/${chaincodeName}/${version}`,
-            {host: _.get(sdkHostPort, '[0]'), port: _.get(sdkHostPort, '[1]')})
+            {agentHost: _.get(sdkHostPort, '[0]'), agentPort: _.get(sdkHostPort, '[1]')})
 
-        return installResult;
+        let dataObject = await streamUtils.dataFromEventStream(installResult)
+        try {
+            dataObject = JSON.parse(dataObject)
+        } catch (e) {
+            logger.error("Install result is not parseable", e)
+        }
+
+        return dataObject;
+    }
+
+    async runExternalChaincode(chaincodeName, version, tarGzStream) {
+        const sdkHostPort = _.split(cfg.SDK_API_URL, ":");
+        const files = [{
+            fieldname: 'files',
+            filename: 'test.tar.gz',
+            // path: path.join(__dirname, '../../../fixtures/msp_org1.example.test.tgz')
+            stream: tarGzStream
+        }]
+        const installResult = await httpService.postMultipart(`http://${cfg.SDK_API_URL}/externalchaincode/run/${chaincodeName}/${version}`,
+            {agentHost: _.get(sdkHostPort, '[0]'), agentPort: _.get(sdkHostPort, '[1]')}, files)
+
     }
 }
 

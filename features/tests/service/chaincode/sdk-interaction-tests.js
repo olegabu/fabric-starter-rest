@@ -24,7 +24,7 @@ Given('Chaincode {string} is instantiated \\(committed) on channel {string}', fu
 
 When('Client requests list of instantiated chaincodes on channel {string}', async function (channelId) {
     const chaincodeService = new ChaincodeService(fabricStarterRuntimeMock);
-    const newVar = this.instantiatedChaincodes = await chaincodeService.getInstantiatedChaincodes(channelId);
+    this.instantiatedChaincodes = await chaincodeService.getInstantiatedChaincodes(channelId);
 
     return 'success';
 });
@@ -41,16 +41,23 @@ Given('No chaincode {string} is installed', function (chaincodeName) {
     return 'success'; //TODO: remove chaincode
 });
 
-When('Web-client requests installation of chaincode {string} as external service', async function (chaincodeName) {
+When('Client invokes installation of chaincode {string} as external service', async function (chaincodeName) {
 
-    const installRes = await new Fabric2xAdapter().installChaincodeAsExternalService(chaincodeName, "1.0");
+    this.installResult = await new Fabric2xAdapter().installChaincodeAsExternalService(chaincodeName, "1.0");
 
+    assert.strictEqual(this.installResult.chaincode.label, chaincodeName + "_1.0")
+    assert.ok(/[a-fA-F\d]{64}/.test(this.installResult.chaincode.packageId), "PackageId is hex of 64 char length")
+
+    assert.ok(/.+:\d{4}/.test(this.installResult.chaincodeConnection.address), "Chaincode Address is returned")
+
+    return 'success'
 });
 
 
-Then('Exec install on peer', function () {
-    // Write code here that turns the phrase above into concrete actions
-    return 'pending';
+Then('Client invokes run external chaincode {string} on remote server', async function (chaincodeName) {
+
+    await new Fabric2xAdapter().runExternalChaincode(chaincodeName, "1.0", )
+    return 'success';
 });
 
 

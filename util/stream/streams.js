@@ -1,6 +1,8 @@
 const stream = require('stream')
+const _ = require('lodash')
 
-function streamToString(stream) {
+
+const convertStreamToString = async (stream) => {
     const chunks = [];
     return new Promise((resolve, reject) => {
         stream.on('data', (chunk) => chunks.push(Buffer.from(chunk)));
@@ -9,7 +11,7 @@ function streamToString(stream) {
     })
 }
 
-stringToStream = (string) => {
+const stringToStream = async (string) => {
     return new stream.Readable({
         read() {
             this.push(string);
@@ -18,8 +20,14 @@ stringToStream = (string) => {
     });
 }
 
+const dataFromEventStream = async (stream) => {
+    const content = await convertStreamToString(stream);
+    return _.takeRight(content.split('data:'), 1)
+}
+
 
 module.exports = {
-    streamToString: streamToString,
-    stringToStream: stringToStream
+    streamToString: convertStreamToString,
+    stringToStream: stringToStream,
+    dataFromEventStream: dataFromEventStream
 }
