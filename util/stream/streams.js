@@ -22,7 +22,7 @@ const stringToStream = async (string) => {
 
 const dataFromEventStream = async (stream) => {
     const content = await convertStreamToString(stream);
-    return _.takeRight(content.split('data:'), 1)
+    return _.reduce(content.split('data:'), (result, item) => result + item, "")
 }
 
 

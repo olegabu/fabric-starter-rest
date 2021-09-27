@@ -2,8 +2,8 @@ const cfg = require('../../config');
 const archiverManager = require('../../service/archive-manager');
 
 class MspManager {
-    packOrgPeerMsp() {
-        return archiverManager.gzip(cfg.ORG_CRYPTO_DIR, '.*\/keystore|.*\/sk.pem|.*/\*.key')
+    async packOrgPeerMsp() {
+        return await archiverManager.gzip(cfg.ORG_CRYPTO_DIR, '.*\/keystore|.*\/sk.pem|.*/\*.key')
     }
 }
 

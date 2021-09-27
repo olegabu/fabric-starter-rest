@@ -60,7 +60,10 @@ class Fabric2xAdapter {
         return dataObject;
     }
 
-    async runExternalChaincode(chaincodeName, version, tarGzStream) {
+    async runExternalChaincode(chaincodeName, packageId, tarGzStream) {
+        if (!tarGzStream) {
+            throw new Error("Package to run is required")
+        }
         const sdkHostPort = _.split(cfg.SDK_API_URL, ":");
         const files = [{
             fieldname: 'files',
@@ -68,9 +71,13 @@ class Fabric2xAdapter {
             // path: path.join(__dirname, '../../../fixtures/msp_org1.example.test.tgz')
             stream: tarGzStream
         }]
-        const installResult = await httpService.postMultipart(`http://${cfg.SDK_API_URL}/externalchaincode/run/${chaincodeName}/${version}`,
-            {agentHost: _.get(sdkHostPort, '[0]'), agentPort: _.get(sdkHostPort, '[1]')}, files)
-
+        const result = await httpService.postMultipart(`http://${cfg.SDK_API_URL}/externalchaincode/run/${chaincodeName}/${packageId}`,
+            {
+                agentHost: _.get(sdkHostPort, '[0]'),
+                agentPort: _.get(sdkHostPort, '[1]')
+            },
+            files)
+        return result
     }
 }
 

@@ -1,3 +1,4 @@
+const fse = require('fs-extra')
 const path = require('path')
 const assert = require('assert')
 const _ = require('lodash')
@@ -8,9 +9,12 @@ const app = require('../../../../test/app/test-express-app')
 // const app = require('../../../../app')
 const Files = require("../../../../model/Files");
 const FabricStarterRuntime = require('../../../../service/context/fabric-starter-runtime');
+const archiveManager = require('../../../../service/archive-manager')
 
 const ChaincodeService = require('../../../../service/chaincode/chaincode-service')
 const Fabric2xAdapter = require('../../../../service/context/fabricversions/fabric-2x-adapter')
+
+const streamUtils = require('../../../../util/stream/streams');
 
 const fabricStarterRuntimeMock = {
     getFabricVersionAdapter: () => new Fabric2xAdapter()
@@ -55,8 +59,13 @@ When('Client invokes installation of chaincode {string} as external service', as
 
 
 Then('Client invokes run external chaincode {string} on remote server', async function (chaincodeName) {
+    const sourceDir = './features/fixtures/chaincode/external-chaincode';
+    const TEST_PACKAGE_ID = "testId"
+    const stream = await archiveManager.gzip(sourceDir);
+    const resultStream = await new Fabric2xAdapter().runExternalChaincode(chaincodeName, TEST_PACKAGE_ID, stream);
+    const resultOutput = await streamUtils.dataFromEventStream(resultStream);
+    assert.ok(new RegExp(`^Emulation of starting chaincode as an external service.*Success\. PORT\: .{4}, PACKAGE_ID: ${TEST_PACKAGE_ID}\\s*$`, "s").test(resultOutput), "Run returns output of executed process")
 
-    await new Fabric2xAdapter().runExternalChaincode(chaincodeName, "1.0", )
     return 'success';
 });
 

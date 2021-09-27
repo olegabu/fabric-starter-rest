@@ -18,8 +18,12 @@ class ChaincodeService {
         return this._getFabricVersionAdapter().installChaincode(chaincodeId, metadata, stream, opts)
     }
 
-    async installChaincodeAsExternalService(chaincodeId, metadata={}, opts) {
+    async installChaincodeAsExternalService(chaincodeId, metadata = {}, opts) {
         return this._getFabricVersionAdapter().installChaincodeAsExternalService(chaincodeId, metadata.version)
+    }
+
+    async runExternalChaincode(chaincodeId, metadata = {}, opts) {
+        return this._getFabricVersionAdapter().runExternalChaincode(chaincodeId, metadata.packageId)
     }
 
 

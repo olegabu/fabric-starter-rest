@@ -33,20 +33,6 @@ class TarExtractor {
     }
 }
 
-class MyEntry extends ReadEntry {
-    constructor (header, ex, gex) {
-        super(header, ex, gex)
-    }
-
-    write(source){
-        console.log(this)
-    }
-
-    pipe(source) {
-        console.log(this)
-    }
-}
-
 class TarGzExtractor {
     extractionOutStream(extractPath) {
         logger.debug("Untargz to ", extractPath);
@@ -54,22 +40,21 @@ class TarGzExtractor {
                 // strip: 1,//nope
                 cwd: extractPath,
                 gzip: true,
-               /* transform: (e)=>{
-                    // if (_.includes(e.header.path, 'peer')) console.log(e.header.path); e.header.path=_.replace(e.header.path, 'peer', 'neer')
-                    let h = e.header
-                    h.set({path:_.replace(h.path, 'peer', 'neer')})
-                    const myEntry = new ReadEntry(h, e.extended, e.globalExtended);
-                    myEntry.on('data', e=>{
-                        // console.log(e)
-                    })
-                    return myEntry
-                }*/
+                /* transform: (e)=>{
+                     // if (_.includes(e.header.path, 'peer')) console.log(e.header.path); e.header.path=_.replace(e.header.path, 'peer', 'neer')
+                     let h = e.header
+                     h.set({path:_.replace(h.path, 'peer', 'neer')})
+                     const myEntry = new ReadEntry(h, e.extended, e.globalExtended);
+                     myEntry.on('data', e=>{
+                         // console.log(e)
+                     })
+                     return myEntry
+                 }*/
 
             }
         )
     }
 }
-
 
 
 const ARCHIVES_EXTRACTOR = {
@@ -83,7 +68,7 @@ const ARCHIVES_EXTRACTOR = {
 class ArchiveManager {
 
     async extractUploadedArchive(uploadedFile, extractPath, transform) {
-        const extractTarStream = this.extractTarTransform(uploadedFile.path, transform );
+        const extractTarStream = this.extractTarTransform(uploadedFile.path, transform);
 
         return await this.extractStream(extractTarStream, '.tgz', extractPath)
 
@@ -127,7 +112,7 @@ class ArchiveManager {
         return extractPath
     }
 
-    async extractStream(readStream, archiveType='.zip', extractPath, sourceFile) {//TODO: unlink source in a caller
+    async extractStream(readStream, archiveType = '.zip', extractPath, sourceFile) {//TODO: unlink source in a caller
         let extractor = ARCHIVES_EXTRACTOR[archiveType];
         return new Promise(async (resolve, reject) => {
             logger.debug(`Extracting stream: `, extractor)
@@ -148,15 +133,20 @@ class ArchiveManager {
                     reject();
                 })
             } catch (e) {
-                    reject(e);
-                }
-            })
+                reject(e);
+            }
+        })
     }
 
-    gzip(sourceDir, excludeRegexp, includeFiles=['./']) {
+    async gzip(sourceDir, excludeRegexp = null, includeFiles = ['./']) {
         logger.debug(`gzip path: ${sourceDir} to stream`, excludeRegexp && ` excluding ${excludeRegexp}`)
+        sourceDir = path.resolve(sourceDir)
+        if (!fse.exists(sourceDir)) {
+            throw new Error("Directory does not exist " + sourceDir)
+        }
+
         const excludeFileFilterRegExp = new RegExp(excludeRegexp);
-        const tarOrig = tar.c(
+        const tarOrig = await tar.c(
             {
 //                [targetFileName ? 'file' : '']: targetFileName,
                 gzip: true, // this will perform the compression too

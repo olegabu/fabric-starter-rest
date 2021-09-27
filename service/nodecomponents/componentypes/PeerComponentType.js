@@ -239,7 +239,7 @@ class PeerComponentType {
 
     async attachMspFileIfAbsent(component) {
         if (_.isEmpty(_.get(component, 'files'))) {
-            const mspPackageStream = mspManager.packOrgPeerMsp();
+            const mspPackageStream = await mspManager.packOrgPeerMsp();
             component = Component.fromComponent(component, null, [{
                 fieldname: Files.componentFileName(component),
                 filename: 'msp.tgz',
