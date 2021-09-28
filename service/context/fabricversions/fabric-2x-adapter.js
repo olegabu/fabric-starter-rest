@@ -10,6 +10,11 @@ class Fabric2xAdapter {
     constructor() {
     }
 
+    async getInstalledChaincodes() {
+        const installResult = await httpService.get(`http://${cfg.SDK_API_URL}/lifecycle/chaincodes`, {parseStreamedData: true})
+        return installResult;
+    }
+
     async getInstantiatedChaincodes(channelId) {
         // const chaincodes = await httpService.get(`${cfg.SDK_API_URL}/lifecycle/channel/${channelId}/chaincodes`)
         return new Promise((resolve, reject) => {
@@ -38,10 +43,10 @@ class Fabric2xAdapter {
         })
     }
 
-    async installChaincode(chaincodeId, metadata, streamOfArchive, opts) {
-        //TODO: return await this.fabricStarterRuntime.getDefaultFabricStarterClient()
-        //.installChaincode(chaincodeId, chaincodePath, version, language)
-        throw new Error("not implemented")
+    async installChaincode(chaincodeName, metadata, tarGzStream, opts) {
+        const installResult = await httpService.postMultipartStream(`http://${cfg.SDK_API_URL}/lifecycle/chaincode/install`, {},
+            'packageToRun', `${chaincodeName}.tar.gz`, tarGzStream, opts)
+        return await streamUtils.dataFromEventStream(installResult);
     }
 
     async installChaincodeAsExternalService(chaincodeName, version, opts) {
@@ -65,20 +70,37 @@ class Fabric2xAdapter {
             throw new Error("Package to run is required")
         }
         const sdkHostPort = _.split(cfg.SDK_API_URL, ":");
-        const files = [{
-            fieldname: 'files',
-            filename: 'test.tar.gz',
-            // path: path.join(__dirname, '../../../fixtures/msp_org1.example.test.tgz')
-            stream: tarGzStream
-        }]
-        const result = await httpService.postMultipart(`http://${cfg.SDK_API_URL}/externalchaincode/run/${chaincodeName}/${packageId}`,
+        const result = await httpService.postMultipartStream(`http://${cfg.SDK_API_URL}/externalchaincode/run/${chaincodeName}/${packageId}`,
             {
                 agentHost: _.get(sdkHostPort, '[0]'),
                 agentPort: _.get(sdkHostPort, '[1]')
             },
-            files)
+            'packageToRun',
+            `${chaincodeName}.tar.gz`,
+            tarGzStream)
         return result
     }
+
+    async approveChaincode(channel, chaincodeName, version, packageId) {
+        const result = await httpService.post(`http://${cfg.SDK_API_URL}/lifecycle/chaincode/approve/${channel}/${chaincodeName}/${version}/${packageId}`)
+        return this.convertEventToObject(result);
+    }
+
+    async commitChaincode(channel, chaincodeName, version, sequence) {
+        const result = await httpService.post(`http://${cfg.SDK_API_URL}/lifecycle/chaincode/commit/${channel}/${chaincodeName}/${version}/${sequence}`)
+        return result; //this.convertEventToObject(result);
+    }
+
+    convertEventToObject(result) {
+        try {
+            const eventContent = _.get(_.filter(_.split(result, "data:"), item => !_.isEmpty(item)), 0)
+            result = JSON.parse(eventContent)
+        } catch (e) {
+            logger.error("Answer is unparseable: ", result)
+        }
+        return result;
+    }
+
 }
 
 module.exports = Fabric2xAdapter

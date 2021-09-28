@@ -48,7 +48,7 @@ Given('No chaincode {string} is installed', function (chaincodeName) {
 When('Client invokes installation of chaincode {string} as external service', async function (chaincodeName) {
 
     this.installResult = await new Fabric2xAdapter().installChaincodeAsExternalService(chaincodeName, "1.0");
-
+    console.log("Chaincode install result: ", this.installResult)
     assert.strictEqual(this.installResult.chaincode.label, chaincodeName + "_1.0")
     assert.ok(/[a-fA-F\d]{64}/.test(this.installResult.chaincode.packageId), "PackageId is hex of 64 char length")
 
@@ -60,18 +60,24 @@ When('Client invokes installation of chaincode {string} as external service', as
 
 Then('Client invokes run external chaincode {string} on remote server', async function (chaincodeName) {
     const sourceDir = './features/fixtures/chaincode/external-chaincode';
-    const TEST_PACKAGE_ID = "testId"
+    const PACKAGE_ID = _.get(this, 'installResult.chaincode.packageId') || 'testId'
     const stream = await archiveManager.gzip(sourceDir);
-    const resultStream = await new Fabric2xAdapter().runExternalChaincode(chaincodeName, TEST_PACKAGE_ID, stream);
+    const resultStream = await new Fabric2xAdapter().runExternalChaincode(chaincodeName, PACKAGE_ID, stream);
     const resultOutput = await streamUtils.dataFromEventStream(resultStream);
-    assert.ok(new RegExp(`^Emulation of starting chaincode as an external service.*Success\. PORT\: .{4}, PACKAGE_ID: ${TEST_PACKAGE_ID}\\s*$`, "s").test(resultOutput), "Run returns output of executed process")
+    assert.ok(new RegExp(`^Emulation of starting chaincode as an external service.*Success\. PORT\: .{4}, PACKAGE_ID: ${PACKAGE_ID}\\s*$`, "s").test(resultOutput), "Run returns output of executed process")
 
     return 'success';
 });
 
 
-Then('Run chaincode on the target host {string}', function (targetHost) {
-    // Write code here that turns the phrase above into concrete actions
-    return 'pending';
+Then('Client invokes approve chaincode {string} on channel {string} for the org', async function (chaincodeName, channel) {
+    const PACKAGE_ID = _.get(this, 'installResult.chaincode.packageId') || 'testId4'
+    let result = await new Fabric2xAdapter().approveChaincode(channel, chaincodeName, "1.0", PACKAGE_ID);
+    result = await new Fabric2xAdapter().commitChaincode(channel, chaincodeName, "1.0", result.sequence);
+    console.log(result)
+    return 'success';
 });
 
+// require('../../../../util/test-cycle').cycle(
+//     async inp => {
+// })

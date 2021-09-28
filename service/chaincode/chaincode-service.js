@@ -1,8 +1,20 @@
 const fs = require('fs-extra');
+const _ = require('lodash');
 
 class ChaincodeService {
     constructor(fabricStarterRuntime) {
         this.fabricStarterRuntime = fabricStarterRuntime
+    }
+
+    async getInstalledChaincodes() {
+        const chaincodes = await this.fabricStarterRuntime.getFabricVersionAdapter().getInstalledChaincodes();
+        const result = _.map(chaincodes,
+            item => ({
+                name: _.get(item, 'label'),
+                version: _.get(item, 'version') || '',
+                packageId: _.get(item, 'packageId')
+            }));
+        return result
     }
 
     async getInstantiatedChaincodes(channelId) {

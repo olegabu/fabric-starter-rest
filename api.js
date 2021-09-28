@@ -97,7 +97,8 @@ module.exports = async function(app, server, fabricStarterRuntime, chaincodeServ
    * @security JWT
    */
   app.get('/chaincodes', asyncMiddleware(async(req, res, next) => {
-    res.json(await req.fabricStarterClient.queryInstalledChaincodes());
+    // res.json(await req.fabricStarterClient.queryInstalledChaincodes());
+    res.json(await chaincodeService.getInstalledChaincodes());
   }));
 
   /**
@@ -134,7 +135,7 @@ module.exports = async function(app, server, fabricStarterRuntime, chaincodeServ
     const archiveType = path.extname(fileName)
 
     res.json(await chaincodeService
-        .installChaincodeAsExternalService(fileBaseName, {...req.body, archiveType}, fileUploadObj.path))
+        .installChaincode(fileBaseName, {...req.body, archiveType}, fileUploadObj.path))
   }));
 
   /**

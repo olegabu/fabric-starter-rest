@@ -1,10 +1,9 @@
-const fs = require('fs');
-const FormData = require('form-data');
 const axios = require('axios');
 const _ = require('lodash');
 const https = require("https");
 const logger = require('../../util/log/log4js-configured').getLogger('HttpService')
 const FormDataFactory = require('./FormDataFactory');
+const streamUtils = require('../../util/stream/streams');
 
 function withTimeout(opts, timeout) {
     return {timeout: timeout, ...opts,}
@@ -17,7 +16,7 @@ class HttpService {
     }
 
     async get(url, opts) {
-        let response = await this.agent.get(url, opts);
+        return await this.agent.get(url, opts);
         // response = this.extractResponse(response);
         logger.debug(`Http. Get request:${url}`, '\nResponse status:', response.status)
 
@@ -36,15 +35,25 @@ class HttpService {
 
     async post(url, data, opts) {
         let response = await this.agent.post(url, data, opts);
-        logger.debug(`Http. Post request:${url}`, data, '\nResponse:', this.extractResponse(response))
+        logger.debug(`Http. Post request:${url}`, data || {}, '\nResponse:', _.get(response, "status"))
         return response.data
     }
 
+    async postMultipartStream(url, fields, fileFieldName, fileName, fileStream, opts) {
+        const files = [{
+            fieldname: fileFieldName,
+            filename: fileName,
+            // path: path.join(__dirname, '../../../fixtures/msp_org1.example.test.tgz')
+            stream: fileStream
+        }]
+        return await this.postMultipart(url, fields, files, opts)
+    }
+
     async postMultipart(url, fields, files, opts) {
-        logger.debug(`postMultipart. Request:${url}`, fields, _.map(files, f => f.fieldname))
+        logger.debug(`postMultipart. Request:${url}`, fields || {}, _.map(files, f => f.fieldname))
         // let response = await this.agent.postMultipart(url, fields, files, withTimeout(opts, cfg.CHAINCODE_PROCESSING_TIMEOUT));
         let response = await this.agent.postMultipart(url, fields, files, opts);
-        logger.debug('postMultipart. Response:', this.extractResponse(response))
+        logger.debug('postMultipart. Response:', _.get(response, 'status'))
         return response.data
     }
 
@@ -57,7 +66,6 @@ class HttpService {
     }
 }
 
-
 class AxiosAgent {
 
     constructor() {
@@ -68,12 +76,47 @@ class AxiosAgent {
         });
     }
 
+    /**
+     * Get requets. See post() for __opts__ options
+     * @param url
+     * @param opts
+     * @returns {Promise<*>}
+     */
+
     async get(url, opts) {
         return await this.instance.get(url, opts)
+            .then(response => this.parseOrStream(_.get(response, 'data'), opts))
+            .catch(async e => await this.processError(e, opts))
+
     }
 
+    /**
+     * Post request to server
+     * @param url
+     * @param fields
+     * @param files
+     * @param opts= {responseType: 'stream'}, for streamed output
+     *        opts= {parseStreamedData: true} to parse 'data:{...}' events to array instead of stream
+     * @returns {Promise<any>}
+     */
     async post(url, data, opts) {
         return await this.instance.post(url, data, opts)
+            .then(response => this.parseOrStream(_.get(response, 'data'), opts))
+            .catch(async e => await this.processError(e, opts))
+    }
+
+    async processError(e, opts) {
+        let answer = _.get(e, 'response.data');
+        answer = _.get(opts, 'responseType') === 'stream' ? tryParseJson(await streamUtils.streamToString(answer)) : answer
+
+        throw new Error(_.get(answer, 'message'))
+    }
+
+    parseOrStream(responseData, opts) {
+        const result = (_.get(opts, 'parseStreamedData') && 'stream' !== _.get(opts, 'responseType'))
+            ? parseDataEventsInNoStreamedOutput(responseData)
+            : responseData;
+        return result;
     }
 
     async postMultipart(url, fields, files, opts) {
@@ -89,18 +132,48 @@ class AxiosAgent {
                 // they are obtained from the endpoint.
             }
         }
-        const response = await this.instance.post(url, formData, _.merge({}, opts, {
-                headers: formDataHeaders,
-                responseType: 'stream'
-            })
-        ).catch(e => {
-            console.log(e, fields)
-            return {}
-        });
+        const response = await this.post(url, formData, {...opts, headers: formDataHeaders})
+        /*            .catch(async e => {
+                        console.log(e, fields)
+                        return streamUtils.streamToString(_.get(e, 'response.data'))
+                            .catch(e1 => {
+                                throw e
+                            })
+                            .then(eFromStream => {
+                                try {
+                                    return JSON.parse(eFromStream)
+                                } catch (e) {
+                                    logger.debug("Not json on error stream", e)
+                                }
+                                return eFromStream
+                            })
+                            .then(eFromStreamObj => {
+                                throw new Error(_.get(eFromStreamObj, 'message'))
+                            })
+                    });*/
         return response
     }
 
 }
+
+
+function parseDataEventsInNoStreamedOutput(content) {
+    return _.reduce(content.split('data:'), (result, item) => {
+        item = tryParseJson(item);
+        item && result.push(item)
+        return result
+    }, [])
+}
+
+function tryParseJson(item) {
+    try {
+        item = JSON.parse(item)
+    } catch (e) {
+        logger.debug('Not parseable:', item)
+    }
+    return item;
+}
+
 
 module.exports = new HttpService()
 
