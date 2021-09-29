@@ -378,6 +378,9 @@ module.exports = async function(app, server, fabricStarterRuntime, chaincodeServ
    * @security JWT
    */
   app.post('/channels/:channelId/chaincodes', fileUpload, asyncMiddleware(async(req, res, next) => {
+    res.json(await chaincodeService.instantiateChaincode(req.params.channelId, req.body.chaincodeId, req.body.chaincodeVersion, req.body.packageId))
+    return
+//TODO: move to v1
     if(req.files && req.files['file'])
       res.json(await req.fabricStarterClient.instantiateChaincode(req.params.channelId, req.body.chaincodeId,
         req.body.chaincodeType, req.body.fcn, extractArgs(req.body.args), req.body.chaincodeVersion, req.body.targets, req.body.waitForTransactionEvent, req.body.policy, req.files['file'][0].path));

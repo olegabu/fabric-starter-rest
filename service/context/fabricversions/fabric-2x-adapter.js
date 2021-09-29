@@ -1,5 +1,6 @@
 const EventSource = require('eventsource')
 const _ = require('lodash');
+const fp = require('lodash/fp');
 const cfg = require('../../../config');
 const httpService = require('../../http/http-service.js');
 const streamUtils = require('../../../util/stream/streams');
@@ -11,12 +12,13 @@ class Fabric2xAdapter {
     }
 
     async getInstalledChaincodes() {
-        const installResult = await httpService.get(`http://${cfg.SDK_API_URL}/lifecycle/chaincodes`, {parseStreamedData: true})
-        return installResult;
+        const chaincodes = await httpService.get(`http://${cfg.SDK_API_URL}/lifecycle/chaincodes`, {parseStreamedData: true})
+        return _.map(chaincodes, this.mapToV1Chaincode);
     }
 
     async getInstantiatedChaincodes(channelId) {
         // const chaincodes = await httpService.get(`${cfg.SDK_API_URL}/lifecycle/channel/${channelId}/chaincodes`)
+        const that = this
         return new Promise((resolve, reject) => {
             const res = [];
             const eventSource = new EventSource(`http://${cfg.SDK_API_URL}/lifecycle/channel/${channelId}/chaincodes`);
@@ -38,12 +40,12 @@ class Fabric2xAdapter {
                     return reject(err);
                 }
 
-                resolve(res)
+                resolve(_.map(res, that.mapToV1Chaincode))
             };
         })
     }
 
-    async installChaincode(chaincodeName, metadata, tarGzStream, opts) {
+    async installChaincode(chaincodeName, version, tarGzStream, opts) {
         const installResult = await httpService.postMultipartStream(`http://${cfg.SDK_API_URL}/lifecycle/chaincode/install`, {},
             'packageToRun', `${chaincodeName}.tar.gz`, tarGzStream, opts)
         return await streamUtils.dataFromEventStream(installResult);
@@ -81,9 +83,10 @@ class Fabric2xAdapter {
         return result
     }
 
-    async approveChaincode(channel, chaincodeName, version, packageId) {
-        const result = await httpService.post(`http://${cfg.SDK_API_URL}/lifecycle/chaincode/approve/${channel}/${chaincodeName}/${version}/${packageId}`)
-        return this.convertEventToObject(result);
+    async approveChaincode(channel, chaincodeName, version, packageId, isInitRequired = '') {
+        const result = await httpService.post(`http://${cfg.SDK_API_URL}/lifecycle/chaincode/approve/${channel}/${chaincodeName}/${version}/${packageId}/${isInitRequired}`, {},
+            {parseStreamedData: true})
+        return result;
     }
 
     async commitChaincode(channel, chaincodeName, version, sequence) {
@@ -91,16 +94,17 @@ class Fabric2xAdapter {
         return result; //this.convertEventToObject(result);
     }
 
-    convertEventToObject(result) {
-        try {
-            const eventContent = _.get(_.filter(_.split(result, "data:"), item => !_.isEmpty(item)), 0)
-            result = JSON.parse(eventContent)
-        } catch (e) {
-            logger.error("Answer is unparseable: ", result)
-        }
-        return result;
+    mapToV1Chaincode(item) {
+        return ({
+            name: _.get(item, 'chaincodeName') || _.join(_.dropRight(splitLabel(item), 1), '_'),
+            version: _.get(item, 'version') || _.get(_.takeRight(splitLabel(item), 1), '[0]'),
+            packageId: _.get(item, 'packageId')
+        });
     }
+}
 
+function splitLabel(item) {
+    return _.split(_.get(item, 'label'), '_');
 }
 
 module.exports = Fabric2xAdapter

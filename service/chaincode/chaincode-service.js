@@ -8,14 +8,9 @@ class ChaincodeService {
 
     async getInstalledChaincodes() {
         const chaincodes = await this.fabricStarterRuntime.getFabricVersionAdapter().getInstalledChaincodes();
-        const result = _.map(chaincodes,
-            item => ({
-                name: _.get(item, 'label'),
-                version: _.get(item, 'version') || '',
-                packageId: _.get(item, 'packageId')
-            }));
-        return result
+        return chaincodes
     }
+
 
     async getInstantiatedChaincodes(channelId) {
         const chaincodes = await this.fabricStarterRuntime.getFabricVersionAdapter().getInstantiatedChaincodes(channelId);
@@ -23,21 +18,33 @@ class ChaincodeService {
     }
 
     async installChaincode(chaincodeId, metadata = {}, fileName, opts) {
-        return await this.installChaincodeFromStream(chaincodeId, metadata, fs.createReadStream(fileName), opts)
+        return await this.installChaincodeFromStream(chaincodeId, metadata.version, fs.createReadStream(fileName), opts)
     }
 
     async installChaincodeFromStream(chaincodeId, metadata = {}, stream, opts) {
         return this._getFabricVersionAdapter().installChaincode(chaincodeId, metadata, stream, opts)
     }
 
-    async installChaincodeAsExternalService(chaincodeId, metadata = {}, opts) {
+    async installChaincodeAsExternalService(chaincodeId, metadata, opts) {
         return this._getFabricVersionAdapter().installChaincodeAsExternalService(chaincodeId, metadata.version)
     }
 
-    async runExternalChaincode(chaincodeId, metadata = {}, opts) {
+    async runExternalChaincode(chaincodeId, metadata = {packageId: ''}, opts) {
         return this._getFabricVersionAdapter().runExternalChaincode(chaincodeId, metadata.packageId)
     }
 
+    async approveChaincode(channel, chaincodeId, version, packageId, isInitRequired) {
+        return this._getFabricVersionAdapter().approveChaincode(channel, chaincodeId, version, packageId, isInitRequired)
+    }
+
+    async commitChaincode(channel, chaincodeId, version, sequence) {
+        return this._getFabricVersionAdapter().commitChaincode(channel, chaincodeId, version, sequence)
+    }
+
+    async instantiateChaincode(channel, chaincodeId, version, packageId, isInitRequired) {
+        const approval = await this.approveChaincode(channel, chaincodeId, version, packageId, isInitRequired);
+        await this.commitChaincode(channel, chaincodeId, version, approval.sequence)
+    }
 
     _getFabricVersionAdapter() {
         return this.fabricStarterRuntime.getFabricVersionAdapter();

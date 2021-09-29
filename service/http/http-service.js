@@ -18,7 +18,7 @@ class HttpService {
     async get(url, opts) {
         return await this.agent.get(url, opts);
         // response = this.extractResponse(response);
-        logger.debug(`Http. Get request:${url}`, '\nResponse status:', response.status)
+/*        logger.debug(`Http. Get request:${url}`, '\nResponse status:', response.status)
 
         let data = response.data;
         if (response.headers['transfer-encoding'] === 'chunked' && data && data.indexOf('data:') !== -1) {
@@ -30,13 +30,13 @@ class HttpService {
                 return {}
             }
         }
-        return data
+        return data*/
     }
 
-    async post(url, data, opts) {
-        let response = await this.agent.post(url, data, opts);
-        logger.debug(`Http. Post request:${url}`, data || {}, '\nResponse:', _.get(response, "status"))
-        return response.data
+    async post(url, formData, opts) {
+        let result = await this.agent.post(url, formData, opts);
+        logger.debug(`Http. Post request:${url}`, formData || {}, '\nResponse:', _.get(result, "status"))
+        return result
     }
 
     async postMultipartStream(url, fields, fileFieldName, fileName, fileStream, opts) {
@@ -76,48 +76,6 @@ class AxiosAgent {
         });
     }
 
-    /**
-     * Get requets. See post() for __opts__ options
-     * @param url
-     * @param opts
-     * @returns {Promise<*>}
-     */
-
-    async get(url, opts) {
-        return await this.instance.get(url, opts)
-            .then(response => this.parseOrStream(_.get(response, 'data'), opts))
-            .catch(async e => await this.processError(e, opts))
-
-    }
-
-    /**
-     * Post request to server
-     * @param url
-     * @param fields
-     * @param files
-     * @param opts= {responseType: 'stream'}, for streamed output
-     *        opts= {parseStreamedData: true} to parse 'data:{...}' events to array instead of stream
-     * @returns {Promise<any>}
-     */
-    async post(url, data, opts) {
-        return await this.instance.post(url, data, opts)
-            .then(response => this.parseOrStream(_.get(response, 'data'), opts))
-            .catch(async e => await this.processError(e, opts))
-    }
-
-    async processError(e, opts) {
-        let answer = _.get(e, 'response.data');
-        answer = _.get(opts, 'responseType') === 'stream' ? tryParseJson(await streamUtils.streamToString(answer)) : answer
-
-        throw new Error(_.get(answer, 'message'))
-    }
-
-    parseOrStream(responseData, opts) {
-        const result = (_.get(opts, 'parseStreamedData') && 'stream' !== _.get(opts, 'responseType'))
-            ? parseDataEventsInNoStreamedOutput(responseData)
-            : responseData;
-        return result;
-    }
 
     async postMultipart(url, fields, files, opts) {
         const {formData, formDataHeaders} = FormDataFactory.createFormData(fields, files)
@@ -132,37 +90,63 @@ class AxiosAgent {
                 // they are obtained from the endpoint.
             }
         }
-        const response = await this.post(url, formData, {...opts, headers: formDataHeaders})
-        /*            .catch(async e => {
-                        console.log(e, fields)
-                        return streamUtils.streamToString(_.get(e, 'response.data'))
-                            .catch(e1 => {
-                                throw e
-                            })
-                            .then(eFromStream => {
-                                try {
-                                    return JSON.parse(eFromStream)
-                                } catch (e) {
-                                    logger.debug("Not json on error stream", e)
-                                }
-                                return eFromStream
-                            })
-                            .then(eFromStreamObj => {
-                                throw new Error(_.get(eFromStreamObj, 'message'))
-                            })
-                    });*/
-        return response
+        return await this.post(url, formData, {...opts, headers: formDataHeaders})
     }
+
+
+    /**
+     * Get requets. See post() for __opts__ options
+     * @param url
+     * @param opts
+     * @returns {Promise<*>}
+     */
+
+    async get(url, opts) {
+        return await this.instance.get(url, opts)
+            .then(response => parseOrStream(_.get(response, 'data'), opts))
+            .catch(async e => await processError(e, opts))
+
+    }
+
+    /**
+     * Post request to server
+     * @param url
+     * @param fields
+     * @param files
+     * @param opts= {responseType: 'stream'}, for streamed output
+     *        opts= {parseStreamedData: true} to parse 'data:{...}' events to array instead of stream
+     * @returns {Promise<any>}
+     */
+    async post(url, data, opts) {
+        return await this.instance.post(url, data, opts)
+            .then(response => parseOrStream(_.get(response, 'data'), opts))
+            .catch(async e => await processError(e, opts))
+    }
+
 
 }
 
+function parseOrStream(responseData, opts) {
+    const result = (_.get(opts, 'parseStreamedData') && 'stream' !== _.get(opts, 'responseType'))
+        ? parseDataEventsInNoStreamedOutput(responseData)
+        : responseData;
+    return result;
+}
 
 function parseDataEventsInNoStreamedOutput(content) {
-    return _.reduce(content.split('data:'), (result, item) => {
+    const data = _.reduce(content.split('data:'), (result, item) => {
         item = tryParseJson(item);
         item && result.push(item)
         return result
-    }, [])
+    }, []);
+    return _.size(data)===1 ? _.get(data, '[0]') || data : data;
+}
+
+async function processError(e, opts) {
+    let answer = _.get(e, 'response.data');
+    answer = _.get(opts, 'responseType') === 'stream' ? tryParseJson(await streamUtils.streamToString(answer)) : answer
+
+    throw new Error(_.get(answer, 'message'))
 }
 
 function tryParseJson(item) {
