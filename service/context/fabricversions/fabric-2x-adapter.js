@@ -13,7 +13,7 @@ class Fabric2xAdapter {
 
     async getInstalledChaincodes() {
         const chaincodes = await httpService.get(`http://${cfg.SDK_API_URL}/lifecycle/chaincodes`, {parseStreamedData: true})
-        return _.map(chaincodes, this.mapToV1Chaincode);
+        return _.map(_.concat([], chaincodes), this.mapToV1Chaincode);
     }
 
     async getInstantiatedChaincodes(channelId) {

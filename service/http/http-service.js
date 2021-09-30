@@ -143,6 +143,7 @@ function parseDataEventsInNoStreamedOutput(content) {
 }
 
 async function processError(e, opts) {
+    logger.error(e)
     let answer = _.get(e, 'response.data');
     answer = _.get(opts, 'responseType') === 'stream' ? tryParseJson(await streamUtils.streamToString(answer)) : answer
 
