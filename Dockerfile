@@ -40,6 +40,7 @@ RUN if [ -d "/external-admin" ]; then \
     fi;
 
 COPY --from=fabrictools /etc/hyperledger/templates /usr/src/app/templates
+# TODO: use single palce
 COPY --from=fabrictools /etc/hyperledger/templates /etc/hyperledger/templates
 COPY --from=fabrictools /etc/hyperledger/container-scripts /usr/src/app/container-scripts
 COPY --from=fabrictools /etc/hyperledger/container-scripts /etc/hyperledger/container-scripts

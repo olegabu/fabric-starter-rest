@@ -48,7 +48,7 @@ class Fabric2xAdapter {
     async installChaincode(chaincodeName, version, tarGzStream, opts) {
         const installResult = await httpService.postMultipartStream(`http://${cfg.SDK_API_URL}/lifecycle/chaincode/install`, {},
             'packageToRun', `${chaincodeName}.tar.gz`, tarGzStream, opts)
-        return await streamUtils.dataFromEventStream(installResult);
+        return installResult; //await streamUtils.dataFromEventStream(installResult);
     }
 
     async installChaincodeAsExternalService(chaincodeName, version, opts) {
@@ -98,7 +98,8 @@ class Fabric2xAdapter {
         return ({
             name: _.get(item, 'chaincodeName') || _.join(_.dropRight(splitLabel(item), 1), '_'),
             version: _.get(item, 'version') || _.get(_.takeRight(splitLabel(item), 1), '[0]'),
-            packageId: _.get(item, 'packageId')
+            packageId: _.get(item, 'packageId'),
+            sequence: _.get(item, 'sequence')
         });
     }
 }

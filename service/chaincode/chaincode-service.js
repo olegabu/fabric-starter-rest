@@ -12,9 +12,16 @@ class ChaincodeService {
     }
 
 
-    async getInstantiatedChaincodes(channelId) {
-        const chaincodes = await this.fabricStarterRuntime.getFabricVersionAdapter().getInstantiatedChaincodes(channelId);
+    async getInstantiatedChaincodes(channelId, chaincodeName = null) {
+        const chaincodes = await this.getCommittedChaincodes(channelId, chaincodeName);
         return {"chaincodes": chaincodes}
+    }
+
+    async getCommittedChaincodes(channelId, chaincodeName = null) {
+        let chaincodes = await this.fabricStarterRuntime.getFabricVersionAdapter().getInstantiatedChaincodes(channelId);
+        if (chaincodeName)
+            chaincodes = _.filter(chaincodes, chaincode => _.isEqual(chaincodeName, _.get(chaincode, 'name')))
+        return chaincodes;
     }
 
     async installChaincode(chaincodeId, metadata = {}, fileName, opts) {
@@ -22,7 +29,7 @@ class ChaincodeService {
     }
 
     async installChaincodeFromStream(chaincodeId, metadata = {}, stream, opts) {
-        return this._getFabricVersionAdapter().installChaincode(chaincodeId, metadata, stream, opts)
+        return await this._getFabricVersionAdapter().installChaincode(chaincodeId, metadata, stream, opts)
     }
 
     async installChaincodeAsExternalService(chaincodeId, metadata, opts) {
@@ -43,7 +50,10 @@ class ChaincodeService {
 
     async instantiateChaincode(channel, chaincodeId, version, packageId, isInitRequired) {
         const approval = await this.approveChaincode(channel, chaincodeId, version, packageId, isInitRequired);
-        await this.commitChaincode(channel, chaincodeId, version, approval.sequence)
+        const currentlyInstantiated = _.find(await this.getCommittedChaincodes(channel, chaincodeId), ch=>_.isEqual(version, _.get(ch, 'version')))
+        if (!currentlyInstantiated || !_.isEqual(approval.sequence, _.get(currentlyInstantiated, 'sequence'))) {
+            await this.commitChaincode(channel, chaincodeId, version, approval.sequence)
+        }
     }
 
     _getFabricVersionAdapter() {

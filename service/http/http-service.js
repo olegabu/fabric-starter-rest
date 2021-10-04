@@ -18,19 +18,19 @@ class HttpService {
     async get(url, opts) {
         return await this.agent.get(url, opts);
         // response = this.extractResponse(response);
-/*        logger.debug(`Http. Get request:${url}`, '\nResponse status:', response.status)
+        /*        logger.debug(`Http. Get request:${url}`, '\nResponse status:', response.status)
 
-        let data = response.data;
-        if (response.headers['transfer-encoding'] === 'chunked' && data && data.indexOf('data:') !== -1) {
-            data = _.trim(data.substring('data:'.length))
-            try {
-                return JSON.parse(data)
-            } catch (e) {
-                logger.debug("Chunked answer is not JSON:", response);
-                return {}
-            }
-        }
-        return data*/
+                let data = response.data;
+                if (response.headers['transfer-encoding'] === 'chunked' && data && data.indexOf('data:') !== -1) {
+                    data = _.trim(data.substring('data:'.length))
+                    try {
+                        return JSON.parse(data)
+                    } catch (e) {
+                        logger.debug("Chunked answer is not JSON:", response);
+                        return {}
+                    }
+                }
+                return data*/
     }
 
     async post(url, formData, opts) {
@@ -52,9 +52,8 @@ class HttpService {
     async postMultipart(url, fields, files, opts) {
         logger.debug(`postMultipart. Request:${url}`, fields || {}, _.map(files, f => f.fieldname))
         // let response = await this.agent.postMultipart(url, fields, files, withTimeout(opts, cfg.CHAINCODE_PROCESSING_TIMEOUT));
-        let response = await this.agent.postMultipart(url, fields, files, opts);
-        logger.debug('postMultipart. Response:', _.get(response, 'status'))
-        return response.data
+        let data = await this.agent.postMultipart(url, fields, files, opts);
+        return data
     }
 
     async download(url, targetFile) {
@@ -77,7 +76,7 @@ class AxiosAgent {
     }
 
 
-    async postMultipart(url, fields, files, opts) {
+    async postMultipart(url, fields, files, opts = {parseStreamedData: true}) {
         const {formData, formDataHeaders} = FormDataFactory.createFormData(fields, files)
         opts = {
             ...opts,
@@ -101,7 +100,7 @@ class AxiosAgent {
      * @returns {Promise<*>}
      */
 
-    async get(url, opts) {
+    async get(url, opts = {parseStreamedData: true}) {
         return await this.instance.get(url, opts)
             .then(response => parseOrStream(_.get(response, 'data'), opts))
             .catch(async e => await processError(e, opts))
@@ -117,7 +116,7 @@ class AxiosAgent {
      *        opts= {parseStreamedData: true} to parse 'data:{...}' events to array instead of stream
      * @returns {Promise<any>}
      */
-    async post(url, data, opts) {
+    async post(url, data, opts = {parseStreamedData: true}) {
         return await this.instance.post(url, data, opts)
             .then(response => parseOrStream(_.get(response, 'data'), opts))
             .catch(async e => await processError(e, opts))
@@ -139,7 +138,8 @@ function parseDataEventsInNoStreamedOutput(content) {
         item && result.push(item)
         return result
     }, []);
-    return _.size(data)===1 ? _.get(data, '[0]') || data : data;
+    logger.debug('parsed response:', data)
+    return _.size(data) === 1 ? _.get(data, '[0]') || data : data;
 }
 
 async function processError(e, opts) {
@@ -147,7 +147,7 @@ async function processError(e, opts) {
     let answer = _.get(e, 'response.data');
     answer = _.get(opts, 'responseType') === 'stream' ? tryParseJson(await streamUtils.streamToString(answer)) : answer
 
-    throw new Error(_.get(answer, 'message'))
+    throw new Error(_.get(answer, 'message') || _.get(answer, 'error'))
 }
 
 function tryParseJson(item) {
