@@ -5,8 +5,10 @@
 # and then ./build.sh for building final fabric-starter-rest image
 
 FABRIC_STARTER_VERSION=${1:-${FABRIC_STARTER_VERSION:-latest}}
-FABRIC_STARTER_REPOSITORY=${2:-olegabu}
+FABRIC_STARTER_REPOSITORY=${2:-${FABRIC_STARTER_REPOSITORY:-olegabu}}
 DOCKER_REGISTRY=${3:-docker.io}
+
+echo ${FABRIC_STARTER_REPOSITORY}
 
 pushd ..
 docker build -t ${DOCKER_REGISTRY}/${FABRIC_STARTER_REPOSITORY}/fabric-starter-rest:${FABRIC_STARTER_VERSION}-base  \
