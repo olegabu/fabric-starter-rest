@@ -52,7 +52,8 @@ class HttpService {
     async postMultipart(url, fields, files, opts) {
         logger.debug(`postMultipart. Request:${url}`, fields || {}, _.map(files, f => f.fieldname))
         // let response = await this.agent.postMultipart(url, fields, files, withTimeout(opts, cfg.CHAINCODE_PROCESSING_TIMEOUT));
-        let data = await this.agent.postMultipart(url, fields, files, opts);
+        let data = await this.agent.postMultipart(url, fields, files,
+            _.assign({}, opts, {maxContentLength: Infinity, maxBodyLength: Infinity}));
         return data
     }
 

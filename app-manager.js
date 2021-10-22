@@ -13,7 +13,7 @@
     class AppManager {
 
         async provisionWebApp(fileObj) {
-            let baseFileName = fileUtils.getFileBaseName(fileObj.originalname);
+            let baseFileName = fileUtils.getFileBaseName(_.get(fileObj, 'originalname'));
             const appFolderPath = path.join(cfg.WEBAPPS_DIR, baseFileName);
 
             return archives.extract(fileObj.path, fileObj.originalname, cfg.WEBAPPS_DIR, true)
@@ -67,7 +67,7 @@
 
         async provisionAppstoreApp(expressApp, fileObj) {
             try {
-                let baseFileName = fileUtils.getFileBaseName(fileObj);
+                let baseFileName = fileUtils.getFileBaseName(_.get(fileObj, 'originalname'));
                 const appFolderPath = path.join(cfg.APPSTORE_DIR, baseFileName);
                 logger.debug("Provisioning Appstore app", appFolderPath, fileObj);
                 let extractPath = await archives.extract(fileObj.path, fileObj.originalname, appFolderPath, true);
