@@ -66,6 +66,8 @@ class FabricCLI {
                 (certificateSubDir, fullCertificateDirectoryPath, certificateFileName, directoryPrefixConfig) => {
                     shell.exec(`/usr/bin/wget ${WGET_OPTS} --directory-prefix ${fullCertificateDirectoryPath} http://${wwwIp}:${wwwPort}/node-certs/${nameDomain}/msp/${certificateSubDir}/${certificateFileName}`);
                 });
+        } else {
+            logger.debug(`Skipping downloading certs. WwwIp: ${wwwIp}, myIp: ${cfg.myIp}`)
         }
     }
 
