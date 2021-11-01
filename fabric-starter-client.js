@@ -179,7 +179,7 @@ class FabricStarterClient {
     async createChannel(channelId) {
         try {
             logger.info(`Creating channel ${channelId}`);
-            await fabricCLI.downloadOrdererMSP();
+            // await fabricCLI.downloadOrdererMSP();
 
             const tx_id = this.client.newTransactionID(true);
             let orderer = this.client.getOrderer(cfg.ORDERER_ADDR); //this.createOrderer();
@@ -207,7 +207,7 @@ class FabricStarterClient {
 
     async joinChannel(channelId) {
         logger.info(`Joining channel ${channelId}`);
-        await fabricCLI.downloadOrdererMSP();
+        // await fabricCLI.downloadOrdererMSP();
 
         const tx2_id = this.client.newTransactionID(true);
         let peers = [this.peer];//await this.queryPeers();

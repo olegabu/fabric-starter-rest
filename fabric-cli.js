@@ -71,9 +71,9 @@ class FabricCLI {
         }
     }
 
-    async downloadOrdererMSP(ordererName=cfg.ordererName, ordererDomain=cfg.ordererDomain, wwwPort = cfg.ordererWwwPort, ordererIp) {
-        await this.downloadCerts(null, ordererDomain, ordererDomain, `${ordererName}.${ordererDomain}`, wwwPort, ordererIp);
-    }
+    // async downloadOrdererMSP(ordererName=cfg.ordererName, ordererDomain=cfg.ordererDomain, wwwPort = cfg.ordererWwwPort, ordererIp) {
+    //     await this.downloadCerts(null, ordererDomain, ordererDomain, `${ordererName}.${ordererDomain}`, wwwPort, ordererIp);
+    // }
 
     async downloadOrgMSP(orgObj, domain = cfg.domain) {
         //TODO:await util.checkRemotePort(`www.${orgObj.orgId}.${domain}`, orgObj.wwwPort || 80);
@@ -133,15 +133,15 @@ class FabricCLI {
     }
 
     async generateChannelConfigTx(channelId) {
-        await this.envSubst(`${cfg.TEMPLATES_DIR}/configtx-template.yaml`, `${cfg.CRYPTO_CONFIG_DIR}/configtx.yaml`, this.getEnv());
+        await this.envSubst(`${cfg.TEMPLATES_DIR}/configtx-template.yaml`, `${cfg.TMP_DIR}/configtx.yaml`, this.getEnv());
 
-        let outputTxFile = `${cfg.CRYPTO_CONFIG_DIR}/configtx/channel_${channelId}.tx`;
-        this.generateConfigTxForChannel(channelId, cfg.CRYPTO_CONFIG_DIR, "CHANNEL", outputTxFile);
+        let outputTxFile = `${cfg.TMP_DIR}/configtx/channel_${channelId}.tx`;
+        this.generateConfigTxForChannel(channelId, cfg.TMP_DIR, "CHANNEL", outputTxFile);
         return outputTxFile;
     }
 
     createChannelByCli(channelName) {
-        let arg = ` -c ${channelName} -f ${cfg.CRYPTO_CONFIG_DIR}/configtx/channel_${channelName}.tx `;
+        let arg = ` -c ${channelName} -f ${cfg.TMP_DIR}/configtx/channel_${channelName}.tx `;
         this.execPeerCommand('channel create', arg);
     }
 
@@ -186,7 +186,7 @@ class FabricCLI {
 
     fetchChannelConfig(channelId, extraEnv) {
         const channelConfigFile = `${channelId}_config.pb`;
-        const outputFilePath = `${cfg.CRYPTO_CONFIG_DIR}/${channelConfigFile}`;
+        const outputFilePath = `${cfg.TMP_DIR}/${channelConfigFile}`;
         this.execPeerCommand(`channel fetch config ${outputFilePath}`, `-c ${channelId}`, extraEnv);
         return outputFilePath;
     }
@@ -213,11 +213,11 @@ class FabricCLI {
 
     computeChannelConfigUpdate(channelId, originalConfig, configWithChangesJson) {
 
-        const originalConfigJsonFile = `${cfg.CRYPTO_CONFIG_DIR}/${channelId}_originalConfig.json`;
-        const originalConfigPbFile = `${cfg.CRYPTO_CONFIG_DIR}/${channelId}_originalConfig.pb`;
-        const updatedConfigWithJsonFile = `${cfg.CRYPTO_CONFIG_DIR}/${channelId}_configUpdate.json`;
-        const updatedConfigPbFile = `${cfg.CRYPTO_CONFIG_DIR}/${channelId}_configUpdate.pb`;
-        const computedUpdatePbFileName = `${cfg.CRYPTO_CONFIG_DIR}/${channelId}_update.pb`;
+        const originalConfigJsonFile = `${cfg.TMP_DIR}/${channelId}_originalConfig.json`;
+        const originalConfigPbFile = `${cfg.TMP_DIR}/${channelId}_originalConfig.pb`;
+        const updatedConfigWithJsonFile = `${cfg.TMP_DIR}/${channelId}_configUpdate.json`;
+        const updatedConfigPbFile = `${cfg.TMP_DIR}/${channelId}_configUpdate.pb`;
+        const computedUpdatePbFileName = `${cfg.TMP_DIR}/${channelId}_update.pb`;
 
 
         fs.writeFileSync(originalConfigJsonFile, JSON.stringify(originalConfig));
@@ -285,7 +285,7 @@ class FabricCLI {
                 });
         */
 
-        const outputFile = `${cfg.CRYPTO_CONFIG_DIR}/${newOrgId}_OrgConfig.json`;
+        const outputFile = `${cfg.TMP_DIR}/${newOrgId}_OrgConfig.json`;
         let newOrgSubstitution = await this.envSubst(`${cfg.TEMPLATES_DIR}/${configTemplateFile}`, outputFile, env);
         logger.debug('Config for ', newOrg, JSON.parse(newOrgSubstitution.outputContents))
         return {outputFile, outputJson: JSON.parse(newOrgSubstitution.outputContents)};

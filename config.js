@@ -26,6 +26,7 @@ module.exports = {
     systemChannelId: systemChannelId,
     ENROLL_ID: ENROLL_ID,
     CRYPTO_CONFIG_DIR: cryptoConfigPath,
+    TMP_DIR: process.env.TMP_DIR || cryptoConfigPath,
     TEMPLATES_DIR: TEMPLATES_DIR,
     YAMLS_DIR: YAMLS_DIR,
     FABRIC_STARTER_HOME: process.env.FABRIC_STARTER_HOME || process.env.FABRIC_STARTER_PWD || './',
@@ -203,7 +204,8 @@ module.exports = {
     CRYPTO_SUIT_CONFIG: process.env.CRYPTO_ALGORITHM === 'GOST' ? gostConfig : {},
 
     AUTH_JWT_EXPIRES_IN: (/^\d+$/.test(process.env.AUTH_JWT_EXPIRES_IN) ? parseInt(process.env.AUTH_JWT_EXPIRES_IN) : process.env.AUTH_JWT_EXPIRES_IN) || '8h',
-    DOCKER_COMPOSE_EXTRA_ARGS: process.env.DOCKER_COMPOSE_EXTRA_ARGS || ''
+    DOCKER_COMPOSE_EXTRA_ARGS: process.env.DOCKER_COMPOSE_EXTRA_ARGS || '',
+    PRIVATE_KEYS_FILTER : '.*\/keystore.*|.*\/sk.pem|.*/\*.key|.*\/priv_sk'
 };
 
 function persistConfig() {

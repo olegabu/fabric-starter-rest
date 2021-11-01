@@ -130,9 +130,10 @@ class PeerComponentType {
             localEnv = _.assign(localEnv, {MASTER_IP: org.masterIp})
             util.writeHostFile({[org.masterIp]: `orderer.${ordererDomain} www.${ordererDomain} ca.${org.orgId}.${org.domain} tlsca.${org.orgId}.${org.domain} peer0.${org.orgId}.${org.domain}`}, cfg.CRYPTO_CONFIG_DIR) //TODO: peer0 -> peerName
             if (!_.isEmpty(component.files)) {
-                await archives.extractUploadedArchive(component.files[0], cfg.ORG_CRYPTO_DIR, name => _.split(name, 'peer0').join(cfg.peerName)) //TODO: use master peerName
+                // await archives.extractUploadedArchive(component.files[0], cfg.CRYPTO_CONFIG_DIR, name => _.split(name, 'peer0').join(cfg.peerName)) //TODO: use master peerName
+                await mspManager.unpackMsp(component.files[0])
             }
-            await fabricCLI.downloadOrdererMSP('orderer', ordererDomain, org.ordererWwwPort, org.ordererIp)//TODO: pass orderer in component config
+            // await fabricCLI.downloadOrdererMSP('orderer', ordererDomain, org.ordererWwwPort, org.ordererIp)//TODO: pass orderer in component config
         }
 
         await this.fabricStarterRuntime.setOrg(Org.fromConfig(cfg))//TODO: check if org is changed

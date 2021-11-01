@@ -139,6 +139,8 @@ class ArchiveManager {
     }
 
     async gzip(sourceDir, excludeRegexp = null, includeFiles = ['./']) {
+        if (!Array.isArray(includeFiles))
+            includeFiles = [includeFiles]
         logger.debug(`gzip path: ${sourceDir} to stream`, excludeRegexp && ` excluding ${excludeRegexp}`)
         sourceDir = path.resolve(sourceDir)
         if (!fse.exists(sourceDir)) {
@@ -151,12 +153,15 @@ class ArchiveManager {
 //                [targetFileName ? 'file' : '']: targetFileName,
                 gzip: true, // this will perform the compression too
                 cwd: sourceDir,
+                onwarn: (c, e) =>{
+                    console.log(c,e)
+                },
                 filter: (path, stat) => {
-                    logger.debug('gzip add:', path);
                     if (excludeFileFilterRegExp.test(path)) {
                         logger.debug('gzip exclude:', path);
                         return false
                     }
+                    logger.debug('gzip add:', path);
                     return true
                 }
             },

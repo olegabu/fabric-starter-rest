@@ -15,4 +15,5 @@ package-lock.json
 webapps/*
 bin/
 
+**/__test__
 node-config.json
