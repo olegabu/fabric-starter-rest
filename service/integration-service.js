@@ -1,7 +1,14 @@
+const fs = require('fs-extra');
+const path = require('path');
 const _ = require('lodash');
+const async = require('async');
 const cfg = require('../config');
+const log4jsConfigured = require('../util/log/log4js-configured');
+const logger = log4jsConfigured.getLogger('IntegrationService');
 const osnManager = require('../osn-manager');
-const logger = cfg.log4js.getLogger('IntegrationService');
+const archiveManager = require('../service/archive-manager');
+const mspManager = require('../service/msp/msp-manager');
+
 
 class IntegrationService {
 
@@ -29,11 +36,15 @@ class IntegrationService {
         return stream;
     }
 
-    async integrateOrg(org) {
+    async integrateOrg(org, certFiles) {
         const allowedOrg = await this.checkOrgIsAllowed(org);
         logger.debug("integrateOrg accepting:", allowedOrg);
+        await fs.emptyDir(path.join(cfg.TMP_DIR, 'peerOrganizations'));
+        await async.everySeries(certFiles, async certFile => {
+            await mspManager.unpackMsp(certFile, cfg.TMP_DIR);
+        })
         const defaultClient = await this.getDefaultClient();
-        const result = await defaultClient.addOrgToChannel(cfg.DNS_CHANNEL, org);
+        const result = await defaultClient.addOrgToChannel(cfg.DNS_CHANNEL, org, certFiles && cfg.TMP_DIR);
         allowedOrg.joined = true;
         return result;
     }

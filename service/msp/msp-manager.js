@@ -11,9 +11,16 @@ class MspManager {
         )
     }
 
-    async unpackMsp(tgzPack) {
-        await archiverManager.extractUploadedArchive(tgzPack, cfg.CRYPTO_CONFIG_DIR, name => _.split(name, 'peer0').join(cfg.peerName)) //TODO: use master peerName
+    async unpackMsp(tgzPack, targetDir, transformFunc) {
+        const extractPath = targetDir || cfg.TMP_DIR;
+        await archiverManager.extractUploadedArchive(tgzPack, extractPath, transformFunc)
+        return extractPath;
     }
+
+    async unpackMspWithPeerNameReplacing(tgzPack, targetDir) {
+        return await this.unpackMsp(tgzPack, targetDir, name => _.split(name, 'peer0').join(cfg.peerName)) //TODO: use master peerName
+    }
+
 }
 
 module.exports = new MspManager()

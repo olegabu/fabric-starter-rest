@@ -211,7 +211,7 @@ module.exports = {
 
     ACCEPT_ALL_ORGS: process.env.ACCEPT_ALL_ORGS !== 'false',
 
-    CUSTOM_APP_PORTS: process.env.CUSTOM_APP_PORTS || '8080-8089',
+    CUSTOM_APP_PORTS: process.env.CUSTOM_APP_PORTS || '8081-8089',
 
     AUTH_MODE: process.env.AUTH_MODE || (process.env.CRYPTO_ALGORITHM === 'GOST' ? 'ADMIN' : 'CA'),
     SIGNATURE_HASH_FAMILY: process.env.SIGNATURE_HASH_FAMILY || (process.env.CRYPTO_ALGORITHM === 'GOST' ? 'SM3' : 'SHA2'),

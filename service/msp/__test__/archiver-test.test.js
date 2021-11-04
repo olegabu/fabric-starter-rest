@@ -1,4 +1,5 @@
 const fs = require('fs-extra');
+const path = require('path');
 const _ = require('lodash');
 const cfg = require('../../../config');
 const archiverManager = require('../../../service/archive-manager');
@@ -6,7 +7,7 @@ const mspManager = require('../../../service/msp/msp-manager');
 
 
 test('Test MSP archive', async () => {
-    const testMspDir = __dirname + 'test-msp';
+    const testMspDir = path.join(__dirname, 'test-msp');
     fs.emptyDirSync(testMspDir);
 
     const stream = await mspManager.packOrgPeerMsp()

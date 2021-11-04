@@ -1,7 +1,15 @@
+const os = require('os');
+const _ = require('lodash');
+const multer = require('multer');
 const asyncMiddleware = require('../api/async-middleware-error-handler');
-const cfg = require('../config');
-const logger = cfg.log4js.getLogger('IntegrationApi');
+const log4jsConfigured = require('../util/log/log4js-configured');
+const logger = log4jsConfigured.getLogger('IntegrationApi');
 const Org = require('../model/Org')
+
+const uploadDir = os.tmpdir() || './upload';
+const upload = multer({dest: uploadDir});
+const certificatesUpload = upload.fields([{name: 'certFiles', maxCount: 1}]); //TODO: refactor upload duplicates
+
 
 module.exports = function (app, server, integrationService) {
 
@@ -21,6 +29,17 @@ module.exports = function (app, server, integrationService) {
         logger.info('Org integration service request: ', req.body);
         try {
             res.json(await integrationService.integrateOrg(Org.fromHttpBody(req.body)))
+        } catch (e) {
+            logger.error(e);
+            res.status(401).json(e);
+        }
+    }));
+
+    app.post('/integration/service/orgs_with_certs', certificatesUpload, asyncMiddleware(async (req, res) => {
+
+        logger.info('Org integration service request: ', req.body);
+        try {
+            res.json(await integrationService.integrateOrg(Org.fromHttpBody(req.body), _.get(req, 'files.certFiles')))
         } catch (e) {
             logger.error(e);
             res.status(401).json(e);

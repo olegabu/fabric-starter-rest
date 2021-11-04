@@ -27,10 +27,10 @@ class CertificateManager {
         return this.ordererMSPEnv;
     }
 
-    getOrgBaseCertificationDirectory(orgId, domain) {
+    getOrgBaseCertificationDirectory(orgId, domain, certsRootDir=cfg.CRYPTO_CONFIG_DIR) {
         return orgId ?
-            `${cfg.CRYPTO_CONFIG_DIR}/peerOrganizations/${orgId}.${domain || cfg.domain}`
-            : `${cfg.CRYPTO_CONFIG_DIR}/ordererOrganizations/${domain || cfg.ordererDomain}`;
+            `${certsRootDir}/peerOrganizations/${orgId}.${domain || cfg.domain}`
+            : `${certsRootDir}/ordererOrganizations/${domain || cfg.ordererDomain}`;
     }
 
     getMSPConfigDirectory(orgId) {
@@ -38,9 +38,9 @@ class CertificateManager {
         return path.join(this.getOrgBaseCertificationDirectory(orgId), 'users', `Admin@${certDomain}`, 'msp');
     }
 
-    forEachCertificate(orgId, domain, /*function (certificateSubDir, fullCertificateDirectoryPath, certificateFileName, directoryPrefixConfig)*/ processorFunc) {
+    forEachCertificate(orgId, domain, certsRootDir, /*function (certificateSubDir, fullCertificateDirectoryPath, certificateFileName, directoryPrefixConfig)*/ processorFunc) {
         _.forEach(_.keys(CERT_FOLDERS_PREFIXES), certificateSubDir => {
-            let fullCertificateDirectoryPath = `${this.getOrgBaseCertificationDirectory(orgId, domain)}/msp/${certificateSubDir}`;
+            let fullCertificateDirectoryPath = `${this.getOrgBaseCertificationDirectory(orgId, domain, certsRootDir)}/msp/${certificateSubDir}`;
             let certificateFilename = this.getCertFileName(certificateSubDir, orgId, domain);
             processorFunc(certificateSubDir, fullCertificateDirectoryPath, certificateFilename, CERT_FOLDERS_PREFIXES[certificateSubDir]);
         });

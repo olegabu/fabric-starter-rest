@@ -225,12 +225,12 @@ class FabricStarterClient {
         return result;
     }
 
-    async addOrgToChannel(channelId, orgObj) {
+    async addOrgToChannel(channelId, orgObj, certsRootDir) {
         await this.checkOrgDns(orgObj);
         try {//TODO: peerName may be inappropriate - it's local peerName, but remote org is added to channel here
-            await util.checkRemotePort(cfg.addressFromTemplate(cfg.peerName, orgObj.orgId, orgObj.domain), orgObj.peer0Port, {from: `addOrgToChannel(${channelId}, ${orgObj})`});
+            await util.checkRemotePort(cfg.addressFromTemplate(orgObj.peerName || cfg.peerName, orgObj.orgId, orgObj.domain), orgObj.peer0Port, {from: `addOrgToChannel(${channelId}, ${orgObj})`});
             let currentChannelConfigFile = fabricCLI.fetchChannelConfig(channelId);
-            let configUpdateRes = await fabricCLI.prepareNewOrgConfig(orgObj);
+            let configUpdateRes = await fabricCLI.prepareOrgConfigStruct(orgObj, 'NewOrg.json', {NEWORG_PEER0_PORT: orgObj.peer0Port || cfg.DEFAULT_PEER0PORT}, certsRootDir);
             let res = await channelManager.applyConfigToChannel(channelId, currentChannelConfigFile, configUpdateRes, this.client);
             this.chmodCryptoFolder();
             return res;
@@ -244,7 +244,7 @@ class FabricStarterClient {
     async addOrgToConsortium(orgObj, consortiumName) {
         await this.checkOrgDns(orgObj);
         let currentChannelConfigFile = fabricCLI.fetchChannelConfig(cfg.systemChannelId, certsManager.getOrdererMSPEnv());
-        let configUpdateRes = await fabricCLI.prepareNewConsortiumConfig(orgObj, consortiumName);
+        let configUpdateRes = await fabricCLI.prepareOrgConfigStruct(orgObj, 'Consortium.json', {CONSORTIUM_NAME: consortiumName || cfg.DEFAULT_CONSORTIUM});
         try {
             let ordererClient = await this.initOrdererClient();
             return channelManager.applyConfigToChannel(cfg.systemChannelId, currentChannelConfigFile, configUpdateRes, ordererClient, IS_ADMIN);
