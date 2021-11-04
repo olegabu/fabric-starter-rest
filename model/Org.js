@@ -1,6 +1,8 @@
 const _ = require('lodash');
+
 const cfg = require('../config.js');
-const logger = cfg.log4js.getLogger('Org');
+const log4jsConfigured = require('../util/log/log4js-configured');
+const logger = log4jsConfigured.getLogger('model.Org');
 
 class Org {
 

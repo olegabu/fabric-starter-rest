@@ -228,7 +228,7 @@ class FabricStarterClient {
     async addOrgToChannel(channelId, orgObj) {
         await this.checkOrgDns(orgObj);
         try {//TODO: peerName may be inappropriate - it's local peerName, but remote org is added to channel here
-            await util.checkRemotePort(`${cfg.peerName}.${orgObj.orgId}.${orgObj.domain}`, orgObj.peer0Port, {from: `addOrgToChannel(${channelId}, ${orgObj})`});
+            await util.checkRemotePort(cfg.addressFromTemplate(cfg.peerName, orgObj.orgId, orgObj.domain), orgObj.peer0Port, {from: `addOrgToChannel(${channelId}, ${orgObj})`});
             let currentChannelConfigFile = fabricCLI.fetchChannelConfig(channelId);
             let configUpdateRes = await fabricCLI.prepareNewOrgConfig(orgObj);
             let res = await channelManager.applyConfigToChannel(channelId, currentChannelConfigFile, configUpdateRes, this.client);

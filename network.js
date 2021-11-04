@@ -46,10 +46,11 @@ function addPeer(t, org, i, peerName, peerUrl=null) {
   }
   // const [peerName, url] = _.split(peerAddress, '=');
   // const peerName = peerAddress; //`peer${i}.${org}.${cfg.domain}:${cfg.peer0Port}`;
+  const url = `${peerUrl || peerName}`;
   t.peers[peerName] = {
-    url: `grpcs://${peerUrl || peerName}`,
+    url: `grpcs://${url}`,
     grpcOptions: {
-      'ssl-target-name-override': `${cfg.peerName}.${org}.${cfg.domain}`, //`peer${i}.${org}.${cfg.domain}`,
+      'ssl-target-name-override': url, //`${cfg.peerName}.${org}.${cfg.domain}`, //`peer${i}.${org}.${cfg.domain}`,
       //'ssl-target-name-override': 'localhost',
     },
     tlsCACerts: {
@@ -142,11 +143,11 @@ module.exports = function (cas, storeSubPath='') {
     cas = JSON.parse('{' + cas + '}');
   }
 
-  Object.keys(orgs).forEach(k => {
-    const [peerName, peerUrl] = _.split(orgs[k], '=');
-    addOrg(t, k, peerName);
+  Object.keys(orgs).forEach(org => {
+    const [peerName, peerUrl] = _.split(orgs[org], '=');
+    addOrg(t, org, peerName);
     // if (!cfg.isOrderer) {
-      addPeer(t, k, 0, peerName, peerUrl); //TODO: different peer names are in addOrg and addPeer
+      addPeer(t, org, 0, peerName, peerUrl); //TODO: different peer names are in addOrg and addPeer
     // }
   });
 

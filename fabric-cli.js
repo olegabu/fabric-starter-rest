@@ -1,4 +1,4 @@
-const fs = require('fs'),
+const fs = require('fs-extra'),
     path = require('path'),
     dns = require('dns'),
     nodeUtil = require('util'),
@@ -135,7 +135,9 @@ class FabricCLI {
     async generateChannelConfigTx(channelId) {
         await this.envSubst(`${cfg.TEMPLATES_DIR}/configtx-template.yaml`, `${cfg.TMP_DIR}/configtx.yaml`, this.getEnv());
 
-        let outputTxFile = `${cfg.TMP_DIR}/configtx/channel_${channelId}.tx`;
+        const outputDir = `${cfg.TMP_DIR}/configtx`;
+        await fs.ensureDir(outputDir)
+        let outputTxFile = `${outputDir}/channel_${channelId}.tx`;
         this.generateConfigTxForChannel(channelId, cfg.TMP_DIR, "CHANNEL", outputTxFile);
         return outputTxFile;
     }

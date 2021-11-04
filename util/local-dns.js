@@ -18,7 +18,8 @@ async function updateLocalDnsStorageFromChaincode(fabricStarterClient) {
 
 async function getChaincodeData(fabricStarterClient, dataKey) {
     let result = null;
-    const dataResponses = await fabricStarterClient.query(channel, chaincodeName, 'get', `["${dataKey}"]`, {targets: process.env.DNS_QUERY_TARGET || `${cfg.peerName}.${cfg.org}.${cfg.domain}:${cfg.peer0Port}`});
+    const dataResponses = await fabricStarterClient.query(channel, chaincodeName, 'get', `["${dataKey}"]`,
+        {targets: process.env.DNS_QUERY_TARGET || `${cfg.addressFromTemplate(cfg.peerName, cfg.org, cfg.domain)}:${cfg.peer0Port}`});
     logger.debug(`dataResponses for ${dataKey}`, dataResponses);
     try {
         if (dataResponses && dataResponses[0] !== '') {

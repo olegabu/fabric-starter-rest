@@ -1,4 +1,5 @@
 const fs = require('fs-extra');
+const _ = require('lodash');
 const log4jsConfigured = require('./util/log/log4js-configured');
 const logger = log4jsConfigured.getLogger('config.js');
 
@@ -20,6 +21,7 @@ const PEER_CONFIG_FILE = process.env.PEER_CONFIG_FILE || `node-config${process.e
 logger.info(`PEER_CONFIG_FILE: ${PEER_CONFIG_FILE}`);
 
 const persistedConfig = fs.readJsonSync(PEER_CONFIG_FILE, {throws: false}) || {}
+const PEER_ADDRESS_TEMPLATE = process.env.PEER_ADDRESS_TEMPLATE || "${PEER_NAME}.${ORG}.${DOMAIN}"
 
 module.exports = {
     log4js:  log4jsConfigured, //TODO: remove from config, use directly
@@ -179,10 +181,22 @@ module.exports = {
     get ordererCryptoDir() {return `${cryptoConfigPath}/ordererOrganizations/${this.ordererDomain}` },
     get ORDERER_TLS_CERT() {return `${this.ordererCryptoDir}/msp/tlscacerts/tlsca.${this.ordererDomain}-cert.pem` },
 
+    addressFromTemplate: (peer, org, domain) =>{
+        let result = _.replace(PEER_ADDRESS_TEMPLATE, '${PEER_NAME}', peer);
+        result = _.replace(result , '${ORG}', org);
+        result = _.replace(result , '${DOMAIN}', domain);
+        return result
+    },
+
     // default to peer0.org1.example.com:7051 inside docker-compose or export ORGS='{"org1":"peer0.org1.example.com:7051","org2":"peer0.org2.example.com:7051"}'
-    get orgs() {return process.env.ORGS || `"${this.org}":"${this.peerName}.${this.org}.${this.domain}:${this.peer0Port}"`},
+    // get orgs() {return process.env.ORGS || `"${this.org}":"${this.peerName}.${this.org}.${this.domain}:${this.peer0Port}"`},
     get cas() {return process.env.CAS || `"${this.org}":"ca.${this.org}.${this.domain}:${this.masterCAPort}"`},
     get tlsCas() {return process.env.TLS_CAS || `"${this.org}":"tlsca.${this.org}.${this.domain}:${this.masterTLSCAPort}"`},
+
+    get orgs() {return process.env.ORGS || `"${this.org}":"${this.addressFromTemplate(this.peerName, this.org, this.domain)}:${this.peer0Port}"`},
+    // get cas() {return process.env.CAS || `"${this.org}":"${this.corePeerAddress('ca', this.org, this.domain)}:${this.masterCAPort}"`},
+    // get tlsCas() {return process.env.TLS_CAS || `"${this.org}":"${this.corePeerAddress('tlsca', this.org, this.domain)}:${this.masterTLSCAPort}"`},
+
 
     get ORG_CRYPTO_DIR() {return `${cryptoConfigPath}/peerOrganizations/${this.org}.${this.domain}`},
 

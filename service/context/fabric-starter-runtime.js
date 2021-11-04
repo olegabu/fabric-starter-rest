@@ -37,7 +37,7 @@ class FabricStarterRuntime {
         logger.debug('Runtime is initialised: ', this.initialized)
         if (!this.initialized) {
 
-            if (!await util.checkRemotePort(`${cfg.peerName}.${org.orgId}.${org.domain}`, org.peer0Port, {
+            if (!await util.checkRemotePort(cfg.addressFromTemplate(cfg.peerName, org.orgId, org.domain), org.peer0Port, {
                 throws: false, timeout: 3000, from: 'tryInitRuntime'
             })) {
                 return
