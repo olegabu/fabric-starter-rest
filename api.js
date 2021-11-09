@@ -294,7 +294,8 @@ module.exports = async function(app, server, fabricStarterRuntime, chaincodeServ
    * @security JWT
    */
   app.post('/channels/:channelId/orgs', asyncMiddleware(async(req, res, next) => {
-    res.json(await req.fabricStarterClient.addOrgToChannel(req.params.channelId, Org.fromHttpBody(req.body)));
+    let certFiles='' // TODO:
+    res.json(await req.fabricStarterClient.addOrgToChannel(req.params.channelId, Org.fromHttpBody(req.body)), certFiles || cfg.TMP_DIR);
   }));
 
 
@@ -498,7 +499,9 @@ module.exports = async function(app, server, fabricStarterRuntime, chaincodeServ
    * @security JWT
    */
   app.post('/consortium/members', asyncMiddleware(async(req, res, next) => {
-    res.json(await req.fabricStarterClient.addOrgToConsortium(Org.fromHttpBody(req.body)));
+    let certFiles = '' // TODO:
+    let consortiumName = null // TODO:
+    res.json(await req.fabricStarterClient.addOrgToConsortium(Org.fromHttpBody(req.body), consortiumName, certFiles || cfg.TMP_DIR));
   }));
 
   /**

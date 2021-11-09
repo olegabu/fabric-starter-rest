@@ -29,7 +29,7 @@ const dnsLookup = nodeUtil.promisify(dns.lookup)
 
 class FabricCLI {
 
-    async downloadCerts(orgName, domain, server, nameDomain, wwwPort, wwwIp) {
+    async downloadCerts(orgName, domain, server, nameDomain, wwwPort, wwwIp, certsRootDir) {
         // const orgDomain = orgName ? `${orgName}.${domain}` : domain;
 
         let wwwHost = wwwIp
@@ -51,19 +51,20 @@ class FabricCLI {
                                 });
                         }*/
 
-            await this.downloadCertsFromWwwServer(orgName, domain, nameDomain, wwwIp, wwwPort)
+            await this.downloadCertsFromWwwServer(orgName, domain, nameDomain, wwwIp, wwwPort, certsRootDir)
         } catch (err) {
-            logger.error(`Download certificates. Server not found ${wwwHost}`)
+            logger.error(`Download certificates. Server not found ${wwwHost}`, err)
             throw new Error(`Download certificates. Server not found ${wwwHost}`)
         }
     }
 
-    async downloadCertsFromWwwServer(orgName, domain, nameDomain, wwwIp, wwwPort) {
+    async downloadCertsFromWwwServer(orgName, domain, nameDomain, wwwIp, wwwPort, certsRootDir) {
         if (!(_.isEqual(wwwIp, cfg.myIp) || _.startsWith(wwwIp, '172'))) {
             wwwPort = wwwPort || 80;
             await util.checkRemotePort(wwwIp, wwwPort); //TODO: same host orderer port is not available when in docker
-            certsManager.forEachCertificate(orgName, domain,
+            certsManager.forEachCertificate(orgName, domain, certsRootDir,
                 (certificateSubDir, fullCertificateDirectoryPath, certificateFileName, directoryPrefixConfig) => {
+                    logger.debug('Download CERTs: ', wwwIp, wwwPort)
                     shell.exec(`/usr/bin/wget ${WGET_OPTS} --directory-prefix ${fullCertificateDirectoryPath} http://${wwwIp}:${wwwPort}/node-certs/${nameDomain}/msp/${certificateSubDir}/${certificateFileName}`);
                 });
         } else {
@@ -75,11 +76,11 @@ class FabricCLI {
     //     await this.downloadCerts(null, ordererDomain, ordererDomain, `${ordererName}.${ordererDomain}`, wwwPort, ordererIp);
     // }
 
-    async downloadOrgMSP(orgObj, domain = cfg.domain) {
+    async downloadOrgMSP(orgObj, domain = cfg.domain, certsRootDir) {
         //TODO:await util.checkRemotePort(`www.${orgObj.orgId}.${domain}`, orgObj.wwwPort || 80);
         let orgId = _.get(orgObj, 'orgId');
         logger.debug(`Download MSP for org ${orgId}`, orgObj)
-        await this.downloadCerts(orgId, domain, `${orgId}.${domain}`, `${orgId}.${domain}`, orgObj.wwwPort);
+        await this.downloadCerts(orgId, domain, `${orgId}.${domain}`, `${orgId}.${domain}`, orgObj.wwwPort, certsRootDir);
     }
 
     execShellCommand(cmd, dir, extraEnv, callback) {
@@ -259,7 +260,7 @@ class FabricCLI {
     async prepareOrgConfigStruct(newOrg, configTemplateFile, extraEnv, certsRootDir) {
         logger.debug("Prepare org config for ", newOrg)
         if (!certsRootDir) {
-            await this.downloadOrgMSP(newOrg);
+            await this.downloadOrgMSP(newOrg, newOrg.domain || cfg.domain, certsRootDir);
         }
 
         let newOrgId = _.get(newOrg, 'orgId');

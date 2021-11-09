@@ -16,4 +16,4 @@ webapps/*
 bin/
 
 **/__test__
-node-config.json
+node-config*.json

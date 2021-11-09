@@ -241,10 +241,10 @@ class FabricStarterClient {
         }
     }
 
-    async addOrgToConsortium(orgObj, consortiumName) {
+    async addOrgToConsortium(orgObj, consortiumName, certsRootDir) {
         await this.checkOrgDns(orgObj);
         let currentChannelConfigFile = fabricCLI.fetchChannelConfig(cfg.systemChannelId, certsManager.getOrdererMSPEnv());
-        let configUpdateRes = await fabricCLI.prepareOrgConfigStruct(orgObj, 'Consortium.json', {CONSORTIUM_NAME: consortiumName || cfg.DEFAULT_CONSORTIUM});
+        let configUpdateRes = await fabricCLI.prepareOrgConfigStruct(orgObj, 'Consortium.json', {CONSORTIUM_NAME: consortiumName || cfg.DEFAULT_CONSORTIUM}, certsRootDir);
         try {
             let ordererClient = await this.initOrdererClient();
             return channelManager.applyConfigToChannel(cfg.systemChannelId, currentChannelConfigFile, configUpdateRes, ordererClient, IS_ADMIN);
@@ -256,7 +256,7 @@ class FabricStarterClient {
 
     async initOrdererClient() {
         try {
-            const ordererClient = Client.loadFromConfig(networkConfigProvider()); //this.networkConfig);
+            const ordererClient = Client.loadFromConfig(networkConfigProvider(cfg.cas)); //this.networkConfig);
             await ordererClient.initCredentialStores();
             ordererClient.setAdminSigningIdentity(
                 util.loadPemFromFile(certsManager.getPrivateKeyFilePath()),
@@ -265,7 +265,7 @@ class FabricStarterClient {
             );
             return ordererClient
         } catch (err) {
-            logger.debug("No orderer on host", err)
+            logger.info("No orderer on host", err)
         }
     }
 

@@ -40,7 +40,7 @@ class CertificateManager {
 
     forEachCertificate(orgId, domain, certsRootDir, /*function (certificateSubDir, fullCertificateDirectoryPath, certificateFileName, directoryPrefixConfig)*/ processorFunc) {
         _.forEach(_.keys(CERT_FOLDERS_PREFIXES), certificateSubDir => {
-            let fullCertificateDirectoryPath = `${this.getOrgBaseCertificationDirectory(orgId, domain, certsRootDir)}/msp/${certificateSubDir}`;
+            let fullCertificateDirectoryPath = this.getOrgBaseCertificationDirectory(orgId, domain, certsRootDir)+`/msp/${certificateSubDir}`;
             let certificateFilename = this.getCertFileName(certificateSubDir, orgId, domain);
             processorFunc(certificateSubDir, fullCertificateDirectoryPath, certificateFilename, CERT_FOLDERS_PREFIXES[certificateSubDir]);
         });
