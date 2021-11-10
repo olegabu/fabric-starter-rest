@@ -6,7 +6,7 @@ const fs = require('fs');
 const cfg = require('./config.js'),
     _ = require('lodash');
 
-const CERT_FOLDERS_PREFIXES = {
+const CERT_PATHS_CONFIG = {
     'admincerts': {certFileNamePart: 'Admin@', envVar: 'ORG_ADMIN_CERT'},
     'cacerts': {certFileNamePart: 'ca.', envVar: 'ORG_ROOT_CERT'},
     'tlscacerts': {certFileNamePart: 'tlsca.', envVar: 'ORG_TLS_ROOT_CERT'}
@@ -39,15 +39,15 @@ class CertificateManager {
     }
 
     forEachCertificate(orgId, domain, certsRootDir, /*function (certificateSubDir, fullCertificateDirectoryPath, certificateFileName, directoryPrefixConfig)*/ processorFunc) {
-        _.forEach(_.keys(CERT_FOLDERS_PREFIXES), certificateSubDir => {
+        _.forEach(_.keys(CERT_PATHS_CONFIG), certificateSubDir => {
             let fullCertificateDirectoryPath = this.getOrgBaseCertificationDirectory(orgId, domain, certsRootDir)+`/msp/${certificateSubDir}`;
             let certificateFilename = this.getCertFileName(certificateSubDir, orgId, domain);
-            processorFunc(certificateSubDir, fullCertificateDirectoryPath, certificateFilename, CERT_FOLDERS_PREFIXES[certificateSubDir]);
+            processorFunc(certificateSubDir, fullCertificateDirectoryPath, certificateFilename, CERT_PATHS_CONFIG[certificateSubDir]);
         });
     }
 
     getCertFileName(certificateSubDir, orgId, domain) {
-        let certFileNamePart = _.get(CERT_FOLDERS_PREFIXES, `[${certificateSubDir}].certFileNamePart`);
+        let certFileNamePart = _.get(CERT_PATHS_CONFIG, `[${certificateSubDir}].certFileNamePart`);
         let domainCertPath = this.getCertificationDomain(orgId, domain);
         let certFileName = `${certFileNamePart}${domainCertPath}-cert.pem`;
         return certFileName;

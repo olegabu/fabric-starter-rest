@@ -12,7 +12,7 @@ class Fabric2xAdapter {
     }
 
     async getInstalledChaincodes() {
-        const chaincodes = await httpService.get(`http://${cfg.SDK_API_URL}/lifecycle/chaincodes`, {parseStreamedData: true})
+        const chaincodes = await httpService.get(`${cfg.SDK_API_URL}/lifecycle/chaincodes`, {parseStreamedData: true})
         return _.map(_.concat([], chaincodes), this.mapToV1Chaincode);
     }
 
@@ -21,7 +21,7 @@ class Fabric2xAdapter {
         const that = this
         return new Promise((resolve, reject) => {
             const res = [];
-            const eventSource = new EventSource(`http://${cfg.SDK_API_URL}/lifecycle/channel/${channelId}/chaincodes`);
+            const eventSource = new EventSource(`${cfg.SDK_API_URL}/lifecycle/channel/${channelId}/chaincodes`);
             eventSource.onmessage = function (event) {
                 const chaincode = JSON.parse(event.data);
                 logger.debug("New message", chaincode);
@@ -46,16 +46,16 @@ class Fabric2xAdapter {
     }
 
     async installChaincode(chaincodeName, version, tarGzStream, opts) {
-        const installResult = await httpService.postMultipartStream(`http://${cfg.SDK_API_URL}/lifecycle/chaincode/install`, {},
+        const installResult = await httpService.postMultipartStream(`${cfg.SDK_API_URL}/lifecycle/chaincode/install`, {},
             'packageToRun', `${chaincodeName}.tar.gz`, tarGzStream, opts)
         return installResult; //await streamUtils.dataFromEventStream(installResult);
     }
 
     async installChaincodeAsExternalService(chaincodeName, version, opts) {
         // const eventSource = new EventSource(`http://${cfg.SDK_API_URL}/externalchaincode/channel/${channelId}/chaincodes`);
-        const sdkHostPort = _.split(cfg.SDK_API_URL, ":");
+        const agentHostPort = getAgentHostPortFromUrl(cfg.SDK_API_URL)
         const installResult = await httpService.postMultipart(`http://${cfg.SDK_API_URL}/externalchaincode/install/${chaincodeName}/${version}`,
-            {agentHost: _.get(sdkHostPort, '[0]'), agentPort: _.get(sdkHostPort, '[1]')})
+            agentHostPort)
 
         let dataObject = await streamUtils.dataFromEventStream(installResult)
         try {
@@ -71,12 +71,9 @@ class Fabric2xAdapter {
         if (!tarGzStream) {
             throw new Error("Package to run is required")
         }
-        const sdkHostPort = _.split(cfg.SDK_API_URL, ":");
-        const result = await httpService.postMultipartStream(`http://${cfg.SDK_API_URL}/externalchaincode/run/${chaincodeName}/${packageId}`,
-            {
-                agentHost: _.get(sdkHostPort, '[0]'),
-                agentPort: _.get(sdkHostPort, '[1]')
-            },
+        const agentHostPort = getAgentHostPortFromUrl(cfg.SDK_API_URL)
+        const result = await httpService.postMultipartStream(`${cfg.SDK_API_URL}/externalchaincode/run/${chaincodeName}/${packageId}`,
+            agentHostPort,
             'packageToRun',
             `${chaincodeName}.tar.gz`,
             tarGzStream)
@@ -84,13 +81,13 @@ class Fabric2xAdapter {
     }
 
     async approveChaincode(channel, chaincodeName, version, packageId, isInitRequired = '') {
-        const result = await httpService.post(`http://${cfg.SDK_API_URL}/lifecycle/chaincode/approve/${channel}/${chaincodeName}/${version}/${packageId}/${isInitRequired}`, {},
+        const result = await httpService.post(`${cfg.SDK_API_URL}/lifecycle/chaincode/approve/${channel}/${chaincodeName}/${version}/${packageId}/${isInitRequired}`, {},
             {parseStreamedData: true})
         return result;
     }
 
     async commitChaincode(channel, chaincodeName, version, sequence) {
-        const result = await httpService.post(`http://${cfg.SDK_API_URL}/lifecycle/chaincode/commit/${channel}/${chaincodeName}/${version}/${sequence}`)
+        const result = await httpService.post(`${cfg.SDK_API_URL}/lifecycle/chaincode/commit/${channel}/${chaincodeName}/${version}/${sequence}`)
         return result; //this.convertEventToObject(result);
     }
 
@@ -106,6 +103,16 @@ class Fabric2xAdapter {
 
 function splitLabel(item) {
     return _.split(_.get(item, 'label'), '_');
+}
+
+function getAgentHostPortFromUrl(url) {
+    const urlNoPrefix = _.replace(url, /http[s]?:\/\//, '');
+    const sdkHostPort = _.split(urlNoPrefix, ":");
+    return {
+        agentHost: _.get(sdkHostPort, '[0]'),
+        agentPort: _.get(sdkHostPort, '[1]')
+    }
+
 }
 
 module.exports = Fabric2xAdapter

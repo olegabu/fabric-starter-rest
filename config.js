@@ -64,7 +64,7 @@ module.exports = {
     DEFAULT_PEER0PORT: '7051',
     HARDCODED_ORDERER_NAME: process.env.HARDCODED_ORDERER_NAME || 'orderer',
 
-    get SDK_API_URL() { return process.env.SDK_API_URL || `sdk.${this.org}.${this.domain}:8080`},
+    get SDK_API_URL() { return process.env.SDK_API_URL || `http://sdk.${this.org}.${this.domain}:8080`},
 
     get org() {return persistedConfig.ORG || process.env.ORG || ''},
 

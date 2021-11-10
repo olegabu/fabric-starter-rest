@@ -10,6 +10,7 @@ const fs = require('fs-extra'),
 const cfg = require('./config')
 const logger = cfg.log4js.getLogger('FabricCLI');
 const certsManager = require('./certs-manager')
+const mspManager = require('./service/msp/msp-manager');
 const util = require('./util');
 
 
@@ -29,7 +30,7 @@ const dnsLookup = nodeUtil.promisify(dns.lookup)
 
 class FabricCLI {
 
-    async downloadCerts(orgName, domain, server, nameDomain, wwwPort, wwwIp, certsRootDir) {
+    async downloadCerts(orgName, domain, server, nameDomain, wwwPort, certsRootDir, wwwIp) {
         // const orgDomain = orgName ? `${orgName}.${domain}` : domain;
 
         let wwwHost = wwwIp
@@ -53,8 +54,8 @@ class FabricCLI {
 
             await this.downloadCertsFromWwwServer(orgName, domain, nameDomain, wwwIp, wwwPort, certsRootDir)
         } catch (err) {
-            logger.error(`Download certificates. Server not found ${wwwHost}`, err)
-            throw new Error(`Download certificates. Server not found ${wwwHost}`)
+            logger.error(`Cannot download certificates. Server not found ${wwwHost}`, err)
+            throw new Error(`Cannot download certificates. Server not found ${wwwHost}`)
         }
     }
 
@@ -257,10 +258,16 @@ class FabricCLI {
         return this.loadFileContentSync(updateEnvelopePbFile);
     }
 
-    async prepareOrgConfigStruct(newOrg, configTemplateFile, extraEnv, certsRootDir) {
+    async prepareOrgConfigStruct(newOrg, configTemplateFile, extraEnv, certFiles) {
         logger.debug("Prepare org config for ", newOrg)
-        if (!certsRootDir) {
-            await this.downloadOrgMSP(newOrg, newOrg.domain || cfg.domain, certsRootDir);
+
+        await fs.emptyDir(path.join(cfg.TMP_DIR, 'peerOrganizations', `${newOrg.orgId}.${newOrg.domain || cfg.domain}`));
+        if (!certFiles) {
+            await this.downloadOrgMSP(newOrg, newOrg.domain || cfg.domain, cfg.TMP_DIR);
+        } else {
+            await async.everySeries(certFiles, async certFile => {
+                await mspManager.unpackMsp(certFile, cfg.TMP_DIR);
+            })
         }
 
         let newOrgId = _.get(newOrg, 'orgId');
@@ -270,7 +277,7 @@ class FabricCLI {
             SIGNATURE_HASH_FAMILY: cfg.SIGNATURE_HASH_FAMILY
         }, extraEnv);
 
-        certsManager.forEachCertificate(newOrgId, newOrg.domain || cfg.domain, certsRootDir, (certificateSubDir, fullCertificateDirectoryPath, certificateFileName, directoryPrefixConfig) => {
+        certsManager.forEachCertificate(newOrgId, newOrg.domain || cfg.domain, cfg.TMP_DIR, (certificateSubDir, fullCertificateDirectoryPath, certificateFileName, directoryPrefixConfig) => {
             let certContent = this.loadFileContentSync(path.join(fullCertificateDirectoryPath, certificateFileName));
             env[directoryPrefixConfig.envVar] = Buffer.from(certContent).toString('base64');
         });
@@ -283,7 +290,7 @@ class FabricCLI {
                 });
         */
 
-        const outputFile = `${certsRootDir}/${newOrgId}_OrgConfig.json`;
+        const outputFile = `${cfg.TMP_DIR}/${newOrgId}_OrgConfig.json`;
         let newOrgSubstitution = await this.envSubst(`${cfg.TEMPLATES_DIR}/${configTemplateFile}`, outputFile, env);
         logger.debug('Config for ', newOrg, JSON.parse(newOrgSubstitution.outputContents))
         return {outputFile, outputJson: JSON.parse(newOrgSubstitution.outputContents)};

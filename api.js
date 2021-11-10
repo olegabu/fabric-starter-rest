@@ -4,9 +4,13 @@ module.exports = async function(app, server, fabricStarterRuntime, chaincodeServ
   const path = require('path');
   const os = require('os');
   const _ = require('lodash');
+
+
+
+
   const cfg = require('./config.js');
-  const logger = cfg.log4js.getLogger('api');
-  const x509util = require('./util/x509-util');
+  const log4jsConfigured = require('./util/log/log4js-configured');
+  const logger = log4jsConfigured.getLogger('IntegrationApi');
   const asyncMiddleware = require('./api/async-middleware-error-handler');
   const Org = require('./model/Org')
 
@@ -18,6 +22,8 @@ module.exports = async function(app, server, fabricStarterRuntime, chaincodeServ
     {name: 'targets'}, {name: 'version', maxCount: 1}, {name: 'language', maxCount: 1},{name: 'fcn', maxCount: 1},
     {name: 'args', maxCount: 1},{name: 'chaincodeType', maxCount: 1},{name: 'chaincodeId', maxCount: 1},
     {name: 'chaincodeVersion', maxCount: 1},{name: 'waitForTransactionEvent', maxCount: 1},{name: 'policy', maxCount: 1}]);
+
+  // const certificatesUpload = upload.fields([{name: 'certFiles', maxCount: 1}]); //TODO: refactor upload duplicates
 
   const channelManager = require('./channel-manager');
   const appManager = require('./app-manager');
@@ -295,7 +301,7 @@ module.exports = async function(app, server, fabricStarterRuntime, chaincodeServ
    */
   app.post('/channels/:channelId/orgs', asyncMiddleware(async(req, res, next) => {
     let certFiles='' // TODO:
-    res.json(await req.fabricStarterClient.addOrgToChannel(req.params.channelId, Org.fromHttpBody(req.body)), certFiles || cfg.TMP_DIR);
+    res.json(await req.fabricStarterClient.addOrgToChannel(req.params.channelId, Org.fromHttpBody(req.body)), certFiles);
   }));
 
 
@@ -501,7 +507,7 @@ module.exports = async function(app, server, fabricStarterRuntime, chaincodeServ
   app.post('/consortium/members', asyncMiddleware(async(req, res, next) => {
     let certFiles = '' // TODO:
     let consortiumName = null // TODO:
-    res.json(await req.fabricStarterClient.addOrgToConsortium(Org.fromHttpBody(req.body), consortiumName, certFiles || cfg.TMP_DIR));
+    res.json(await req.fabricStarterClient.addOrgToConsortium(Org.fromHttpBody(req.body), consortiumName, certFiles));
   }));
 
   /**
