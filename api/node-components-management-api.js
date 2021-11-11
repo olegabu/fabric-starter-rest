@@ -23,14 +23,14 @@ module.exports = function (app, server, nodeComponentsManager) {
         res.json({org: Org.fromConfig(cfg)})
     })
 
-    app.get('/node/msp', asyncMiddleware(async (req, res) => {
+    app.get('/node/msp/org', asyncMiddleware(async (req, res) => {
         const packStream = await mspManager.packOrgPeerMsp();
-        if (!packStream) {
-            throw new Error('Error providing msp')
-        }
-        res.setHeader('Content-type', 'application/octet-stream')
-        res.setHeader('Content-disposition', `attachment; filename="msp_${cfg.org}.tgz"`)
-        packStream.pipe(res)
+        streamContentToHttpResponseAsFile(`msp_${cfg.org}.tgz`, packStream, res);
+    }))
+
+    app.get('/node/msp/orderer', asyncMiddleware(async (req, res) => {
+        const packStream = await mspManager.packOrdererMsp();
+        streamContentToHttpResponseAsFile(`msp_${cfg.ordererName}.tgz`, packStream, res);
     }))
 
     app.post('/node/organization', asyncMiddleware(async (req, res, next) => {
@@ -128,6 +128,15 @@ module.exports = function (app, server, nodeComponentsManager) {
             return component
         })
         return components
+    }
+
+    function streamContentToHttpResponseAsFile(fileName, stream, res) {
+        if (!stream) {
+            throw new Error('Error providing msp')
+        }
+        res.setHeader('Content-type', 'application/octet-stream')
+        res.setHeader('Content-disposition', `attachment; filename="${fileName}"`)
+        stream.pipe(res)
     }
 
 }

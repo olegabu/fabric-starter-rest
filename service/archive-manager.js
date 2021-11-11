@@ -112,12 +112,12 @@ class ArchiveManager {
         return extractPath
     }
 
-    async extractStream(readStream, archiveType = '.zip', extractPath, sourceFile) {//TODO: unlink source in a caller
+    async extractStream(readStream, archiveType = '.zip', extractPath, sourceFile, filter) {
         let extractor = ARCHIVES_EXTRACTOR[archiveType];
         return new Promise(async (resolve, reject) => {
             logger.debug(`Extracting stream: `, extractor)
             if (!sourceFile || path.normalize(path.dirname(sourceFile)) !== path.normalize(extractPath)) {
-                await fse.emptyDir(extractPath)
+                await fse.emptyDir(extractPath) // TODO: need to clean only folders which present in the archive
             }
             try {
                 let outStream = extractor.extractionOutStream(extractPath);

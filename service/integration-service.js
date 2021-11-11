@@ -1,14 +1,10 @@
 const fs = require('fs-extra');
 const path = require('path');
 const _ = require('lodash');
-const async = require('async');
 const cfg = require('../config');
 const log4jsConfigured = require('../util/log/log4js-configured');
 const logger = log4jsConfigured.getLogger('IntegrationService');
 const osnManager = require('../osn-manager');
-const archiveManager = require('../service/archive-manager');
-const mspManager = require('../service/msp/msp-manager');
-
 
 class IntegrationService {
 
@@ -44,7 +40,7 @@ class IntegrationService {
         //     await mspManager.unpackMsp(certFile, cfg.TMP_DIR);
         // })
         const defaultClient = await this.getDefaultClient();
-        const result = await defaultClient.addOrgToChannel(cfg.DNS_CHANNEL, org, certFiles && cfg.TMP_DIR);
+        const result = await defaultClient.addOrgToChannel(cfg.DNS_CHANNEL, org, certFiles);
         allowedOrg.joined = true;
         return result;
     }

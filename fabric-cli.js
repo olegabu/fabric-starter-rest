@@ -1,6 +1,7 @@
 const fs = require('fs-extra'),
     path = require('path'),
     dns = require('dns'),
+    async = require('async'),
     nodeUtil = require('util'),
     _ = require('lodash'),
     envsub = require('envsub'),
@@ -261,12 +262,17 @@ class FabricCLI {
     async prepareOrgConfigStruct(newOrg, configTemplateFile, extraEnv, certFiles) {
         logger.debug("Prepare org config for ", newOrg)
 
-        await fs.emptyDir(path.join(cfg.TMP_DIR, 'peerOrganizations', `${newOrg.orgId}.${newOrg.domain || cfg.domain}`));
+        const orgMspPath = path.join(cfg.TMP_DIR, 'peerOrganizations', `${newOrg.orgId}.${newOrg.domain || cfg.domain}`);
+        // await fs.emptyDir(orgMspPath);
         if (!certFiles) {
-            await this.downloadOrgMSP(newOrg, newOrg.domain || cfg.domain, cfg.TMP_DIR);
+            try {
+                await this.downloadOrgMSP(newOrg, newOrg.domain || cfg.domain, cfg.TMP_DIR);
+            } catch (e) {
+                logger.info("Can't download certificates. Skipping.")
+            }
         } else {
             await async.everySeries(certFiles, async certFile => {
-                await mspManager.unpackMsp(certFile, cfg.TMP_DIR);
+                await mspManager.unpackMsp(certFile, orgMspPath);
             })
         }
 

@@ -235,7 +235,8 @@ class FabricStarterClient {
             this.chmodCryptoFolder();
             return res;
         } catch (e) {
-            return e;
+            logger.error(e)
+            throw e;
         } finally {
             this.invalidateChannelsCache(channelId);
         }
@@ -318,15 +319,17 @@ class FabricStarterClient {
             channel = this.client.newChannel(channelId);
             channel.addOrderer(this.client.getOrderer(cfg.ORDERER_ADDR)); //this.createOrderer());
             try {
-                optionalPeer = optionalPeer || await this.queryPeers();
+                if (optionalPeer) { //TODO: seems unnecessary code
+                    optionalPeer = optionalPeer || await this.queryPeers();
 
-                if (_.isArray(optionalPeer)) {
-                    optionalPeer = _.find(optionalPeer, p => _.startsWith(p.getName(), "peer0")) || optionalPeer[0];
+                    if (_.isArray(optionalPeer)) {
+                        optionalPeer = _.find(optionalPeer, p => _.startsWith(p.getName(), "peer0")) || optionalPeer[0];
+                    }
+
+                    channel.addPeer(optionalPeer);
                 }
-
-                channel.addPeer(optionalPeer);
             } catch (e) {
-                logger.warn(`Error adding peer ${optionalPeer} to channel ${channelId}`);
+                logger.warn(`Error adding peer ${optionalPeer} to channel ${channelId}`, e);
             }
         }
         return channel;

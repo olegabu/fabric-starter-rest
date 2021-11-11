@@ -5,9 +5,6 @@ module.exports = async function(app, server, fabricStarterRuntime, chaincodeServ
   const os = require('os');
   const _ = require('lodash');
 
-
-
-
   const cfg = require('./config.js');
   const log4jsConfigured = require('./util/log/log4js-configured');
   const logger = log4jsConfigured.getLogger('IntegrationApi');
@@ -23,7 +20,7 @@ module.exports = async function(app, server, fabricStarterRuntime, chaincodeServ
     {name: 'args', maxCount: 1},{name: 'chaincodeType', maxCount: 1},{name: 'chaincodeId', maxCount: 1},
     {name: 'chaincodeVersion', maxCount: 1},{name: 'waitForTransactionEvent', maxCount: 1},{name: 'policy', maxCount: 1}]);
 
-  // const certificatesUpload = upload.fields([{name: 'certFiles', maxCount: 1}]); //TODO: refactor upload duplicates
+  const certificatesUpload = upload.fields([{name: 'certFiles', maxCount: 1}]); //TODO: refactor upload duplicates
 
   const channelManager = require('./channel-manager');
   const appManager = require('./app-manager');
@@ -299,9 +296,8 @@ module.exports = async function(app, server, fabricStarterRuntime, chaincodeServ
    * @returns {Error}  default - Unexpected error
    * @security JWT
    */
-  app.post('/channels/:channelId/orgs', asyncMiddleware(async(req, res, next) => {
-    let certFiles='' // TODO:
-    res.json(await req.fabricStarterClient.addOrgToChannel(req.params.channelId, Org.fromHttpBody(req.body)), certFiles);
+  app.post('/channels/:channelId/orgs', certificatesUpload, asyncMiddleware(async(req, res, next) => {
+    res.json(await req.fabricStarterClient.addOrgToChannel(req.params.channelId, Org.fromHttpBody(req.body), _.get(req, 'files.certFiles')));
   }));
 
 
@@ -504,10 +500,9 @@ module.exports = async function(app, server, fabricStarterRuntime, chaincodeServ
    * @returns {Error}  default - Unexpected error
    * @security JWT
    */
-  app.post('/consortium/members', asyncMiddleware(async(req, res, next) => {
-    let certFiles = '' // TODO:
+  app.post('/consortium/members', certificatesUpload, asyncMiddleware(async(req, res, next) => {
     let consortiumName = null // TODO:
-    res.json(await req.fabricStarterClient.addOrgToConsortium(Org.fromHttpBody(req.body), consortiumName, certFiles));
+    res.json(await req.fabricStarterClient.addOrgToConsortium(Org.fromHttpBody(req.body), consortiumName, _.get(req, 'files.certFiles')));
   }));
 
   /**

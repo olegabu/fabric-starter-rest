@@ -25,18 +25,7 @@ module.exports = function (app, server, integrationService) {
         res.json(integrationService.acceptedOrgsList());
     }));
 
-    app.post('/integration/service/orgs', asyncMiddleware(async (req, res) => {
-        logger.info('Org integration service request: ', req.body);
-        try {
-            res.json(await integrationService.integrateOrg(Org.fromHttpBody(req.body)))
-        } catch (e) {
-            logger.error(e);
-            res.status(401).json(e);
-        }
-    }));
-
-    app.post('/integration/service/orgs_with_certs', certificatesUpload, asyncMiddleware(async (req, res) => {
-
+    app.post('/integration/service/orgs', certificatesUpload, asyncMiddleware(async (req, res) => {
         logger.info('Org integration service request: ', req.body);
         try {
             res.json(await integrationService.integrateOrg(Org.fromHttpBody(req.body), _.get(req, 'files.certFiles')))
