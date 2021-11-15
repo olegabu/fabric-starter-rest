@@ -86,8 +86,8 @@ class Fabric2xAdapter {
         return result;
     }
 
-    async commitChaincode(channel, chaincodeName, version, sequence) {
-        const result = await httpService.post(`${cfg.SDK_API_URL}/lifecycle/chaincode/commit/${channel}/${chaincodeName}/${version}/${sequence}`)
+    async commitChaincode(channel, chaincodeName, version, sequence, isInitRequired = '') {
+        const result = await httpService.post(`${cfg.SDK_API_URL}/lifecycle/chaincode/commit/${channel}/${chaincodeName}/${version}/${sequence}/${isInitRequired}`)
         return result; //this.convertEventToObject(result);
     }
 

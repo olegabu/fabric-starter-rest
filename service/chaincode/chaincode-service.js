@@ -44,15 +44,15 @@ class ChaincodeService {
         return this._getFabricVersionAdapter().approveChaincode(channel, chaincodeId, version, packageId, isInitRequired)
     }
 
-    async commitChaincode(channel, chaincodeId, version, sequence) {
-        return this._getFabricVersionAdapter().commitChaincode(channel, chaincodeId, version, sequence)
+    async commitChaincode(channel, chaincodeId, version, sequence, isInitRequired) {
+        return this._getFabricVersionAdapter().commitChaincode(channel, chaincodeId, version, sequence, isInitRequired)
     }
 
     async instantiateChaincode(channel, chaincodeId, version, packageId, isInitRequired) {
         const approval = await this.approveChaincode(channel, chaincodeId, version, packageId, isInitRequired);
         const currentlyInstantiated = _.find(await this.getCommittedChaincodes(channel, chaincodeId), ch=>_.isEqual(version, _.get(ch, 'version')))
         if (!currentlyInstantiated || !_.isEqual(approval.sequence, _.get(currentlyInstantiated, 'sequence'))) {
-            await this.commitChaincode(channel, chaincodeId, version, approval.sequence)
+            await this.commitChaincode(channel, chaincodeId, version, approval.sequence, isInitRequired)
         }
     }
 
