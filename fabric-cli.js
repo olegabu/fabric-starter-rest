@@ -279,7 +279,8 @@ class FabricCLI {
         let newOrgId = _.get(newOrg, 'orgId');
         let env = _.assign({
             NEWORG: newOrgId,
-            DOMAIN: cfg.domain,
+            DOMAIN: newOrg.domain || cfg.domain,
+            PEER_NAME: newOrg.peerName || "peer0",
             SIGNATURE_HASH_FAMILY: cfg.SIGNATURE_HASH_FAMILY
         }, extraEnv);
 

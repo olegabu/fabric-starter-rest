@@ -11,13 +11,14 @@ logger.info(`Crypto-config path: ${cryptoConfigPath}`);
 const TEMPLATES_DIR = process.env.TEMPLATES_DIR || '/etc/hyperledger/templates';
 const YAMLS_DIR = process.env.YAMLS_DIR || `${TEMPLATES_DIR}/..`;
 const ENROLL_ID = process.env.ENROLL_ID || 'admin';
+const TMP_DIR = process.env.TMP_DIR || cryptoConfigPath;
 
 const ordererNamePrefix = process.env.ORDERER_NAME_PREFIX || 'raft';
 const ordererBatchTimeout = process.env.ORDERER_BATCH_TIMEOUT || '2';
 
 const systemChannelId = process.env.SYSTEM_CHANNEL_ID || "orderer-system-channel";
 
-const PEER_CONFIG_FILE = process.env.PEER_CONFIG_FILE || `${process.env.TMP_DIR}/node-config${process.env.DEBUG_INSTANCE ? '-' + process.env.DEBUG_INSTANCE : ''}.json`
+const PEER_CONFIG_FILE = process.env.PEER_CONFIG_FILE || `${TMP_DIR}/node-config${process.env.DEBUG_INSTANCE ? '-' + process.env.DEBUG_INSTANCE : ''}.json`
 logger.info(`PEER_CONFIG_FILE: ${PEER_CONFIG_FILE}`);
 
 const persistedConfig = fs.readJsonSync(PEER_CONFIG_FILE, {throws: false}) || {}
@@ -28,7 +29,7 @@ module.exports = {
     systemChannelId: systemChannelId,
     ENROLL_ID: ENROLL_ID,
     CRYPTO_CONFIG_DIR: cryptoConfigPath,
-    TMP_DIR: process.env.TMP_DIR || cryptoConfigPath,
+    TMP_DIR: TMP_DIR,
     TEMPLATES_DIR: TEMPLATES_DIR,
     YAMLS_DIR: YAMLS_DIR,
     FABRIC_STARTER_HOME: process.env.FABRIC_STARTER_HOME || process.env.FABRIC_STARTER_PWD || './',
@@ -219,7 +220,8 @@ module.exports = {
 
     AUTH_JWT_EXPIRES_IN: (/^\d+$/.test(process.env.AUTH_JWT_EXPIRES_IN) ? parseInt(process.env.AUTH_JWT_EXPIRES_IN) : process.env.AUTH_JWT_EXPIRES_IN) || '8h',
     DOCKER_COMPOSE_EXTRA_ARGS: process.env.DOCKER_COMPOSE_EXTRA_ARGS || '',
-    PRIVATE_KEYS_FILTER : '.*\/keystore.*|.*\/sk.pem|.*/\*.key|.*\/priv_sk'
+    PRIVATE_KEYS_FILTER : '.*\/keystore.*|.*\/sk.pem|.*/\*.key|.*\/priv_sk',
+    SKIP_CHECK_PORTS_TIMEOUT_SECONDS: process.env.SKIP_CHECK_PORTS_TIMEOUT_SECONDS ? process.env.SKIP_CHECK_PORTS_TIMEOUT_SECONDS * 1000 : ''
 };
 
 function persistConfig() {

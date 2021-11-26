@@ -5,7 +5,7 @@ const _ = require('lodash');
 const FabricStarterClient = require('../../fabric-starter-client');
 const RestSocketServer = require('../../rest-socket-server');
 const cfg = require('../../config');
-const logger = cfg.log4js.getLogger('NodeRuntime');
+const logger =  require('../../util/log/log4js-configured').getLogger('NodeRuntime');
 const appManager = require('../../app-manager');
 const IntegrationService = require('../../service/integration-service');
 const ChaincodeService = require('../../service/chaincode/chaincode-service');
@@ -40,6 +40,7 @@ class FabricStarterRuntime {
             if (!await util.checkRemotePort(cfg.addressFromTemplate(cfg.peerName, org.orgId, org.domain), org.peer0Port, {
                 throws: false, timeout: 3000, from: 'tryInitRuntime'
             })) {
+                logger.info("Peer is not available. Stopping.")
                 return
             }
 

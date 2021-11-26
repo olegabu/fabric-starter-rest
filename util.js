@@ -3,24 +3,30 @@ const path = require('path');
 const net = require('net');
 const _ = require('lodash');
 const logger = require('./util/log/log4js-configured').getLogger('util')
+const cfg = require('./config')
 
 class Util {
 
     async checkRemotePort(server, port, options = {throws: true}) {
         logger.debug(`Check whether remote port is accessible for: ${server}:${port}`, options);
         return new Promise(async (resolve, reject) => {
-            await this.sleep(options.timeout || 1000) //TODO: createConnection ignores timeout
-            let client = net.createConnection({host: server, port: port, timeout: options.timeout || 1000}, () => {
-                logger.debug(`Remote port is accessible: ${server}:${port}`);
-                client.end();
-                resolve(true);
-            });
-            client.on("error", e => {
-                logger.debug(`Error accessing remote port, ${server}:${port}. {options.throws:${options.throws}`, e)
-                return options.throws
-                    ? reject(`Endpoint is unreachable: ${server}:${port}. ${e && e.message}`)
-                    : resolve(false)
-            });
+            await this.sleep(cfg.SKIP_CHECK_PORTS_TIMEOUT_SECONDS || options.timeout || 1000) //TODO: createConnection ignores timeout
+            if (!cfg.SKIP_CHECK_PORTS_TIMEOUT_SECONDS) {
+                let client = net.createConnection({host: server, port: port, timeout: options.timeout || 1000}, () => {
+                    logger.debug(`Remote port is accessible: ${server}:${port}`);
+                    client.end();
+                    resolve(true);
+                });
+                client.on("error", e => {
+                    logger.debug(`Error accessing remote port, ${server}:${port}. {options.throws:${options.throws}`, e)
+                    return options.throws
+                        ? reject(`Endpoint is unreachable: ${server}:${port}. ${e && e.message}`)
+                        : resolve(false)
+                });
+            } else {
+                logger.warn(`Skip waiting for peer availability. Waited for ${cfg.SKIP_CHECK_PORTS_TIMEOUT_SECONDS} before continue`)
+                return true;
+            }
         });
     }
 
