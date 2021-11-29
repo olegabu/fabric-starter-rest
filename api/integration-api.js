@@ -45,10 +45,10 @@ module.exports = function (app, server, integrationService) {
         }
     }));
 
-    app.post('/integration/service/raft', asyncMiddleware(async (req, res, next) => {
+    app.post('/integration/service/raft', certificatesUpload, asyncMiddleware(async (req, res, next) => {
         logger.info('Raft integration service request: ', req.body);
         try {
-            let stream = await integrationService.integrateOrderer(ordererFromHttpBody(req.body));
+            let stream = await integrationService.integrateOrderer(ordererFromHttpBody(req.body), _.get(req, 'files.certFiles'));
             logger.info('Streaming updated config block back to new organization node')
             stream.on('error', (err) => {
                 logger.debug('Error streaming ', err);

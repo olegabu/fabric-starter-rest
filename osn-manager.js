@@ -1,9 +1,11 @@
 const fs = require('fs');
 const path = require('path');
 const _ = require('lodash');
+const async = require('async');
 const cfg = require('./config.js');
-const logger = cfg.log4js.getLogger('OsmManager');
+const logger = cfg.log4js.getLogger('OsnManager');
 const certsManager = require('./certs-manager');
+const mspManager = require('./service/msp/msp-manager');
 const fabricCLI = require('./fabric-cli');
 const util = require('./util');
 const localDns = require('./util/local-dns');
@@ -18,12 +20,12 @@ class OsnManager {
         return _.get(bootstrap, 'ip') ? `${org.orgId}-osn.${org.domain}` : org.domain //TODO: remove after normalize orderer domain names at deployment
     }
 
-    async addRaftConsenter(newOrderer, fabricStarterClient) {
+    async addRaftConsenter(newOrderer, fabricStarterClient, certFiles) {
         logger.debug("Register new orderer DNS info ", newOrderer);
         await this.registerOrdererInCommonChannel(newOrderer, fabricStarterClient);
-        this.updateConsenterConfig(newOrderer, cfg.systemChannelId);
-        this.updateConsenterConfig(newOrderer, cfg.DNS_CHANNEL);
-        let confgiBlockPath = path.join(cfg.CRYPTO_CONFIG_DIR, 'ordererOrganizations', cfg.domain, 'msp', `${newOrderer.ordererName}.${newOrderer.domain}`, 'genesis', `${cfg.systemChannelId}_remote.pb`);
+        await this.updateConsenterConfig(newOrderer, cfg.systemChannelId, certFiles);
+        await this.updateConsenterConfig(newOrderer, cfg.DNS_CHANNEL, certFiles);
+        let confgiBlockPath = path.join(cfg.TMP_DIR, 'ordererOrganizations', cfg.ordererDomain, 'msp', `${newOrderer.ordererName}.${newOrderer.domain}`, 'genesis', `${cfg.systemChannelId}_remote.pb`);
         logger.debug('\n\n            Creating read stream for updated config block file\n\n            ', confgiBlockPath)
         return fs.createReadStream(confgiBlockPath, {encoding: 'binary'})
     }
@@ -34,9 +36,18 @@ class OsnManager {
         await localDns.updateLocalDnsStorageFromChaincode(fabricStarterClient)
     }
 
-    updateConsenterConfig(newOrderer, channel) {
+    async updateConsenterConfig(newOrderer, channel, certFiles) {
         logger.debug(`\n\n\nAdd new consenter config to raft service", Channel: ${channel}`, newOrderer, '\n\n\n');
-        let cmd = `container-scripts/orderer/raft-full-add-new-consenter.sh ${newOrderer.ordererName} ${newOrderer.domain} ${newOrderer.ordererPort} ${newOrderer.wwwPort} ${channel}`;
+        let wwwPort = newOrderer.wwwPort;
+        const orgMspPath = path.join(cfg.TMP_DIR, 'ordererOrganizations', `${newOrderer.domain || cfg.domain}`);
+
+        if (certFiles) {
+            await async.everySeries(certFiles, async certFile => {
+                await mspManager.unpackMsp(certFile, orgMspPath);
+            })
+            wwwPort="0"
+        }
+        let cmd = `container-scripts/orderer/raft-full-add-new-consenter.sh ${newOrderer.ordererName} ${newOrderer.domain} ${newOrderer.ordererPort} ${wwwPort} ${channel}`;
         fabricCLI.execShellCommand(cmd, cfg.YAMLS_DIR, certsManager.getOrdererMSPEnv());
 
 /*

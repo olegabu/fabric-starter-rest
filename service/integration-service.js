@@ -23,11 +23,11 @@ class IntegrationService {
         return _.map(this.orgsToAccept, e => e);
     }
 
-    async integrateOrderer(orderer) {
+    async integrateOrderer(orderer, certFiles) {
         const allowedOrg = await this.checkOrgIsAllowed(orderer);
         logger.debug("integrateOrderer accepting:", allowedOrg);
         const defaultClient = await this.getDefaultClient();
-        const stream = await osnManager.OsnManager.addRaftConsenter(orderer, defaultClient);
+        const stream = await osnManager.OsnManager.addRaftConsenter(orderer, defaultClient, certFiles);
         allowedOrg.ordererJoined = true;
         return stream;
     }

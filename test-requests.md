@@ -37,6 +37,18 @@ curl -i --connect-timeout 30 --max-time 120 --retry 1 -k http://${BOOTSTRAP_HOST
 # Add org to consortium
 /consortium/members
 
+
+# Raft orderer
+ 
+tar czf msp-orderer.tgz -C crypto-config/ordererOrganizations/example2.com/ msp
+
+curl -i -k  --connect-timeout 30 --max-time 240 --retry 0 \
+  http://${BOOTSTRAP_HOST}/integration/service/raft -H 'Content-Type: application/json' \
+    -F ordererName=orderer -F domain=osn-org2 -F ordererPort=7050 -F wwwPort=80 -F ordererIp=192.168.1.23 \
+    -F orgId=org2 -F certFiles=@msp-orderer.tgz \
+    --output crypto-config/configtx/example2.com/genesis.pb
+     
+
 ```
 
 
