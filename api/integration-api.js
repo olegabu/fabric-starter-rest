@@ -59,7 +59,7 @@ module.exports = function (app, server, integrationService) {
                 res.status(500).json(err)
             });
             res.set('Content-Type', 'application/octet-stream');
-            stream.pipe(res)
+            stream.pipe(res, {encoding: 'binary'})
         } catch (e) {
             logger.error(e);
             res.status(401).json(e);

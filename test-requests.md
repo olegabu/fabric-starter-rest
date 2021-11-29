@@ -42,8 +42,10 @@ curl -i --connect-timeout 30 --max-time 120 --retry 1 -k http://${BOOTSTRAP_HOST
  
 tar czf msp-orderer.tgz -C crypto-config/ordererOrganizations/example2.com/ msp
 
+#sudo chown -R $USER crypto-config
+
 curl -i -k  --connect-timeout 30 --max-time 240 --retry 0 \
-  http://${BOOTSTRAP_HOST}/integration/service/raft -H 'Content-Type: application/json' \
+  http://${BOOTSTRAP_HOST}/integration/service/raft  \
     -F ordererName=orderer -F domain=osn-org2 -F ordererPort=7050 -F wwwPort=80 -F ordererIp=192.168.1.23 \
     -F orgId=org2 -F certFiles=@msp-orderer.tgz \
     --output crypto-config/configtx/example2.com/genesis.pb
@@ -56,3 +58,17 @@ curl -i -k  --connect-timeout 30 --max-time 240 --retry 0 \
 # Multipart post
 curl 'http://localhost:4000/chaincodes' -X POST  -H "Authorization: Bearer $JWT" --data-binary 
 
+
+tar czf msp-orderer.tgz -C crypto-config/ordererOrganizations/ex2.com/ msp
+
+curl -k -0 --connect-timeout 30 --max-time 240 --retry 0 \
+  http://localhost:4000/integration/service/raft  \
+    -F ordererName=orderer -F domain=ex2.com -F ordererPort=7150 -F wwwPort=81 -F ordererIp=192.168.99.1 \
+    -F orgId=org1d -F certFiles=@msp-orderer.tgz \
+    --output crypto-config/configtx/ex2.com/genesis.pb
+
+
+
+curl -i --connect-timeout 30 --max-time 120 --retry 1 -k http://localhost:4000/integration/service/orgs \
+  -F peerName="peer0"  -F orgId="org2" -F domain="example.com" -F orgIp="192.168.99.100" -F peerPort="7051" -F wwwPort="80" \
+  -F certFiles=@msp-org.tgz

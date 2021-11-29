@@ -27,7 +27,7 @@ class OsnManager {
         await this.updateConsenterConfig(newOrderer, cfg.DNS_CHANNEL, certFiles);
         let confgiBlockPath = path.join(cfg.TMP_DIR, 'ordererOrganizations', cfg.ordererDomain, 'msp', `${newOrderer.ordererName}.${newOrderer.domain}`, 'genesis', `${cfg.systemChannelId}_remote.pb`);
         logger.debug('\n\n            Creating read stream for updated config block file\n\n            ', confgiBlockPath)
-        return fs.createReadStream(confgiBlockPath, {encoding: 'binary'})
+        return fs.createReadStream(confgiBlockPath)
     }
 
     async registerOrdererInCommonChannel(orderer, fabricStarterClient) {
