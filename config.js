@@ -206,9 +206,9 @@ module.exports = {
 
     get certificationDomain() { return `${this.org}.${this.domain}`},
 
-    get RAFT0_PORT(){return process.env.RAFT0_PORT || this.ordererPort},
-    RAFT1_PORT: process.env.RAFT1_PORT || '7150',
-    RAFT2_PORT: process.env.RAFT2_PORT || '7250',
+    get RAFT0_CONSENTER_PORT(){return process.env.RAFT0_CONSENTER_PORT || this.ordererPort},
+    RAFT1_CONSENTER_PORT: process.env.RAFT1_CONSENTER_PORT || '7150',
+    RAFT2_CONSENTER_PORT: process.env.RAFT2_CONSENTER_PORT || '7250',
 
     ACCEPT_ALL_ORGS: process.env.ACCEPT_ALL_ORGS !== 'false',
 

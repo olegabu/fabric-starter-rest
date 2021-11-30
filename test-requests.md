@@ -62,8 +62,8 @@ curl 'http://localhost:4000/chaincodes' -X POST  -H "Authorization: Bearer $JWT"
 tar czf msp-orderer.tgz -C crypto-config/ordererOrganizations/ex2.com/ msp
 
 curl -k -0 --connect-timeout 30 --max-time 240 --retry 0 \
-  http://localhost:4000/integration/service/raft  \
-    -F ordererName=orderer -F domain=ex2.com -F ordererPort=7150 -F wwwPort=81 -F ordererIp=192.168.99.1 \
+  http://192.168.99.1:4000/integration/service/raft  \
+    -F ordererName=orderer -F domain=ex2.com -F ordererPort=7050 -F wwwPort=81 -F ordererIp=192.168.99.100 \
     -F orgId=org1d -F certFiles=@msp-orderer.tgz \
     --output crypto-config/configtx/ex2.com/genesis.pb
 
