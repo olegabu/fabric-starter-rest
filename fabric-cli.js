@@ -284,6 +284,10 @@ class FabricCLI {
             SIGNATURE_HASH_FAMILY: cfg.SIGNATURE_HASH_FAMILY
         }, extraEnv);
 
+        const origEnv= {
+            DOMAIN: cfg.domain,
+            PEER_NAME: cfg.peerName
+        }
         certsManager.forEachCertificate(newOrgId, newOrg.domain || cfg.domain, cfg.TMP_DIR, (certificateSubDir, fullCertificateDirectoryPath, certificateFileName, directoryPrefixConfig) => {
             let certContent = this.loadFileContentSync(path.join(fullCertificateDirectoryPath, certificateFileName));
             env[directoryPrefixConfig.envVar] = Buffer.from(certContent).toString('base64');
@@ -299,6 +303,7 @@ class FabricCLI {
 
         const outputFile = `${cfg.TMP_DIR}/${newOrgId}_OrgConfig.json`;
         let newOrgSubstitution = await this.envSubst(`${cfg.TEMPLATES_DIR}/${configTemplateFile}`, outputFile, env);
+        _.assign(process.env, origEnv); //TODO: envsub replaces global env!
         logger.debug('Config for ', newOrg, JSON.parse(newOrgSubstitution.outputContents))
         return {outputFile, outputJson: JSON.parse(newOrgSubstitution.outputContents)};
     }

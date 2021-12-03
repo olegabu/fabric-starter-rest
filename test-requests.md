@@ -51,6 +51,10 @@ curl -i -k  --connect-timeout 30 --max-time 240 --retry 0 \
     --output crypto-config/configtx/example2.com/genesis.pb
      
 
+
+#
+DNS
+registerOrg '{"orgId":"test","domain":"domain2.com","orgIp":"192.1.1.1","peerPort":"7051"}'
 ```
 
 
@@ -63,8 +67,8 @@ tar czf msp-orderer.tgz -C crypto-config/ordererOrganizations/ex2.com/ msp
 
 curl -k -0 --connect-timeout 30 --max-time 240 --retry 0 \
   http://192.168.99.1:4000/integration/service/raft  \
-    -F ordererName=orderer -F domain=ex2.com -F ordererPort=7050 -F wwwPort=81 -F ordererIp=192.168.99.100 \
-    -F orgId=org1d -F certFiles=@msp-orderer.tgz \
+    -F ordererName=orderer -F domain=ex2.com -F ordererPort=7050 -F wwwPort=8000 -F ordererIp=192.168.99.100 \
+    -F orgId=org11 -F certFiles=@msp-orderer.tgz \
     --output crypto-config/configtx/ex2.com/genesis.pb
 
 

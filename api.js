@@ -137,16 +137,12 @@ module.exports = async function(app, server, fabricStarterRuntime, chaincodeServ
     const fileName = _.get(fileUploadObj, 'originalname');
     const fileBaseName = fileUtils.getFileBaseName(fileName);
     const archiveType = path.extname(fileName)
-    try {
-      const result = await chaincodeService.installChaincode(fileBaseName, {...req.body, archiveType}, fileUploadObj.path);
-      res.setHeader('Access-Control-Allow-Origin', '*');
-      res.setHeader('Access-Control-Allow-Methods', "GET, POST, PUT, DELETE, OPTIONS");
-      res.setHeader("Access-Control-Allow-Headers", "Authorization, Cache-Control, Access-Control-Allow-Headers, Origin,Accept, X-Requested-With, Content-Type, Access-Control-Request-Method, Access-Control-Request-Headers");
-      res.setHeader("Vary", "Accept")
-      res.json(result)
-    }catch (e) {
-      console.log(e)
-    }
+    const result = await chaincodeService.installChaincode(fileBaseName, {...req.body, archiveType}, fileUploadObj.path);
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', "GET, POST, PUT, DELETE, OPTIONS");
+    res.setHeader("Access-Control-Allow-Headers", "Authorization, Cache-Control, Access-Control-Allow-Headers, Origin,Accept, X-Requested-With, Content-Type, Access-Control-Request-Method, Access-Control-Request-Headers");
+    res.setHeader("Vary", "Accept")
+    res.json(result)
   }));
 
   /**
