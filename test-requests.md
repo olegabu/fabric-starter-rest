@@ -15,7 +15,7 @@ curl http://${BOOTSTRAP_HOST}:4000/node/msp/orderer --output msp_orderer.tgz
 MSP_FILE=msp_org2.tgz
 
 # Get MSP archive:
-curl http://${ORG_HOST}/node/msp --output ${MSP_FILE} 
+curl http://${ORG_HOST}/node/msp/org --output ${MSP_FILE} 
 #OR
 tar czf msp_org2.tgz peerOrganizations ordererOrganizations
 
@@ -55,6 +55,7 @@ curl -i -k  --connect-timeout 30 --max-time 240 --retry 0 \
 #
 DNS
 registerOrg '{"orgId":"test","domain":"domain2.com","orgIp":"192.1.1.1","peerPort":"7051"}'
+registerOrderer '{"ordererName":"test-orderer", "domain":"ex2.com", "ordererPort":"7050", "ordererIp":"192.168.99.1","orgId":"org2"}'
 ```
 
 
@@ -71,8 +72,14 @@ curl -k -0 --connect-timeout 30 --max-time 240 --retry 0 \
     -F orgId=org11 -F certFiles=@msp-orderer.tgz \
     --output crypto-config/configtx/ex2.com/genesis.pb
 
+curl http://localhost:4000/node/msp/org --output msp-org.tgz
 
-
-curl -i --connect-timeout 30 --max-time 120 --retry 1 -k http://localhost:4000/integration/service/orgs \
-  -F peerName="peer0"  -F orgId="org2" -F domain="example.com" -F orgIp="192.168.99.100" -F peerPort="7051" -F wwwPort="80" \
+curl -i --connect-timeout 30 --max-time 120 --retry 1 -k http://192.168.99.1:4000/integration/service/orgs \
+  -F peerName="peer0"  -F orgId="org11" -F domain="ex2.com" -F orgIp="192.168.99.100" -F peerPort="7051" -F wwwPort="8000" \
   -F certFiles=@msp-org.tgz
+  
+  
+  
+  curl -i --connect-timeout 30 --max-time 120 --retry 1 -k http://192.168.99.1:4000/channels/test/orgs \
+    -H "Authorization: Bearer $JWT" \
+    -F peerName="peer0"  -F orgId="org11" -F domain="ex2.com" -F orgIp="192.168.99.100" -F peerPort="7051" -F wwwPort="8000"
