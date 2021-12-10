@@ -83,3 +83,12 @@ curl -i --connect-timeout 30 --max-time 120 --retry 1 -k http://192.168.99.1:400
   curl -i --connect-timeout 30 --max-time 120 --retry 1 -k http://192.168.99.1:4000/channels/test/orgs \
     -H "Authorization: Bearer $JWT" \
     -F peerName="peer0"  -F orgId="org11" -F domain="ex2.com" -F orgIp="192.168.99.100" -F peerPort="7051" -F wwwPort="8000"
+    
+    
+    https://cloud.redhat.com/blog/grpc-or-http/2-ingress-connectivity-in-openshift
+    https://kubernetes.io/blog/2018/11/07/grpc-load-balancing-on-kubernetes-without-tears/
+    
+    https://www.educba.com/java-runtimeexception/
+    
+    https://github.com/hyperledger/fabric-samples/tree/main/test-network-k8s
+    
