@@ -81,6 +81,8 @@ module.exports = {
         persistConfig()
     },
 
+    get internalDomain() {return persistedConfig.INTERNAL_DOMAIN || process.env.INTERNAL_DOMAIN },
+
     get peerName() {return persistedConfig.PEER_NAME || process.env.PEER_NAME || 'peer0'},
 
     setPeerName(val) {
@@ -144,7 +146,7 @@ module.exports = {
         persistConfig()
     },
 
-    get ORDERER_ADDR() {return persistedConfig.ORDERER_ADDR || `${this.ordererName}.${this.ordererDomain}:${this.ordererPort}`},
+    get ORDERER_ADDR() {return persistedConfig.ORDERER_ADDR || `${this.ordererName}.${this.internalDomain || this.ordererDomain}:${this.ordererPort}`},
 
     setOrdererAddr(val) {
         persistedConfig.ORDERER_ADDR = val
@@ -194,7 +196,7 @@ module.exports = {
     get cas() {return process.env.CAS || `"${this.org}":"ca.${this.org}.${this.domain}:${this.masterCAPort}"`},
     get tlsCas() {return process.env.TLS_CAS || `"${this.org}":"tlsca.${this.org}.${this.domain}:${this.masterTLSCAPort}"`},
 
-    get orgs() {return process.env.ORGS || `"${this.org}":"${this.addressFromTemplate(this.peerName, this.org, this.domain)}:${this.peer0Port}"`},
+    get orgs() {return process.env.ORGS || `"${this.org}":"${this.addressFromTemplate(this.peerName, this.org, this.internalDomain || this.domain)}:${this.peer0Port}"`},
     // get cas() {return process.env.CAS || `"${this.org}":"${this.corePeerAddress('ca', this.org, this.domain)}:${this.masterCAPort}"`},
     // get tlsCas() {return process.env.TLS_CAS || `"${this.org}":"${this.corePeerAddress('tlsca', this.org, this.domain)}:${this.masterTLSCAPort}"`},
 
