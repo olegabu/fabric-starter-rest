@@ -108,9 +108,9 @@ module.exports = function (cas, storeSubPath='') {
   t.client = {
     organization: cfg.org,
     credentialStore: {
-      path: `hfc-kvs/${cfg.org}${storeSubPath}`,
+      path: `${cfg.TMP_DIR}/hfc-kvs/${cfg.org}${storeSubPath}`,
       cryptoStore: {
-        path: `hfc-cvs/${cfg.org}${storeSubPath}`
+        path: `${cfg.TMP_DIR}/hfc-cvs/${cfg.org}${storeSubPath}`
       }
     },
     connection: {
