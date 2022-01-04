@@ -131,8 +131,8 @@ class FabricCLI {
         this.execShellCommand(`configtxgen -channelID ${channelName} -configPath ${configDir} -profile ${profile} -outputCreateChannelTx ${outputTxFile}`)
     }
 
-    execPeerCommand(command, paramsStr, extraEnv) {
-        this.execShellCommand(`peer ${command} -o ${cfg.ORDERER_ADDR} --tls --cafile ${cfg.ORDERER_TLS_CERT} ${paramsStr}`, null, extraEnv);
+    execPeerCommand(command, paramsStr, extraEnv, cb) {
+        return this.execShellCommand(`peer ${command} -o ${cfg.ORDERER_ADDR} --tls --cafile ${cfg.ORDERER_TLS_CERT} ${paramsStr}`, null, extraEnv, cb);
     }
 
     async generateChannelConfigTx(channelId) {
@@ -189,10 +189,11 @@ class FabricCLI {
         return this.loadFileContent(filePath);
     }
 
-    fetchChannelConfig(channelId, extraEnv) {
+    fetchChannelConfig(channelId, extraEnv, cb) {
         const channelConfigFile = `${channelId}_config.pb`;
         const outputFilePath = `${cfg.TMP_DIR}/${channelConfigFile}`;
-        this.execPeerCommand(`channel fetch config ${outputFilePath}`, `-c ${channelId}`, extraEnv);
+        let out = this.execPeerCommand(`channel fetch config ${outputFilePath}`, `-c ${channelId}`, extraEnv, cb);
+        logger.info(out)
         return outputFilePath;
     }
 

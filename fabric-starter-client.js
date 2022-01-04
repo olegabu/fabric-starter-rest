@@ -37,24 +37,24 @@ class FabricStarterClient {
     }
 
     static setDefaultConfigSettings(config) {
-        _.forEach(config, (value, key)=>{
+        _.forEach(config, (value, key) => {
             Client.setConfigSetting(key, value);
-        } )
+        })
     }
 
     async init() { //todo: remove after removing from dns.js
-    //     // await this.client.initCredentialStores();
-    //     await this.ordererClient.initCredentialStores();
-    //     this.fabricCaClient = cfg.AUTH_MODE === 'CA' ? this.ordererClient.getCertificateAuthority() : undefined;
-    //     try {
-    //         this.ordererClient.setAdminSigningIdentity(
-    //             util.loadPemFromFile(certsManager.getPrivateKeyFilePath()),
-    //             util.loadPemFromFile(certsManager.getSignCertPath()),
-    //             cfg.ORDERER_MSPID
-    //         );
-    //     } catch (err) {
-    //         logger.debug("Not orderer host")
-    //     }
+        //     // await this.client.initCredentialStores();
+        //     await this.ordererClient.initCredentialStores();
+        //     this.fabricCaClient = cfg.AUTH_MODE === 'CA' ? this.ordererClient.getCertificateAuthority() : undefined;
+        //     try {
+        //         this.ordererClient.setAdminSigningIdentity(
+        //             util.loadPemFromFile(certsManager.getPrivateKeyFilePath()),
+        //             util.loadPemFromFile(certsManager.getSignCertPath()),
+        //             cfg.ORDERER_MSPID
+        //         );
+        //     } catch (err) {
+        //         logger.debug("Not orderer host")
+        //     }
     }
 
     async login(username, password) {
@@ -107,7 +107,7 @@ class FabricStarterClient {
         }
     }
 
-    async register(username, password, affiliation, role, attrs=[]) {
+    async register(username, password, affiliation, role, attrs = []) {
         if (cfg.AUTH_MODE === 'CA') {
             await this.checkClientInitialized();
             let fabricCaClient = this.client.getCertificateAuthority()
@@ -197,8 +197,8 @@ class FabricStarterClient {
             // let res = await this.client.createChannel(channelReq);
             fabricCLI.createChannelByCli(channelId);
             // if (!res || res.status != "SUCCESS") {
-                // logger.error(res);
-                // throw new Error(res.info);
+            // logger.error(res);
+            // throw new Error(res.info);
             // }
         } finally {
             this.chmodCryptoFolder();
@@ -273,24 +273,29 @@ class FabricStarterClient {
     async getConsortiumMemberList(consortiumName = 'SampleConsortium') {
         logger.debug("About to get consortium mebers list")
         let result = [];
-        try {
-            // let channel = await (this.client.getChannel(cfg.systemChannelId, false) || this.constructChannel(cfg.systemChannelId));
-            // let sysChannelConfig = await channel.getChannelConfigFromOrderer();
-            let channelConfigBlock = fabricCLI.fetchChannelConfig(cfg.systemChannelId, certsManager.getOrdererMSPEnv());
-            let channelGroupConfig = await fabricCLI.translateChannelConfig(channelConfigBlock);
-            logger.debug(channelGroupConfig);
-            // let consortium = _.get(sysChannelConfig, "config.channel_group.groups.map.Consortiums");
-            // let participants = _.get(consortium, 'value.groups.map.SampleConsortium.value.groups.map');
-            let consortium = _.get(channelGroupConfig, `channel_group.groups.Consortiums.groups.${consortiumName}`);
-            let participants = _.get(consortium, 'groups');
-            // return util.filterOrderersOut(participants);
-            result = _.filter(_.keys(participants), name => {
-                return !(_.startsWith(name, "Orderer") || _.startsWith(name, "orderer"));
-            });
-        } catch (err) {
-            logger.debug("Not enough permissions to access Consortium", err);
-        }
-        return result;
+        return new Promise((resolve, reject) => {
+            try {
+                // let channel = await (this.client.getChannel(cfg.systemChannelId, false) || this.constructChannel(cfg.systemChannelId));
+                // let sysChannelConfig = await channel.getChannelConfigFromOrderer();
+                let channelConfigBlock = fabricCLI.fetchChannelConfig(cfg.systemChannelId, certsManager.getOrdererMSPEnv(), async () => {
+                    let channelGroupConfig = await fabricCLI.translateChannelConfig(channelConfigBlock);
+                    logger.debug(channelGroupConfig);
+                    // let consortium = _.get(sysChannelConfig, "config.channel_group.groups.map.Consortiums");
+                    // let participants = _.get(consortium, 'value.groups.map.SampleConsortium.value.groups.map');
+                    let consortium = _.get(channelGroupConfig, `channel_group.groups.Consortiums.groups.${consortiumName}`);
+                    let participants = _.get(consortium, 'groups');
+                    // return util.filterOrderersOut(participants);
+                    result = _.filter(_.keys(participants), name => {
+                        return !(_.startsWith(name, "Orderer") || _.startsWith(name, "orderer"));
+                    });
+                    return resolve(result);
+                });
+            } catch (err) {
+                logger.debug("Not enough permissions to access Consortium", err);
+                reject(err)
+            }
+
+        })
     }
 
     async checkOrgDns(orgObj) {
@@ -304,7 +309,7 @@ class FabricStarterClient {
             const orgId = _.get(orgObj, "orgId");
             const orgIp = _.get(orgObj, "orgIp");
 
-            if (orgIp){
+            if (orgIp) {
                 await this.invoke(cfg.DNS_CHANNEL, cfg.DNS_CHAINCODE, "registerOrg", [JSON.stringify(orgObj)], {targets: []}, true)
                     .then(() => util.sleep(cfg.DNS_UPDATE_TIMEOUT));
                 await localDns.updateLocalDnsStorageFromChaincode(this)
@@ -313,6 +318,7 @@ class FabricStarterClient {
             logger.warn("Error on dns info:", dns, e);
         }
     }
+
     async constructChannel(channelId, optionalPeer) {
         let channel = this.client.getChannel(channelId, false);
         if (!channel) {
