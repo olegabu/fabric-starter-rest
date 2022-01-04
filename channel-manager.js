@@ -33,7 +33,7 @@ class ChannelManager {
             }
 
             logger.debug(`Channel updated config ${channelId}:`, updatedConfig);
-            let configUpdate = fabricCLI.computeChannelConfigUpdate(channelId, channelGroupConfig, updatedConfig);
+            let configUpdate = await fabricCLI.computeChannelConfigUpdate(channelId, channelGroupConfig, updatedConfig);
             logger.debug(`Got updated envelope ${channelId}:`, _.toString(configUpdate));
             const txId = fabricClient.newTransactionID(admin);
 

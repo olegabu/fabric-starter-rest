@@ -229,7 +229,7 @@ class FabricStarterClient {
         await this.checkOrgDns(orgObj);
         try {//TODO: peerName may be inappropriate - it's local peerName, but remote org is added to channel here
             await util.checkRemotePort(cfg.addressFromTemplate(orgObj.peerName || cfg.peerName, orgObj.orgId, orgObj.domain), orgObj.peer0Port, {from: `addOrgToChannel(${channelId}, ${orgObj})`});
-            let currentChannelConfigFile = fabricCLI.fetchChannelConfig(channelId);
+            let currentChannelConfigFile = await fabricCLI.fetchChannelConfig(channelId);
             let configUpdateRes = await fabricCLI.prepareOrgConfigStruct(orgObj, 'NewOrg.json', {NEWORG_PEER0_PORT: orgObj.peer0Port || cfg.DEFAULT_PEER0PORT}, certFiles);
             let res = await channelManager.applyConfigToChannel(channelId, currentChannelConfigFile, configUpdateRes, this.client);
             this.chmodCryptoFolder();
@@ -244,7 +244,7 @@ class FabricStarterClient {
 
     async addOrgToConsortium(orgObj, consortiumName, certsRootDir) {
         await this.checkOrgDns(orgObj);
-        let currentChannelConfigFile = fabricCLI.fetchChannelConfig(cfg.systemChannelId, certsManager.getOrdererMSPEnv());
+        let currentChannelConfigFile = await fabricCLI.fetchChannelConfig(cfg.systemChannelId, certsManager.getOrdererMSPEnv());
         let configUpdateRes = await fabricCLI.prepareOrgConfigStruct(orgObj, 'Consortium.json', {CONSORTIUM_NAME: consortiumName || cfg.DEFAULT_CONSORTIUM}, certsRootDir);
         try {
             let ordererClient = await this.initOrdererClient();
@@ -271,25 +271,24 @@ class FabricStarterClient {
     }
 
     async getConsortiumMemberList(consortiumName = 'SampleConsortium') {
-        logger.debug("About to get consortium mebers list")
+        logger.debug("About to get consortium members list")
         let result = [];
-        return new Promise((resolve, reject) => {
+        return new Promise(async (resolve, reject) => {
             try {
                 // let channel = await (this.client.getChannel(cfg.systemChannelId, false) || this.constructChannel(cfg.systemChannelId));
                 // let sysChannelConfig = await channel.getChannelConfigFromOrderer();
-                let channelConfigBlock = fabricCLI.fetchChannelConfig(cfg.systemChannelId, certsManager.getOrdererMSPEnv(), async () => {
-                    let channelGroupConfig = await fabricCLI.translateChannelConfig(channelConfigBlock);
-                    logger.debug(channelGroupConfig);
-                    // let consortium = _.get(sysChannelConfig, "config.channel_group.groups.map.Consortiums");
-                    // let participants = _.get(consortium, 'value.groups.map.SampleConsortium.value.groups.map');
-                    let consortium = _.get(channelGroupConfig, `channel_group.groups.Consortiums.groups.${consortiumName}`);
-                    let participants = _.get(consortium, 'groups');
-                    // return util.filterOrderersOut(participants);
-                    result = _.filter(_.keys(participants), name => {
-                        return !(_.startsWith(name, "Orderer") || _.startsWith(name, "orderer"));
-                    });
-                    return resolve(result);
+                let channelConfigBlock = await fabricCLI.fetchChannelConfig(cfg.systemChannelId, certsManager.getOrdererMSPEnv());
+                let channelGroupConfig = await fabricCLI.translateChannelConfig(channelConfigBlock);
+                logger.debug(channelGroupConfig);
+                // let consortium = _.get(sysChannelConfig, "config.channel_group.groups.map.Consortiums");
+                // let participants = _.get(consortium, 'value.groups.map.SampleConsortium.value.groups.map');
+                let consortium = _.get(channelGroupConfig, `channel_group.groups.Consortiums.groups.${consortiumName}`);
+                let participants = _.get(consortium, 'groups');
+                // return util.filterOrderersOut(participants);
+                result = _.filter(_.keys(participants), name => {
+                    return !(_.startsWith(name, "Orderer") || _.startsWith(name, "orderer"));
                 });
+                return resolve(result);
             } catch (err) {
                 logger.debug("Not enough permissions to access Consortium", err);
                 reject(err)

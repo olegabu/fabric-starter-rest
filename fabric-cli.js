@@ -185,14 +185,16 @@ class FabricCLI {
 
 
     async fetchChannelConfigToFile(channelId) {
-        const filePath = this.fetchChannelConfig(channelId);
+        const filePath = await this.fetchChannelConfig(channelId);
         return this.loadFileContent(filePath);
     }
 
-    fetchChannelConfig(channelId, extraEnv, cb) {
+    async fetchChannelConfig(channelId, extraEnv) {
         const channelConfigFile = `${channelId}_config.pb`;
         const outputFilePath = `${cfg.TMP_DIR}/${channelConfigFile}`;
-        let out = this.execPeerCommand(`channel fetch config ${outputFilePath}`, `-c ${channelId}`, extraEnv, cb);
+        let out = await this.execPeerCommand(`channel fetch config ${outputFilePath}`, `-c ${channelId}`, extraEnv, (err)=>{
+            logger.error(`Error at fetching channel ${channelId} config: ${err}`)
+        });
         logger.info(out)
         return outputFilePath;
     }
@@ -201,15 +203,19 @@ class FabricCLI {
         this.execShellCommand(`configtxlator compute_update --channel_id=${channelId} --original=${originalFileName} --updated=${updatedFileName} --output=${outputFileName}`);
     }
 
-    translateProtobufConfig(translateOp, configType, inputFilename, outputFileName) {
-        this.execShellCommand(`configtxlator ${translateOp.name} --type ${configType.name} --input=${inputFilename} --output=${outputFileName}`);
+    async translateProtobufConfig(translateOp, configType, inputFilename, outputFileName, cb) {
+        return this.execShellCommand(`configtxlator ${translateOp.name} --type ${configType.name} --input=${inputFilename} --output=${outputFileName}`, null, null, cb);
     }
 
-    translateChannelConfig(configFileName) {
+    async translateChannelConfig(configFileName) {
         logger.debug('translateChannelConfig ', configFileName)
         const outputFileName = `${path.dirname(configFileName)}/${path.basename(configFileName, ".pb")}.json`;
-        this.translateProtobufConfig(TRANSLATE_OP.proto_decode, CONFIG_TYPE['common.Block'], configFileName, outputFileName);
-        const channelConfigProtobuf = this.loadFileContentSync(outputFileName);
+        await this.translateProtobufConfig(TRANSLATE_OP.proto_decode, CONFIG_TYPE['common.Block'], configFileName, outputFileName, (err) => {
+            if (err) {
+               // throw new Error("Errot translating protobuf: " + err)
+            }
+        });
+        const channelConfigProtobuf = await this.loadFileContent(outputFileName);
         const channelConfigEnvelope = JSON.parse(_.toString(channelConfigProtobuf));
         let origChannelGroupConfig = _.get(channelConfigEnvelope, "data.data[0].payload.data.config");
         logger.debug('translateChannelConfig. result ', origChannelGroupConfig)
@@ -217,7 +223,7 @@ class FabricCLI {
     }
 
 
-    computeChannelConfigUpdate(channelId, originalConfig, configWithChangesJson) {
+    async computeChannelConfigUpdate(channelId, originalConfig, configWithChangesJson) {
 
         const originalConfigJsonFile = `${cfg.TMP_DIR}/${channelId}_originalConfig.json`;
         const originalConfigPbFile = `${cfg.TMP_DIR}/${channelId}_originalConfig.pb`;
@@ -226,14 +232,14 @@ class FabricCLI {
         const computedUpdatePbFileName = `${cfg.TMP_DIR}/${channelId}_update.pb`;
 
 
-        fs.writeFileSync(originalConfigJsonFile, JSON.stringify(originalConfig));
-        this.translateProtobufConfig(TRANSLATE_OP.proto_encode, CONFIG_TYPE["common.Config"], originalConfigJsonFile, originalConfigPbFile);
+        await fs.writeFile(originalConfigJsonFile, JSON.stringify(originalConfig));
+        await this.translateProtobufConfig(TRANSLATE_OP.proto_encode, CONFIG_TYPE["common.Config"], originalConfigJsonFile, originalConfigPbFile);
 
-        fs.writeFileSync(updatedConfigWithJsonFile, JSON.stringify(configWithChangesJson));
-        this.translateProtobufConfig(TRANSLATE_OP.proto_encode, CONFIG_TYPE['common.Config'], updatedConfigWithJsonFile, updatedConfigPbFile);
+        await fs.writeFile(updatedConfigWithJsonFile, JSON.stringify(configWithChangesJson));
+        await this.translateProtobufConfig(TRANSLATE_OP.proto_encode, CONFIG_TYPE['common.Config'], updatedConfigWithJsonFile, updatedConfigPbFile);
         this.computeConfigUpdate(channelId, originalConfigPbFile, updatedConfigPbFile, computedUpdatePbFileName);
 
-        return this.loadFileContentSync(computedUpdatePbFileName);
+        return await this.loadFileContent(computedUpdatePbFileName);
     }
 
     async prepareComputeUpdateEnvelope(channelId, originalConfig, configWithChangesJson) { //todo: for future reuse
@@ -285,7 +291,7 @@ class FabricCLI {
             SIGNATURE_HASH_FAMILY: cfg.SIGNATURE_HASH_FAMILY
         }, extraEnv);
 
-        const origEnv= {
+        const origEnv = {
             DOMAIN: cfg.domain,
             PEER_NAME: cfg.peerName
         }
@@ -320,7 +326,7 @@ class FabricCLI {
     }
 
 
-    loadFileContent(fileName) {
+    async loadFileContent(fileName) {
         return new Promise((resolve, reject) => {
             fs.readFile(fileName, (err, data) => {
                 !err ? resolve(data) : reject(err);
