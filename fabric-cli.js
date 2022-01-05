@@ -213,17 +213,25 @@ class FabricCLI {
         logger.debug('translateChannelConfig ', configFileName)
         const outputFileName = `${path.dirname(configFileName)}/${path.basename(configFileName, ".pb")}.json`;
         return new Promise(async (resolve, reject) => {
-            let out = await this.translateProtobufConfig(TRANSLATE_OP.proto_decode, CONFIG_TYPE['common.Block'], configFileName, outputFileName, async (err) => {
-                if (err) {
-                    return reject("Error translating protobuf: " + err)
-                }
-                const channelConfigProtobuf = await this.loadFileContent(outputFileName);
-                const channelConfigEnvelope = JSON.parse(_.toString(channelConfigProtobuf));
-                let origChannelGroupConfig = _.get(channelConfigEnvelope, "data.data[0].payload.data.config");
-                logger.debug('translateChannelConfig. result ', origChannelGroupConfig)
+            let out = await this.translateProtobufConfig(TRANSLATE_OP.proto_decode, CONFIG_TYPE['common.Block'], configFileName, outputFileName,
+                async (err) => {
+                    if (err) {
+                        return reject("Error translating protobuf: " + err)
+                    }
+                    // const channelConfigProtobuf = await this.loadFileContent(outputFileName);
+                    logger.debug("\n\nSIZE:"+_.toString(await this.loadFileContent(outputFileName)).length)
+                    await util.sleep(1000)
+                    logger.debug("\n\nSIZE:"+_.toString(await this.loadFileContent(outputFileName)).length)
+                    await util.sleep(500)
+                    const channelConfigProtobuf = await this.loadFileContent(outputFileName);
+                    logger.debug("\n\nSIZE:"+_.toString(channelConfigProtobuf).length)
 
-                resolve(origChannelGroupConfig);
-            });
+                    const channelConfigEnvelope = JSON.parse(_.toString(channelConfigProtobuf));
+                    let origChannelGroupConfig = _.get(channelConfigEnvelope, "data.data[0].payload.data.config");
+                    logger.debug('translateChannelConfig. result ', origChannelGroupConfig)
+
+                    resolve(origChannelGroupConfig);
+                });
             logger.debug(await streamUtils.streamToString(out))
         })
     }
