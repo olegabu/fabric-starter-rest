@@ -13,7 +13,7 @@ const logger = cfg.log4js.getLogger('FabricCLI');
 const certsManager = require('./certs-manager')
 const mspManager = require('./service/msp/msp-manager');
 const util = require('./util');
-
+const streamUtils = require('./util/stream/streams')
 
 const WGET_OPTS = process.env.WGET_OPTS || '-N';
 
@@ -192,10 +192,12 @@ class FabricCLI {
     async fetchChannelConfig(channelId, extraEnv) {
         const channelConfigFile = `${channelId}_config.pb`;
         const outputFilePath = `${cfg.TMP_DIR}/${channelConfigFile}`;
-        let out = await this.execPeerCommand(`channel fetch config ${outputFilePath}`, `-c ${channelId}`, extraEnv, (err)=>{
-            logger.error(`Error at fetching channel ${channelId} config: ${err}`)
+        let out = await this.execPeerCommand(`channel fetch config ${outputFilePath}`, `-c ${channelId}`, extraEnv, async (err) => {
+            if (err) {
+                logger.error(`Error at fetching channel ${channelId} config: ${err}`)
+            }
         });
-        logger.info(out)
+        logger.debug(await streamUtils.streamToString(out))
         return outputFilePath;
     }
 
@@ -210,16 +212,20 @@ class FabricCLI {
     async translateChannelConfig(configFileName) {
         logger.debug('translateChannelConfig ', configFileName)
         const outputFileName = `${path.dirname(configFileName)}/${path.basename(configFileName, ".pb")}.json`;
-        await this.translateProtobufConfig(TRANSLATE_OP.proto_decode, CONFIG_TYPE['common.Block'], configFileName, outputFileName, (err) => {
-            if (err) {
-               // throw new Error("Errot translating protobuf: " + err)
-            }
-        });
-        const channelConfigProtobuf = await this.loadFileContent(outputFileName);
-        const channelConfigEnvelope = JSON.parse(_.toString(channelConfigProtobuf));
-        let origChannelGroupConfig = _.get(channelConfigEnvelope, "data.data[0].payload.data.config");
-        logger.debug('translateChannelConfig. result ', origChannelGroupConfig)
-        return origChannelGroupConfig;
+        return new Promise(async (resolve, reject) => {
+            let out = await this.translateProtobufConfig(TRANSLATE_OP.proto_decode, CONFIG_TYPE['common.Block'], configFileName, outputFileName, async (err) => {
+                if (err) {
+                    return reject("Error translating protobuf: " + err)
+                }
+                const channelConfigProtobuf = await this.loadFileContent(outputFileName);
+                const channelConfigEnvelope = JSON.parse(_.toString(channelConfigProtobuf));
+                let origChannelGroupConfig = _.get(channelConfigEnvelope, "data.data[0].payload.data.config");
+                logger.debug('translateChannelConfig. result ', origChannelGroupConfig)
+
+                resolve(origChannelGroupConfig);
+            });
+            logger.debug(await streamUtils.streamToString(out))
+        })
     }
 
 
