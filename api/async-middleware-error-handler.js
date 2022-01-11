@@ -10,7 +10,7 @@ const asyncMiddleware = fn =>
         Promise.resolve(fn(req, res, next))
             .catch(e => {
                 logger.error('asyncMiddleware', e, req.url, req.params, req.body);
-                res.status((e && e.status) || 500).json(e && e.message);
+                res.status((e && e.status) || 500).send(e && e.message || e);
                 next();
             })
     };

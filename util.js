@@ -9,25 +9,33 @@ class Util {
 
     async checkRemotePort(server, port, options = {throws: true}) {
         logger.debug(`Check whether remote port is accessible for: ${server}:${port}`, options);
+
         return new Promise(async (resolve, reject) => {
-            await this.sleep(cfg.SKIP_CHECK_PORTS_TIMEOUT_SECONDS || options.timeout || 1000) //TODO: createConnection ignores timeout
             if (!cfg.SKIP_CHECK_PORTS_TIMEOUT_SECONDS) {
-                let client = net.createConnection({host: server, port: port, timeout: options.timeout || 1000}, () => {
+                resolveIfTakesLongerThanTimeout(resolve, reject, options);
+                let client = net.createConnection({host: server, port: port}, () => {
                     logger.debug(`Remote port is accessible: ${server}:${port}`);
                     client.end();
                     resolve(true);
                 });
                 client.on("error", e => {
-                    logger.debug(`Error accessing remote port, ${server}:${port}. {options.throws:${options.throws}`, e)
+                    logger.debug(`\nError accessing remote port, ${server}:${port}. Throwing: ${options.throws}\n`, e)
                     return options.throws
                         ? reject(`Endpoint is unreachable: ${server}:${port}. ${e && e.message}`)
                         : resolve(false)
                 });
             } else {
                 logger.warn(`Skip waiting for peer availability. Waited for ${cfg.SKIP_CHECK_PORTS_TIMEOUT_SECONDS} before continue`)
-                return true;
+                return resolve(true);
             }
         });
+
+        function resolveIfTakesLongerThanTimeout(resolve, reject, options={}) {
+            setTimeout(() => {
+                return options.throws ? reject(`Timeout checking remote port: ${server}:${port}`) : resolve(false)
+            }, options.timeout || 1000)
+        }
+
     }
 
     async retryOperation(nTimes, period, fn) {

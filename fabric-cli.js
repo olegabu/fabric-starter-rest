@@ -201,8 +201,10 @@ class FabricCLI {
         return outputFilePath;
     }
 
-    computeConfigUpdate(channelId, originalFileName, updatedFileName, outputFileName) {
-        this.execShellCommand(`configtxlator compute_update --channel_id=${channelId} --original=${originalFileName} --updated=${updatedFileName} --output=${outputFileName}`);
+    async computeConfigUpdate(channelId, originalFileName, updatedFileName, outputFileName) {
+       return this.execShellCommand(`configtxlator compute_update --channel_id=${channelId} --original=${originalFileName} --updated=${updatedFileName} --output=${outputFileName}`,
+           null, null, () => {
+           });
     }
 
     async translateProtobufConfig(translateOp, configType, inputFilename, outputFileName, cb) {
@@ -245,7 +247,7 @@ class FabricCLI {
 
         await fs.writeFile(updatedConfigWithJsonFile, JSON.stringify(configWithChangesJson));
         await this.translateProtobufConfig(TRANSLATE_OP.proto_encode, CONFIG_TYPE['common.Config'], updatedConfigWithJsonFile, updatedConfigPbFile);
-        this.computeConfigUpdate(channelId, originalConfigPbFile, updatedConfigPbFile, computedUpdatePbFileName);
+        await this.computeConfigUpdate(channelId, originalConfigPbFile, updatedConfigPbFile, computedUpdatePbFileName);
 
         return await this.loadFileContent(computedUpdatePbFileName);
     }

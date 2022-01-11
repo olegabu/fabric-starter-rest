@@ -227,8 +227,9 @@ class FabricStarterClient {
 
     async addOrgToChannel(channelId, orgObj, certFiles) {
         await this.checkOrgDns(orgObj);
-        try {//TODO: peerName may be inappropriate - it's local peerName, but remote org is added to channel here
-            await util.checkRemotePort(cfg.addressFromTemplate(orgObj.peerName || cfg.peerName, orgObj.orgId, orgObj.domain), orgObj.peer0Port, {from: `addOrgToChannel(${channelId}, ${orgObj})`});
+        try {
+            await util.checkRemotePort(cfg.addressFromTemplate(orgObj.peerName || 'peer0', orgObj.orgId, orgObj.domain), orgObj.peer0Port,
+                {from: `addOrgToChannel(${channelId}, ${orgObj})`}); //TODO: , throws: true
             let currentChannelConfigFile = await fabricCLI.fetchChannelConfig(channelId);
             let configUpdateRes = await fabricCLI.prepareOrgConfigStruct(orgObj, 'NewOrg.json', {NEWORG_PEER0_PORT: orgObj.peer0Port || cfg.DEFAULT_PEER0PORT}, certFiles);
             let res = await channelManager.applyConfigToChannel(channelId, currentChannelConfigFile, configUpdateRes, this.client);
@@ -242,10 +243,10 @@ class FabricStarterClient {
         }
     }
 
-    async addOrgToConsortium(orgObj, consortiumName, certsRootDir) {
+    async addOrgToConsortium(orgObj, consortiumName, certFiles) {
         await this.checkOrgDns(orgObj);
         let currentChannelConfigFile = await fabricCLI.fetchChannelConfig(cfg.systemChannelId, certsManager.getOrdererMSPEnv());
-        let configUpdateRes = await fabricCLI.prepareOrgConfigStruct(orgObj, 'Consortium.json', {CONSORTIUM_NAME: consortiumName || cfg.DEFAULT_CONSORTIUM}, certsRootDir);
+        let configUpdateRes = await fabricCLI.prepareOrgConfigStruct(orgObj, 'Consortium.json', {CONSORTIUM_NAME: consortiumName || cfg.DEFAULT_CONSORTIUM}, certFiles);
         try {
             let ordererClient = await this.initOrdererClient();
             return channelManager.applyConfigToChannel(cfg.systemChannelId, currentChannelConfigFile, configUpdateRes, ordererClient, IS_ADMIN);
