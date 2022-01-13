@@ -12,7 +12,7 @@ class MspManager {
 
     async packOrdererMsp() {
         logger.debug("Pack Orderer dir ", cfg.ordererCryptoDir)
-        return await archiverManager.gzip(cfg.CRYPTO_CONFIG_DIR, cfg.PRIVATE_KEYS_FILTER, path.relative(cfg.CRYPTO_CONFIG_DIR, path.join(cfg.ordererCryptoDir, "msp")))
+        return await archiverManager.gzip(cfg.ordererCryptoDir, cfg.PRIVATE_KEYS_FILTER, path.relative(cfg.ordererCryptoDir, path.join(cfg.ordererCryptoDir, "msp")))
     }
 
     async unpackMsp(tgzPack, targetDir, transformFunc) {
