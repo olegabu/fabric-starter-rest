@@ -22,7 +22,7 @@ const IS_ADMIN = true;
 logger.debug(`invokeTimeout=${cfg.CHAINCODE_PROCESSING_TIMEOUT} asLocalhost=${asLocalhost}`);
 
 class FabricStarterClient {
-    constructor(networkConfig) {
+    constructor(networkConfig, eventBus) {
         FabricStarterClient.setDefaultConfigSettings(cfg.CRYPTO_SUIT_CONFIG);
 
         this.networkConfig = networkConfig || networkConfigProvider(cfg.cas);
@@ -34,6 +34,7 @@ class FabricStarterClient {
         this.channelsInitializationMap = new Map();
         this.registerQueue = new Map();
         this.clients = new Map()
+        this.eventBus = eventBus
     }
 
     static setDefaultConfigSettings(config) {
@@ -375,7 +376,9 @@ class FabricStarterClient {
         //const channelEventHub = channel.getChannelEventHub(this.peer.getName());
         const channelEventHub = channel.newChannelEventHub(this.peer.getName());
         // const channelEventHub = channel.getChannelEventHubsForOrg()[0];
-        channelEventHub.connect(options);
+        channelEventHub.connect(options, (err, data)=>{
+            err && logger.error(`Error at connection to ChannelEventHub: ${channel}`, err)
+        });
         return channelEventHub;
     }
 
@@ -643,14 +646,23 @@ class FabricStarterClient {
 
         const eventPromise = new Promise((resolve, reject) => {
             logger.trace(`registerTxEvent ${id}`);
-
-            channelEventHub.registerTxEvent(id, (txid, status, blockNumber) => {
-                logger.debug(`committed transaction ${txid} as ${status} in block ${blockNumber}`);
-                resolve({txid: txid, status: status, blockNumber: blockNumber});
-            }, (e) => {
-                logger.error(`registerTxEvent ${e}`);
-                reject(new Error(e));
-            });
+            if (!cfg.DISABLE_TX_ID_LISTENER) { //TODO: refactor
+                channelEventHub.registerTxEvent(id, (txid, status, blockNumber) => {
+                    logger.debug(`committed transaction ${txid} as ${status} in block ${blockNumber}`);
+                    resolve({txid: txid, status: status, blockNumber: blockNumber});
+                }, (e) => {
+                    logger.error(`registerTxEvent ${e}`);
+                    reject(new Error(e));
+                });
+            } else {
+                this.eventBus && this.eventBus.on(channel.getName()+'_block', (block) => {
+                    const expectedTx = _.find(this._transactions(block), tran => tran.txid == id);
+                    if (expectedTx) {
+                        logger.debug(`block event of committed transaction ${expectedTx.txid} as ${expectedTx.status || expectedTx.tx_validation_code} in block ${this._blockNumber(block)}`);
+                        resolve({txid: expectedTx.txid, status: expectedTx.status || expectedTx.tx_validation_code, blockNumber: this._blockNumber(block)});
+                    }
+                })
+            }
         });
 
         const racePromise = Promise.race([eventPromise, timeoutPromise]);
@@ -664,6 +676,17 @@ class FabricStarterClient {
         });
 
         return racePromise;
+    }
+
+    _blockNumber(block){ //TODO: move to Block object
+        return block.number || _.get(block, "header.number");
+    }
+    _transactions(block) {
+        return block.filtered_transactions || _.map(_.get(block, 'data.data'), d=>{
+            const {tx_id, ...rest} = _.get(d,'payload.header.channel_header');
+            const {status, ...rest1} = _.get(d, 'payload.data.actions[0].payload.action.proposal_response_payload.extension.response')
+            return {txid: tx_id, status: status}
+        })
     }
 
     async query(channelId, chaincodeId, fcn, args, targets) {

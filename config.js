@@ -223,7 +223,8 @@ module.exports = {
     AUTH_JWT_EXPIRES_IN: (/^\d+$/.test(process.env.AUTH_JWT_EXPIRES_IN) ? parseInt(process.env.AUTH_JWT_EXPIRES_IN) : process.env.AUTH_JWT_EXPIRES_IN) || '8h',
     DOCKER_COMPOSE_EXTRA_ARGS: process.env.DOCKER_COMPOSE_EXTRA_ARGS || '',
     PRIVATE_KEYS_FILTER : '.*\/keystore.*|.*\/sk.pem|.*/\*.key|.*\/priv_sk',
-    SKIP_CHECK_PORTS_TIMEOUT_SECONDS: process.env.SKIP_CHECK_PORTS_TIMEOUT_SECONDS ? process.env.SKIP_CHECK_PORTS_TIMEOUT_SECONDS * 1000 : ''
+    SKIP_CHECK_PORTS_TIMEOUT_SECONDS: process.env.SKIP_CHECK_PORTS_TIMEOUT_SECONDS ? process.env.SKIP_CHECK_PORTS_TIMEOUT_SECONDS * 1000 : '',
+    DISABLE_TX_ID_LISTENER: process.env.DISABLE_TX_ID_LISTENER === "true" || process.env.DISABLE_TX_ID_LISTENER
 };
 
 function persistConfig() {

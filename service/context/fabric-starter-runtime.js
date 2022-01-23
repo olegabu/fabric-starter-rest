@@ -1,11 +1,12 @@
 const glob = require('glob');
 const path = require('path');
+const EventEmitter = require('events')
 const _ = require('lodash');
 
 const FabricStarterClient = require('../../fabric-starter-client');
 const RestSocketServer = require('../../rest-socket-server');
 const cfg = require('../../config');
-const logger =  require('../../util/log/log4js-configured').getLogger('NodeRuntime');
+const logger = require('../../util/log/log4js-configured').getLogger('NodeRuntime');
 const appManager = require('../../app-manager');
 const IntegrationService = require('../../service/integration-service');
 const ChaincodeService = require('../../service/chaincode/chaincode-service');
@@ -22,6 +23,7 @@ class FabricStarterRuntime {
         this.app = app;
         this.server = server;
         this.initialized = false
+        this.eventBus = new EventEmitter()
     }
 
     async setOrg(org = {}) {
@@ -61,7 +63,7 @@ class FabricStarterRuntime {
 
     async initDefaultFabricStarterClient() {
         // fabric client
-        this.defaultFabricStarterClient = new FabricStarterClient();
+        this.defaultFabricStarterClient = new FabricStarterClient(null, this.eventBus);
         try {
             await this.defaultFabricStarterClient.loginOrRegister(cfg.ENROLL_ID, cfg.enrollSecret);
         } catch (e) {
@@ -80,7 +82,7 @@ class FabricStarterRuntime {
 
     async initSocketServer() {
         // socket.io server to pass blocks to webapps
-        this.socket = new RestSocketServer(this.defaultFabricStarterClient);
+        this.socket = new RestSocketServer(this.defaultFabricStarterClient, this.eventBus);
         await this.socket.startSocketServer(this.server, cfg.UI_LISTEN_BLOCK_OPTS).then(() => {
             logger.info('started socket server');
         });

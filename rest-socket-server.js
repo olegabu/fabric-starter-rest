@@ -6,9 +6,10 @@ const util = require('./util.js');
 
 class RestSocketServer {
 
-    constructor(fabricStarterClient) {
+    constructor(fabricStarterClient, eventBus) {
         this.listOfChannels = [];
         this.fabricStarterClient = fabricStarterClient;
+        this.eventBus = eventBus
     }
 
   async startSocketServer(server, opts) {
@@ -62,6 +63,7 @@ class RestSocketServer {
       logger.debug(`fabricStarterClient has received block ${blockNumber} on ${block.channel_id}`);
       logger.debug(block);
       this.io.emit('chainblock', block);
+      this.eventBus && this.eventBus.emit(channelId+"_block", block)
     }, e => {
       logger.error('registerBlockEvent error:', e);
       _.remove(self.listOfChannels, chId=>chId===channelId);

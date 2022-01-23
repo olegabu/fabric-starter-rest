@@ -56,7 +56,7 @@ module.exports = function (app, server, defaultFabricStarterClient) {
         // if(!mapFabricStarterClient[namePasswordKey]) {
         // }
         mapFabricStarterClient[req.body.username] && mapFabricStarterClient[req.body.username].logoutUser(req.body.username);
-        mapFabricStarterClient[req.body.username] = new FabricStarterClient(); //todo: client should be created in fabricStarterRuntime
+        mapFabricStarterClient[req.body.username] = new FabricStarterClient(null, defaultFabricStarterClient.eventBus); //todo: client should be created in fabricStarterRuntime
         req.fabricStarterClient = mapFabricStarterClient[req.body.username];
 
         await req.fabricStarterClient.loginOrRegister(req.body.username, req.body.password || req.body.username);
