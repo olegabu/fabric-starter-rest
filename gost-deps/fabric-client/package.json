@@ -28,7 +28,7 @@
     "fabric-ca-client": "^1.4.4",
     "fabric-cryptosuite-gost": "file:../fabric-cryptosuite-gost",
     "fs-extra": "^6.0.1",
-    "grpc": "1.22.2",
+    "grpc": "file:./grpc",
     "hoek": "^4.2.1",
     "ignore-walk": "^3.0.0",
     "js-sha3": "^0.7.0",
