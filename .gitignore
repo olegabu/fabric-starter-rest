@@ -54,6 +54,8 @@ typings/
 # Yarn Integrity file
 .yarn-integrity
 
+**/.DS_Store
+
 # dotenv environment variables file
 features/node-components/peer-component/.env
 features/fixtures/network/fabric-*/org1.example.test/peer0.org1.example.test/ledger

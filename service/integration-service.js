@@ -24,6 +24,9 @@ class IntegrationService {
     }
 
     async integrateOrderer(orderer, certFiles) {
+        if (_.isEqual(orderer.domain, cfg.ordererDomain)) {
+            throw new Error(`\nConsenter with ${cfg.ordererDomain} should already be integrated\n`)
+        }
         const allowedOrg = await this.checkOrgIsAllowed(orderer);
         logger.debug("integrateOrderer accepting:", allowedOrg);
         const defaultClient = await this.getDefaultClient();
@@ -33,6 +36,9 @@ class IntegrationService {
     }
 
     async integrateOrg(org, certFiles) {
+        if (_.isEqual(org.orgId, cfg.org)) {
+            throw new Error(`\nOrg ${org.orgId}.${cfg.domain} should already be in the network\n`)
+        }
         const allowedOrg = await this.checkOrgIsAllowed(org);
         logger.debug("integrateOrg accepting:", allowedOrg);
         // await fs.emptyDir(path.join(cfg.TMP_DIR, 'peerOrganizations'));

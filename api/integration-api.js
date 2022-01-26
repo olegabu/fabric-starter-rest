@@ -31,7 +31,7 @@ module.exports = function (app, server, integrationService) {
             res.json(await integrationService.integrateOrg(Org.fromHttpBody(req.body), _.get(req, 'files.certFiles')))
         } catch (e) {
             logger.error(e);
-            res.status(401).json(e);
+            res.status(500).send(_.get(e, 'message') || e);
         }
     }));
 
@@ -62,7 +62,7 @@ module.exports = function (app, server, integrationService) {
             stream.pipe(res, {encoding: 'binary'})
         } catch (e) {
             logger.error(e);
-            res.status(401).json(e);
+            res.status(500).send("500: " + _.get(e, 'message', e));
         }
     }));
 
