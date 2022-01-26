@@ -202,9 +202,13 @@ class FabricCLI {
     }
 
     async computeConfigUpdate(channelId, originalFileName, updatedFileName, outputFileName) {
-       return this.execShellCommand(`configtxlator compute_update --channel_id=${channelId} --original=${originalFileName} --updated=${updatedFileName} --output=${outputFileName}`,
-           null, null, () => {
-           });
+        return new Promise((resolve, reject)=>{
+            let result = this.execShellCommand(`configtxlator compute_update --channel_id=${channelId} --original=${originalFileName} --updated=${updatedFileName} --output=${outputFileName}`,
+                null, null, (err) => {
+                    return err ? reject(err) : resolve(result)
+                });
+
+        })
     }
 
     async translateProtobufConfig(translateOp, configType, inputFilename, outputFileName, cb) {
