@@ -142,3 +142,8 @@ registerOrg '{"orgId":"org2","domain":"example.com","orgIp":"192.168.99.1","peer
 16:  172.21.3.63 (172.21.3.63)                             4.389ms asymm 12
 17:  no reply
 18:  no reply
+
+
+140019564836672:error:0200206E:system library:connect:Connection timed out:crypto/bio/b_sock2.c:110:
+140019564836672:error:2008A067:BIO routines:BIO_connect:connect error:crypto/bio/b_sock2.c:111:
+connect:errno=110
