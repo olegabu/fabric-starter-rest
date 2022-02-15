@@ -147,3 +147,81 @@ registerOrg '{"orgId":"org2","domain":"example.com","orgIp":"192.168.99.1","peer
 140019564836672:error:0200206E:system library:connect:Connection timed out:crypto/bio/b_sock2.c:110:
 140019564836672:error:2008A067:BIO routines:BIO_connect:connect error:crypto/bio/b_sock2.c:111:
 connect:errno=110
+
+
+
+
+
+
+[user@ift-bcdx-partner0 ~]$ tracepath -p 7051 -n 84.252.147.75 -b
+ 1?: [LOCALHOST]                      pmtu 1500
+ 1:  192.168.101.1 (_gateway)                              0.215ms asymm 64
+ 1:  192.168.101.1 (_gateway)                              0.179ms asymm 64
+ 2:  100.64.96.38 (100.64.96.38)                           0.302ms
+ 3:  169.254.10.1 (169.254.10.1)                           1.328ms
+ 4:  169.254.6.9 (169.254.6.9)                             1.794ms
+ 5:  no reply
+ 6:  no reply
+ 7:  172.16.30.68 (172.16.30.68)                           1.279ms
+ 8:  172.16.30.125 (172.16.30.125)                         1.414ms
+ 9:  no reply
+10:  178.176.150.190 (178.176.150.190)                     2.297ms
+11:  83.169.204.118 (83.169.204.118)                       3.522ms asymm 12
+12:  10.222.99.88 (10.222.99.88)                           2.916ms
+13:  178.176.150.217 (178.176.150.217)                     3.690ms asymm 12
+14:  172.21.3.142 (172.21.3.142)                           4.198ms (This broken router returned corrupted payload) asymm 12
+15:  172.21.3.59 (172.21.3.59)                             4.414ms (This broken router returned corrupted payload) asymm 12
+16:  172.21.3.63 (172.21.3.63)                             4.447ms asymm 12
+17:  no reply
+
+[user@ift-bcdx-partner0 ~]$ date
+Tue Feb 15 12:42:08 MSK 2022
+
+[user@ift-bcdx-partner0 ~]$
+
+
+
+
+
+[user@ift-bcdx-partner0 ~]$ openssl s_client -connect 84.252.147.75:7051
+^C
+[user@ift-bcdx-partner0 ~]$ openssl s_client -connect 84.252.147.75:7051
+139870375515968:error:0200206E:system library:connect:Connection timed out:crypto/bio/b_sock2.c:110:
+139870375515968:error:2008A067:BIO routines:BIO_connect:connect error:crypto/bio/b_sock2.c:111:
+connect:errno=110
+
+[user@ift-bcdx-partner0 ~]$ date
+Tue Feb 15 12:29:39 MSK 2022
+
+[user@ift-bcdx-partner0 ~]$ tracepath 84.252.147.75 -p 7051
+ 1?: [LOCALHOST]                      pmtu 1500
+ 1:  _gateway                                              0.201ms asymm 64
+ 1:  _gateway                                              0.169ms asymm 64
+ 2:  100.64.96.38                                          0.402ms
+ 3:  169.254.10.1                                          0.552ms
+ 4:  169.254.6.13                                          1.018ms
+ 5:  no reply
+ 6:  no reply
+ 7:  172.16.30.4                                           1.033ms
+ 8:  172.16.30.61                                          1.640ms
+ 9:  169.254.0.3                                           1.499ms
+10:  178.176.150.190                                       2.190ms
+11:  83.169.204.114                                        3.378ms asymm 12
+12:  10.222.99.88                                          2.799ms
+13:  178.176.150.217                                       3.400ms asymm 12
+14:  172.21.3.142                                          4.571ms (This broken router returned corrupted payload) asymm 12
+15:  172.21.3.59                                           4.402ms (This broken router returned corrupted payload) asymm 12
+16:  172.21.3.63                                           4.563ms asymm 12
+17:  no reply
+18:  no reply
+19:  no reply
+20:  no reply
+21:  no reply
+22:  no reply
+23:  no reply
+24:  no reply
+25:  no reply
+26:  no reply
+^C
+[user@ift-bcdx-partner0 ~]$ date
+Tue Feb 15 12:30:38 MSK 2022
