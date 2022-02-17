@@ -41,14 +41,13 @@ class Util {
     async retryOperation(nTimes, period, fn) {
         return new Promise(async (resolve, reject) => {
             if (nTimes <= 0) return reject('Retried invocation unsuccessful');
-            try {
-                let response = await fn();
-                resolve(response);
-            } catch (err) {
-                logger.trace(`Retry attempt: ${nTimes}. Error: `, err);
-                if (nTimes === 1) {
-                    reject(err);
-                }
+            let response = await fn();
+            resolve(response);
+        }).catch(async err => {
+            logger.trace(`Retry attempt: ${nTimes}. Error: `, err);
+            if (nTimes === 1) {
+                throw new Error(err);
+            } else {
                 await this.sleep(period);
                 return await this.retryOperation(nTimes - 1, period, fn);
             }
