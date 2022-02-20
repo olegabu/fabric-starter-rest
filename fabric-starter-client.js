@@ -35,6 +35,31 @@ class FabricStarterClient {
         this.registerQueue = new Map();
         this.clients = new Map()
         this.eventBus = eventBus
+        this.registeredTx = {}
+        if (cfg.DISABLE_TX_ID_LISTENER) {
+            this.eventBus && this.eventBus.on('chainblock', (block) => {
+                const txConfirmed = _.size(this.registeredTx)
+                if (!txConfirmed) return;
+
+                logger.debug(`CHAINBLOCK. Count of registeredTx in queue: ${txConfirmed}`)
+                _.each(this._transactions(block), tran=> {
+                    const expectedTx = tran; //_.find(this._transactions(block), tran => !!this.registeredTx[tran.txid]);
+                    if (expectedTx) {
+                        logger.debug(`block event of committed transaction ${expectedTx.txid} as ${expectedTx.status || expectedTx.tx_validation_code} in block ${this._blockNumber(block)}`);
+                        const resolve = this.registeredTx[expectedTx.txid]
+                        delete this.registeredTx[expectedTx.txid]
+
+                        resolve({
+                            txid: expectedTx.txid,
+                            status: expectedTx.status || expectedTx.tx_validation_code,
+                            blockNumber: this._blockNumber(block)
+                        });
+                    }
+
+                })
+            })
+        }
+
     }
 
     static setDefaultConfigSettings(config) {
@@ -639,14 +664,16 @@ class FabricStarterClient {
                 const msg = `timed out waiting for transaction ${id} after ${timeout}`;
                 logger.error(msg);
                 reject(new Error(msg));
+                // resolve({txid:id, msg: msg});
             }, timeout);
         });
 
-        const channelEventHub = this.getChannelEventHub(channel);
+        let channelEventHub;
 
         const eventPromise = new Promise((resolve, reject) => {
             logger.trace(`registerTxEvent ${id}`);
             if (!cfg.DISABLE_TX_ID_LISTENER) { //TODO: refactor
+                channelEventHub = this.getChannelEventHub(channel);
                 channelEventHub.registerTxEvent(id, (txid, status, blockNumber) => {
                     logger.debug(`committed transaction ${txid} as ${status} in block ${blockNumber}`);
                     resolve({txid: txid, status: status, blockNumber: blockNumber});
@@ -655,13 +682,7 @@ class FabricStarterClient {
                     reject(new Error(e));
                 });
             } else {
-                this.eventBus && this.eventBus.on(channel.getName()+'_block', (block) => {
-                    const expectedTx = _.find(this._transactions(block), tran => tran.txid == id);
-                    if (expectedTx) {
-                        logger.debug(`block event of committed transaction ${expectedTx.txid} as ${expectedTx.status || expectedTx.tx_validation_code} in block ${this._blockNumber(block)}`);
-                        resolve({txid: expectedTx.txid, status: expectedTx.status || expectedTx.tx_validation_code, blockNumber: this._blockNumber(block)});
-                    }
-                })
+                this.registeredTx[id] = resolve
             }
         });
 
@@ -669,10 +690,10 @@ class FabricStarterClient {
 
         racePromise.catch(() => {
             clearTimeout(timeoutHandle);
-            channelEventHub.disconnect();
+            channelEventHub && channelEventHub.disconnect();
         }).then(() => {
             clearTimeout(timeoutHandle);
-            channelEventHub.disconnect();
+            channelEventHub && channelEventHub.disconnect();
         });
 
         return racePromise;

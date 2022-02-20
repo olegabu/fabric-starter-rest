@@ -7,7 +7,7 @@ module.exports = async function(app, server, fabricStarterRuntime, chaincodeServ
 
   const cfg = require('./config.js');
   const log4jsConfigured = require('./util/log/log4js-configured');
-  const logger = log4jsConfigured.getLogger('IntegrationApi');
+  const logger = log4jsConfigured.getLogger('Api');
   const asyncMiddleware = require('./api/async-middleware-error-handler');
   const Org = require('./model/Org')
 
