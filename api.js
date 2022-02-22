@@ -7,7 +7,7 @@ module.exports = async function(app, server, fabricStarterRuntime, chaincodeServ
 
   const cfg = require('./config.js');
   const log4jsConfigured = require('./util/log/log4js-configured');
-  const logger = log4jsConfigured.getLogger('IntegrationApi');
+  const logger = log4jsConfigured.getLogger('Api');
   const asyncMiddleware = require('./api/async-middleware-error-handler');
   const Org = require('./model/Org')
 
@@ -606,17 +606,15 @@ module.exports = async function(app, server, fabricStarterRuntime, chaincodeServ
   function extractTargets(req, prop) {
     const result = {};
     let targets = _.get(req, `${prop}.targets`);
-
-    try {
-      targets = JSON.parse(targets);
-    } catch(e) {
-      logger.warn("Targets are not parseable", targets, e.message);
-    }
-    if(targets) result.targets = targets;
-
-    if(!targets) {
+    if (targets) {
+      try {
+        result.targets = JSON.parse(targets);
+      } catch (e) {
+        logger.warn("Targets are not parseable", targets, e.message);
+      }
+    } else {
       let peers = _.concat([], _.get(req, `${prop}.peer`) || _.get(req, `${prop}.peers`) || []);
-      if(!_.isEmpty(peers)) {
+      if (!_.isEmpty(peers)) {
         result.peers = _.map(peers, p => {
           const parts = _.split(p, "/"); //format: org/peer0
           const peerOrg = parts[0];

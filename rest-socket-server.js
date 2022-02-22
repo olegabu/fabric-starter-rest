@@ -6,10 +6,11 @@ const util = require('./util.js');
 
 class RestSocketServer {
 
-    constructor(fabricStarterClient, eventBus) {
+    constructor(fabricStarterClient, txEventQueue) {
         this.listOfChannels = [];
         this.fabricStarterClient = fabricStarterClient;
-        this.eventBus = eventBus
+        this.txEventQueue = txEventQueue
+        this.rate={}
     }
 
   async startSocketServer(server, opts) {
@@ -55,6 +56,39 @@ class RestSocketServer {
         return this.listOfChannels.find(i => i === channelId);
     }
 
+    checkRate(lastBlockNumber) {
+        const time = new Date();
+        const elapsedSeconds = ((time - this.rate.lastSentTime) || 1000 ) / 1000
+        const committedBlocks = lastBlockNumber - (this.rate.lastSentBlock || lastBlockNumber)
+        let result = false
+        if (committedBlocks / elapsedSeconds < .5 || time - (this.rate.lastTime || 0) > 1000) {
+            result = true
+        }
+        if (committedBlocks / elapsedSeconds >= 0.5 && (committedBlocks / elapsedSeconds <= 10) && (lastBlockNumber / 10 === Math.floor(lastBlockNumber / 10))) {
+            result = true
+        }
+        if (committedBlocks / elapsedSeconds > 10  && (lastBlockNumber / 100 === Math.floor(lastBlockNumber / 100))) {
+            result = true
+        }
+
+        this.rate.lastTime = time
+        if (result) {
+            this.rate.lastSentTime = time
+            this.rate.lastSentBlock = lastBlockNumber
+        }
+        return result;
+    }
+
+    emitIOEventWithRateCheck(blockNumber, block) {
+        if (this.checkRate(blockNumber)) {
+            this.io.emit('chainblock', block);
+            this.rate.timer && clearTimeout(this.rate.timer)
+        } else {
+            this.rate.timer && clearTimeout(this.rate.timer)
+            this.rate.timer = setTimeout(() => this.io.emit('chainblock', block), 5000)
+        }
+    }
+
   async registerChannelBlockListener(channelId) {
     const self = this;
 
@@ -62,8 +96,8 @@ class RestSocketServer {
       let blockNumber = block.number || _.get(block, "header.number");
       logger.debug(`fabricStarterClient has received block ${blockNumber} on ${block.channel_id}`);
       logger.debug(block);
-      this.io.emit('chainblock', block);
-      this.eventBus && this.eventBus.emit(channelId+"_block", block)
+      this.emitIOEventWithRateCheck(blockNumber, block)
+      this.emitTxChainBlockEvent(block);
     }, e => {
       logger.error('registerBlockEvent error:', e);
       _.remove(self.listOfChannels, chId=>chId===channelId);
@@ -73,7 +107,11 @@ class RestSocketServer {
     return true;
   }
 
-  async sendRepeatingBlockNotification(channel) {
+    emitTxChainBlockEvent(block) {
+        this.txEventQueue && this.txEventQueue.emitChainblock(block)
+    }
+
+    async sendRepeatingBlockNotification(channel) {
       let info = await this.fabricStarterClient.queryInfo(channel);
       let number = info.height.low-1;
       let block = await this.fabricStarterClient.queryBlock(channel, number, true);
