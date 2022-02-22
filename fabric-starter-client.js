@@ -22,7 +22,7 @@ const IS_ADMIN = true;
 logger.debug(`invokeTimeout=${cfg.CHAINCODE_PROCESSING_TIMEOUT} asLocalhost=${asLocalhost}`);
 
 class FabricStarterClient {
-    constructor(networkConfig, eventBus) {
+    constructor(networkConfig, txEventQueue) {
         FabricStarterClient.setDefaultConfigSettings(cfg.CRYPTO_SUIT_CONFIG);
 
         this.networkConfig = networkConfig || networkConfigProvider(cfg.cas);
@@ -34,32 +34,7 @@ class FabricStarterClient {
         this.channelsInitializationMap = new Map();
         this.registerQueue = new Map();
         this.clients = new Map()
-        this.eventBus = eventBus
-        this.registeredTx = {}
-        if (cfg.DISABLE_TX_ID_LISTENER) {
-            this.eventBus && this.eventBus.on('chainblock', (block) => {
-                const txConfirmed = _.size(this.registeredTx)
-                if (!txConfirmed) return;
-
-                logger.debug(`CHAINBLOCK. Count of registeredTx in queue: ${txConfirmed}`)
-                _.each(this._transactions(block), tran=> {
-                    const expectedTx = tran; //_.find(this._transactions(block), tran => !!this.registeredTx[tran.txid]);
-                    if (expectedTx) {
-                        logger.debug(`block event of committed transaction ${expectedTx.txid} as ${expectedTx.status || expectedTx.tx_validation_code} in block ${this._blockNumber(block)}`);
-                        const resolve = this.registeredTx[expectedTx.txid]
-                        delete this.registeredTx[expectedTx.txid]
-
-                        resolve({
-                            txid: expectedTx.txid,
-                            status: expectedTx.status || expectedTx.tx_validation_code,
-                            blockNumber: this._blockNumber(block)
-                        });
-                    }
-
-                })
-            })
-        }
-
+        this.txEventQueue = txEventQueue
     }
 
     static setDefaultConfigSettings(config) {
@@ -682,7 +657,7 @@ class FabricStarterClient {
                     reject(new Error(e));
                 });
             } else {
-                this.registeredTx[id] = resolve
+                this.txEventQueue.waitForTransaction(id,resolve)
             }
         });
 

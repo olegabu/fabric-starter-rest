@@ -1,6 +1,5 @@
 const glob = require('glob');
 const path = require('path');
-const EventEmitter = require('events')
 const _ = require('lodash');
 
 const FabricStarterClient = require('../../fabric-starter-client');
@@ -14,6 +13,7 @@ const LedgerStorage = require('../storage/ledger-storage')
 const util = require('../../util');
 const Fabric1xAdapter = require('../../service/context/fabricversions/fabric-1x-adapter') // todo: load adapters automatically
 const Fabric2xAdapter = require('../../service/context/fabricversions/fabric-2x-adapter')
+const TxEventQueue = require('../../service/tx/TxEventQueue')
 
 class FabricStarterRuntime {
 
@@ -23,7 +23,7 @@ class FabricStarterRuntime {
         this.app = app;
         this.server = server;
         this.initialized = false
-        this.eventBus = new EventEmitter()
+        this.txEventQueue = new TxEventQueue(cfg); //new EventEmitter()
     }
 
     async setOrg(org = {}) {
@@ -63,7 +63,7 @@ class FabricStarterRuntime {
 
     async initDefaultFabricStarterClient() {
         // fabric client
-        this.defaultFabricStarterClient = new FabricStarterClient(null, this.eventBus);
+        this.defaultFabricStarterClient = new FabricStarterClient(null, this.txEventQueue);
         try {
             await this.defaultFabricStarterClient.loginOrRegister(cfg.ENROLL_ID, cfg.enrollSecret);
         } catch (e) {
@@ -82,7 +82,7 @@ class FabricStarterRuntime {
 
     async initSocketServer() {
         // socket.io server to pass blocks to webapps
-        this.socket = new RestSocketServer(this.defaultFabricStarterClient, this.eventBus);
+        this.socket = new RestSocketServer(this.defaultFabricStarterClient, this.txEventQueue);
         await this.socket.startSocketServer(this.server, cfg.UI_LISTEN_BLOCK_OPTS).then(() => {
             logger.info('started socket server');
         });
