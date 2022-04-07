@@ -4,6 +4,7 @@ module.exports = async function(app, server, fabricStarterRuntime, chaincodeServ
   const path = require('path');
   const os = require('os');
   const _ = require('lodash');
+  const rateLimit = require('express-rate-limit')
 
   const cfg = require('./config.js');
   const log4jsConfigured = require('./util/log/log4js-configured');
@@ -27,8 +28,15 @@ module.exports = async function(app, server, fabricStarterRuntime, chaincodeServ
   const fileUtils = require('./util/fileUtils')
   const utils = require('./util')
 
-// serve admin and custom web apps as static
-  const express = require("express");
+  if (cfg.REQUEST_LIMIT !== -1 ) {
+    const limiter = rateLimit({
+      windowMs: 1000, // 1 sec
+      max: cfg.REQUEST_LIMIT, // Limit each IP to 100 requests per `window` (here, per 15 minutes)
+      standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
+      legacyHeaders: false, // Disable the `X-RateLimit-*` headers
+    })
+    app.use(limiter)
+  }
 /*
   const webappDir = process.env.WEBAPP_DIR || './webapp';
   app.use('/webapp', express.static(webappDir));

@@ -224,7 +224,8 @@ module.exports = {
     DOCKER_COMPOSE_EXTRA_ARGS: process.env.DOCKER_COMPOSE_EXTRA_ARGS || '',
     PRIVATE_KEYS_FILTER : '.*\/keystore.*|.*\/sk.pem|.*/\*.key|.*\/priv_sk',
     SKIP_CHECK_PORTS_TIMEOUT_SECONDS: process.env.SKIP_CHECK_PORTS_TIMEOUT_SECONDS ? process.env.SKIP_CHECK_PORTS_TIMEOUT_SECONDS * 1000 : '',
-    DISABLE_TX_ID_LISTENER: process.env.DISABLE_TX_ID_LISTENER === "true" || process.env.DISABLE_TX_ID_LISTENER
+    DISABLE_TX_ID_LISTENER: process.env.DISABLE_TX_ID_LISTENER === "true" || process.env.DISABLE_TX_ID_LISTENER,
+    REQUEST_LIMIT: process.env.REQUEST_LIMIT || -1
 };
 
 function persistConfig() {
