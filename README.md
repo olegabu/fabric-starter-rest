@@ -44,8 +44,7 @@ cd docker-images
 1. Build desired (custom or fabric-starter's) admin webapp, pack as `admin-webapp.tgz` and copy to the `fabric-starter-rest` dir
 ```bash
 pushd ../fabric-starter-admin-webapp
-au build --env prod
-cp admin-webapp.tgz ../fabric-starter-rest
+./pack-admin-webapp.sh
 popd
 ```
   
