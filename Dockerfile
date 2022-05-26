@@ -11,6 +11,7 @@ LABEL MAINTAINER=olegabu
 
 ## install dependencies
 COPY "package.json" .
+COPY "package-lock.json" .
 COPY gost-deps/crypto-gost/package.json ./gost-deps/crypto-gost/
 COPY gost-deps/fabric-client/package.json ./gost-deps/fabric-client/
 COPY gost-deps/fabric-cryptosuite-gost/package.json ./gost-deps/fabric-cryptosuite-gost/
