@@ -30,8 +30,8 @@ Run REST server.
 ```bash
 npm start
 ```
-###Build docker image.
-First pull latest _base_ rest image:
+### Build docker image.
+1. First pull latest _base_ rest image:
 ```bash
 docker pull olegabu/fabric-starter-rest:latest-base
 ```
@@ -40,10 +40,20 @@ or build if it doesn't exists with `./build-base.sh` (one time for new Hyperledg
 cd docker-images
 ./build-base.sh latest
 ```
-Then build the `fabric-starter-rest` container by using the `./build.sh` script in the `docker-images` folder:
+
+1. Build desired (custom or fabric-starter's) admin webapp, pack as `admin-webapp.tgz` and copy to the `fabric-starter-rest` dir
+```bash
+pushd ../fabric-starter-admin-webapp
+au build --env prod
+cp admin-webapp.tgz ../fabric-starter-rest
+popd
+```
+  
+
+2. Then build the `fabric-starter-rest` container by using the `./build.sh` script in the `docker-images` folder:
 ```bash
 cd docker-images
-./build.sh latest
+./build.sh latest olegabu docker.io admin-webapp.tgz
 ```
 or manually:
 ```bash
@@ -63,11 +73,11 @@ tar -zcvf admin-webapp.tgz ./build
 cp admin-webapp.tgz ../fabric-starter-rest
 ```
 
-Set `USE_EXTERNAL_ADMIN_WEBAPP=true` and use`./build.sh` script from the docker-images folder:
+Use`./build.sh` script from the docker-images folder:
       
 ```bash
 cd docker-images
-USE_EXTERNAL_ADMIN_WEBAPP=true ./build.sh latest
+./build.sh latest olegabu docker.io admin-webapp.tgz
 ```
 
 # Connection options
@@ -102,7 +112,6 @@ GRPC_MIN_TIME_BETWEEN_PINGS_MS| 300000 (5 minutes)|_Fabric-starter-rest_ resets 
 - Tag stable version
 
 
-curl -i --connect-timeout 30 --max-time 120 --retry 1 -k http://api.org1.example.com:3000/integration/service/orgs -H 'Content-Type: application/json' -d '{"orgId":"oprg2","domain":"example.com","orgIp":"","peerPort":"8051","wwwPort":"82"}'
 
 
 
