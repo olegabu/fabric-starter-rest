@@ -31,7 +31,7 @@ module.exports = function (app, server, integrationService) {
             res.json(await integrationService.integrateOrg(Org.fromHttpBody(req.body), _.get(req, 'files.certFiles')))
         } catch (e) {
             logger.error(e);
-            res.status(500).send(_.get(e, 'message') || e);
+            res.status(500).send(_.toString(_.get(e, 'message') || e));
         }
     }));
 
