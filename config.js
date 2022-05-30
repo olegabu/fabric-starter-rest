@@ -22,7 +22,10 @@ const PEER_CONFIG_FILE = process.env.PEER_CONFIG_FILE || `${TMP_DIR}/node-config
 logger.info(`PEER_CONFIG_FILE: ${PEER_CONFIG_FILE}`);
 
 const persistedConfig = fs.readJsonSync(PEER_CONFIG_FILE, {throws: false}) || {}
-const PEER_ADDRESS_TEMPLATE = process.env.PEER_ADDRESS_TEMPLATE || "${PEER_NAME}.${ORG}.${DOMAIN}"
+
+const PEER_ADDRESS_PREFIX_TEMPLATE = process.env.PEER_ADDRESS_PREFIX_TEMPLATE || "${PEER_NAME}."
+//@deprecated
+const PEER_ADDRESS_TEMPLATE = process.env.PEER_ADDRESS_TEMPLATE; // || "${PEER_NAME}.${ORG}.${DOMAIN}" //TODO: deprecated, use PEER_ADDRESS_PREFIX_TEMPLATE
 
 module.exports = {
     log4js:  log4jsConfigured, //TODO: remove from config, use directly
@@ -184,8 +187,14 @@ module.exports = {
     get ordererCryptoDir() {return `${cryptoConfigPath}/ordererOrganizations/${this.ordererDomain}` },
     get ORDERER_TLS_CERT() {return `${this.ordererCryptoDir}/msp/tlscacerts/tlsca.${this.ordererDomain}-cert.pem` },
 
+    get PEER_ADDRESS_PREFIX_TEMPLATE() {return PEER_ADDRESS_PREFIX_TEMPLATE},
+    peerAddressPrefix(peer) {
+        return _.replace(this.PEER_ADDRESS_PREFIX_TEMPLATE, '${PEER_NAME}', peer)
+    },
+
     addressFromTemplate: (peer, org, domain) =>{
-        let result = _.replace(PEER_ADDRESS_TEMPLATE, '${PEER_NAME}', peer);
+        const template = PEER_ADDRESS_TEMPLATE ? PEER_ADDRESS_TEMPLATE : `${PEER_ADDRESS_PREFIX_TEMPLATE}\${ORG}.\${DOMAIN}`
+        let result = _.replace(template, '${PEER_NAME}', peer);
         result = _.replace(result , '${ORG}', org);
         result = _.replace(result , '${DOMAIN}', domain);
         return result
@@ -200,6 +209,7 @@ module.exports = {
     // get cas() {return process.env.CAS || `"${this.org}":"${this.corePeerAddress('ca', this.org, this.domain)}:${this.masterCAPort}"`},
     // get tlsCas() {return process.env.TLS_CAS || `"${this.org}":"${this.corePeerAddress('tlsca', this.org, this.domain)}:${this.masterTLSCAPort}"`},
 
+    get PEEER_ORG_NAME() {return persistedConfig.PEEER_ORG_NAME || process.env.PEEER_ORG_NAME || `${this.peerName}.${this.org}`},
 
     get ORG_CRYPTO_DIR() {return `${cryptoConfigPath}/peerOrganizations/${this.org}.${this.domain}`},
 

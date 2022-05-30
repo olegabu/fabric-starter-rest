@@ -302,6 +302,7 @@ class FabricCLI {
             NEWORG: newOrgId,
             DOMAIN: newOrg.domain || cfg.domain,
             PEER_NAME: newOrg.peerName || "peer0",
+            PEER_ADDRESS_PREFIX: cfg.peerAddressPrefix(newOrg.peerName || "peer0"),
             SIGNATURE_HASH_FAMILY: cfg.SIGNATURE_HASH_FAMILY
         }, extraEnv);
 
