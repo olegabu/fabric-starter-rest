@@ -42,6 +42,7 @@ RUN if [ -d "/external-admin" ]; then \
 COPY --from=fabrictools /etc/hyperledger/templates /usr/src/app/templates
 COPY --from=fabrictools /etc/hyperledger/container-scripts /usr/src/app/container-scripts
 COPY --from=fabrictools /etc/hyperledger/docker-compose*.yaml /usr/src/app/
+COPY --from=fabrictools /usr/src/app/routes/* /usr/src/app/routes/
 
 
 EXPOSE 3000
