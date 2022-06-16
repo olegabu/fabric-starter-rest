@@ -47,7 +47,7 @@ module.exports = function (app, server, defaultFabricStarterClient) {
      * Login or register user.
      * @route POST /users
      * @group users - Authentication and operations about users
-     * @param {User.model} user.body.required
+     * @param {User.model} user.body.required - User object
      * @returns {object} 200 - User logged in and his JWT returned
      * @returns {Error}  default - Unexpected error
      */
