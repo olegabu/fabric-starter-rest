@@ -222,7 +222,7 @@ module.exports = async function(app, server, fabricStarterRuntime, chaincodeServ
    * Create channel and join it
    * @route POST /channels
    * @group channels - Queries and operations on channels
-   * @param {Channel.model} channel.body.required
+   * @param {Channel.model} channel.body.required - Channel object in form {channelId:"channelId"}
    * @returns {object} 200 - Channel created
    * @returns {Error}  default - Unexpected error
    * @security JWT
@@ -250,7 +250,7 @@ module.exports = async function(app, server, fabricStarterRuntime, chaincodeServ
    * @route GET /channels/{channelId}/orgs
    * @group channels - Queries and operations on channels
    * @param {string} channelId.path.required - channel - eg: common
-   * @param {boolean} filter.path.required - reject orderer name flag
+   * @param {boolean} filter.query.required - reject orderer name flag
    * @returns {object} 200 - Array of organization objects with names (MSPIDs)
    * @returns {Error}  default - Unexpected error
    * @security JWT
@@ -288,6 +288,12 @@ module.exports = async function(app, server, fabricStarterRuntime, chaincodeServ
   /**
    * @typedef Organization
    * @property {string} orgId.required - organization name by convention same as MSPID- eg: org1
+   * @property {string} domain.required - domain
+   * @property {string} orgIp.required - IP of current peer
+   * @property {string} masterIp - Ip of main (anchor) peer of Org
+   * @property {string} peer0Port - peer's port
+   * @property {string} wwwPort - www port (certs provisioning)
+   * @property {string} peerName - peer name
    */
 
   /**
@@ -295,7 +301,7 @@ module.exports = async function(app, server, fabricStarterRuntime, chaincodeServ
    * @route POST /channels/{channelId}/orgs
    * @group channels - Queries and operations on channels
    * @param {string} channelId.path.required - channel - eg: common
-   * @param {Organization.model} organization.body.required
+   * @param {Organization.model} organization.body.required - Org object
    * @returns {object} 200 - Organization added
    * @returns {Error}  default - Unexpected error
    * @security JWT
@@ -405,12 +411,23 @@ module.exports = async function(app, server, fabricStarterRuntime, chaincodeServ
             req.body.chaincodeType, req.body.fcn, extractArgs(req.body.args), req.body.chaincodeVersion, req.body.targets, req.body.waitForTransactionEvent, req.body.policy));
   }));
 
+
+  /**
+   * @typedef Upgrade
+   * @property {string} chaincodeId.required - Id of the chaincode to upgrade
+   * @property {string} chaincodeType.required - chaincode type
+   * @property {string} fcn.required - domain
+   * @property {array} args.required - array ofInit function args
+   * @property {string} chaincodeVersion.required - new version
+   */
+
+
     /**
      * Upgrade chaincode
      * @route POST /channels/{channelId}/chaincodes/upgrade
      * @group channels - Queries and operations on channels
      * @param {string} channelId.path.required - channel - eg: common
-     * @param {upgrade.model} upgrade.body.required - upgrade request
+     * @param {Upgrade.model} upgrade.body.required - upgrade request
      * @returns {object} 200 - Transaction id
      * @returns {Error}  default - Unexpected error
      * @security JWT
@@ -500,7 +517,7 @@ module.exports = async function(app, server, fabricStarterRuntime, chaincodeServ
    * Add organization to the consortium
    * @route POST /consortium/members
    * @group consortium - view and control participants
-   * @param {Organization.model} organization.body.required
+   * @param {Organization.model} organization.body.required Org object
    * @returns {object} 200 - Organization added
    * @returns {Error}  default - Unexpected error
    * @security JWT
@@ -524,6 +541,7 @@ module.exports = async function(app, server, fabricStarterRuntime, chaincodeServ
   /**
    * Deploy new web application
    * @route POST /applications
+   * @consumes multipart/form-data
    * @group applications - Web applications
    * @param {file} file.formData.required - application compiled folder archived in zip - eg: coolwebapp.zip
    * @returns {Error}  default - Unexpected error
@@ -556,6 +574,7 @@ module.exports = async function(app, server, fabricStarterRuntime, chaincodeServ
   /**
    * Deploy new integrated
    * @route POST /appstore/app
+   * @consumes multipart/form-data
    * @group appstore - market applications
    * @param {file} file.formData.required - folder with compiled application archived in zip - eg: coolwebapp.zip
    * @returns {Error}  default - Unexpected error
@@ -586,6 +605,7 @@ module.exports = async function(app, server, fabricStarterRuntime, chaincodeServ
   /**
    * Deploy new middleware
    * @route POST /middlewares
+   * @consumes multipart/form-data
    * @group middlewares - Web applications
    * @param {file} file.formData.required - middlewares's js file
    * @returns {Error}  default - Unexpected error
