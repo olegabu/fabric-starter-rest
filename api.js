@@ -61,13 +61,12 @@ module.exports = async function(app, server, fabricStarterRuntime, chaincodeServ
   app.get('/', (req, res) => {
     res.status(200).send('Welcome to fabric-starter REST server');
   });
-/*
+
   app.post('/cert', (req, res) => {
     res.json(x509util.decodeCert(req.body.cert));
   });
-/*
-
  */
+
   /**
    * Show network name (as defined by DOMAIN env variable at setup time)
    * @route GET /domain
