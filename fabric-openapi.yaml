@@ -1,0 +1,60 @@
+openapi: 3.0.0
+info:
+  description: Hyperledger Fabric Peer partial API
+  title: Hyperledger Fabric Peer
+  version: "2.2"
+paths:
+  /ProcessProposal:
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SignedProposal"
+        description: User object
+        required: true
+      description: |-
+
+        Login or register user.
+      tags:
+        - Proposal
+      responses:
+        "200":
+          description: User logged in and his JWT returned
+        default:
+          description: Unexpected error
+tags:
+  - name: Proposal
+    description: Transaction Proposal
+  - name: Broadcast
+    description: Transaction Broadcasting
+
+servers:
+  - url: /
+components:
+
+  schemas:
+    Proposal:
+      properties:
+        Header:
+          type: object
+          description: "Header"
+          example: ""
+        ChaincodeProposalPayload:
+          type: object
+          description: "Proposal "
+          example: ""
+
+    SignedProposal:
+      required:
+        - Signature
+        - Proposal
+      properties:
+        Signature:
+          type: string
+          description: "Signature"
+          example: D6 FE BX...
+        Proposal:
+          type: "object"
+          description: "Proposal "
+          example: ""
