@@ -184,7 +184,6 @@ module.exports = async function(app, server, fabricStarterRuntime, chaincodeServ
         .installChaincode(fileBaseName, {...req.body, archiveType}, fileUploadObj.path))
   }));
 
-
   /**
    * Query channels joined by the first peer of my organization
    * @route GET /channels

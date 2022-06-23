@@ -3,7 +3,7 @@ const _ = require('lodash');
 const log4jsConfigured = require('./util/log/log4js-configured');
 const logger = log4jsConfigured.getLogger('config.js');
 
-const gostConfig = require('./gost-deps/crypto-suit-config');
+// const gostConfig=require('./gost-deps/crypto-suit-config');
 
 let cryptoConfigPath = fs.realpathSync(process.env.CRYPTO_CONFIG_DIR || '../fabric-starter/crypto-config');
 logger.info(`Crypto-config path: ${cryptoConfigPath}`);
@@ -228,7 +228,7 @@ module.exports = {
 
     AUTH_MODE: process.env.AUTH_MODE || (process.env.CRYPTO_ALGORITHM === 'GOST' ? 'ADMIN' : 'CA'),
     SIGNATURE_HASH_FAMILY: process.env.SIGNATURE_HASH_FAMILY || (process.env.CRYPTO_ALGORITHM === 'GOST' ? 'SM3' : 'SHA2'),
-    CRYPTO_SUIT_CONFIG: process.env.CRYPTO_ALGORITHM === 'GOST' ? gostConfig : {},
+    CRYPTO_SUIT_CONFIG: process.env.CRYPTO_ALGORITHM === 'GOST' ? require('./gost-deps/crypto-suit-config') : {},
 
     AUTH_JWT_EXPIRES_IN: (/^\d+$/.test(process.env.AUTH_JWT_EXPIRES_IN) ? parseInt(process.env.AUTH_JWT_EXPIRES_IN) : process.env.AUTH_JWT_EXPIRES_IN) || '8h',
     DOCKER_COMPOSE_EXTRA_ARGS: process.env.DOCKER_COMPOSE_EXTRA_ARGS || '',
