@@ -1,0 +1,54 @@
+{
+  "_from": "crypto-gost@^1.0.14",
+  "_id": "crypto-gost@1.0.14",
+  "_inBundle": false,
+  "_integrity": "sha512-oE7ZngB9p5dstDpeR+xNg+n6hEFMQ0l3Syhe6ihcQbUDpt2sygsZJHont+QacxRzOw3ukEzGSVvTclKaH1XruA==",
+  "_location": "/crypto-gost",
+  "_phantomChildren": {},
+  "_requested": {
+    "type": "range",
+    "registry": true,
+    "raw": "crypto-gost@^1.0.14",
+    "name": "crypto-gost",
+    "escapedName": "crypto-gost",
+    "rawSpec": "^1.0.14",
+    "saveSpec": null,
+    "fetchSpec": "^1.0.14"
+  },
+  "_requiredBy": [
+    "/",
+    "/fabric-cryptosuite-gost"
+  ],
+  "_resolved": "https://registry.npmjs.org/crypto-gost/-/crypto-gost-1.0.14.tgz",
+  "_shasum": "071a604bc82c9ee4b5de987a534bfd0d6cff1f56",
+  "_spec": "crypto-gost@^1.0.14",
+  "_where": "/home/ao/IdeaProjects/fabric-starter-rest",
+  "author": "",
+  "bugs": {
+    "url": "https://github.com/vostokplatform/crypto/issues"
+  },
+  "bundleDependencies": false,
+  "dependencies": {},
+  "deprecated": false,
+  "description": "Pure Javascript implementation of WebCrypto API interfaces and Public Key  Infrastructure for GOST algorithms (Russian Cryptographic Standards)",
+  "devDependencies": {
+    "@babel/core": "^7.0.0-beta.40",
+    "@babel/preset-env": "^7.0.0-beta.40",
+    "babel-loader": "^8.0.0-beta.0",
+    "webpack": "^3.10.0"
+  },
+  "homepage": "https://github.com/vostokplatform/crypto#readme",
+  "keywords": [],
+  "license": "ISC",
+  "main": "dist/CryptoGost.min.js",
+  "name": "crypto-gost",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/vostokplatform/crypto.git"
+  },
+  "scripts": {
+    "build": "PROD_ENV=1 ./node_modules/.bin/webpack --colors --progress --display-error-details",
+    "test": "node test/index.js"
+  },
+  "version": "1.0.14"
+}
