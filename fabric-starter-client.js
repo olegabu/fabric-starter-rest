@@ -1,5 +1,4 @@
 const fs = require('fs');
-const axios = require('axios');
 const _ = require('lodash');
 const cfg = require('./config.js');
 const logger = cfg.log4js.getLogger('FabricStarterClient');
@@ -10,10 +9,12 @@ const urlParseLax = require('url-parse-lax');
 const chmodPlus = require('chmod-plus');
 const fabricCLI = require('./fabric-cli');
 const util = require('./util');
+const localDns = require('./util/local-dns');
 const certsManager = require('./certs-manager');
 const channelManager = require('./channel-manager');
 //const networkConfigFile = '../crypto-config/network.json'; // or .yaml
 //const networkConfig = require('../crypto-config/network.json');
+const networkConfigProvider = require('./network');
 
 const asLocalhost = (process.env.DISCOVER_AS_LOCALHOST === 'true');
 const IS_ADMIN = true;
@@ -21,46 +22,49 @@ const IS_ADMIN = true;
 logger.debug(`invokeTimeout=${cfg.CHAINCODE_PROCESSING_TIMEOUT} asLocalhost=${asLocalhost}`);
 
 class FabricStarterClient {
-    constructor(networkConfig) {
-        FabricStarterClient.setConfigObject(cfg.CRYPTO_SUIT_CONFIG);
+    constructor(networkConfig, txEventQueue) {
+        FabricStarterClient.setDefaultConfigSettings(cfg.CRYPTO_SUIT_CONFIG);
 
-        this.networkConfig = networkConfig || require('./network')();
+        this.networkConfig = networkConfig || networkConfigProvider(cfg.cas);
         logger.info('constructing with network config:', JSON.stringify(this.networkConfig));
         this.client = Client.loadFromConfig(this.networkConfig); // or networkConfigFile
-        this.ordererClient = Client.loadFromConfig(this.networkConfig); // or networkConfigFile
+
         this.peer = this.client.getPeersForOrg()[0];
-        this.org = this.networkConfig.client.organization;
-        this.affiliation = this.org;
+        // this.org = this.networkConfig.client.organization; //todo:?
         this.channelsInitializationMap = new Map();
         this.registerQueue = new Map();
+        this.clients = new Map()
+        this.txEventQueue = txEventQueue
     }
 
-    static setConfigObject(config) {
-        _.forEach(config, (value, key)=>{
+    static setDefaultConfigSettings(config) {
+        _.forEach(config, (value, key) => {
             Client.setConfigSetting(key, value);
-        } )
+        })
     }
 
-    async init() {
-        await this.client.initCredentialStores();
-        this.fabricCaClient = cfg.AUTH_MODE === 'CA' ? this.client.getCertificateAuthority() : undefined;
-        await this.ordererClient.initCredentialStores();
-        try {
-            this.ordererClient.setAdminSigningIdentity(
-                util.loadPemFromFile(certsManager.getPrivateKeyFilePath()),
-                util.loadPemFromFile(certsManager.getSignCertPath()),
-                cfg.ORDERER_MSPID
-            );
-        } catch (err) {
-            logger.debug("Not orderer host")
-        }
+    async init() { //todo: remove after removing from dns.js
+        //     // await this.client.initCredentialStores();
+        //     await this.ordererClient.initCredentialStores();
+        //     this.fabricCaClient = cfg.AUTH_MODE === 'CA' ? this.ordererClient.getCertificateAuthority() : undefined;
+        //     try {
+        //         this.ordererClient.setAdminSigningIdentity(
+        //             util.loadPemFromFile(certsManager.getPrivateKeyFilePath()),
+        //             util.loadPemFromFile(certsManager.getSignCertPath()),
+        //             cfg.ORDERER_MSPID
+        //         );
+        //     } catch (err) {
+        //         logger.debug("Not orderer host")
+        //     }
     }
 
     async login(username, password) {
         if (cfg.AUTH_MODE === 'CA') {
+            await this.checkClientInitialized();
+            this.clearUsersPreviousLoginCache(username);
             this.user = await this.client.setUserContext({username: username, password: password}, true);
         } else if (cfg.AUTH_MODE === 'ADMIN') {
-            if (cfg.enrollId != username || cfg.enrollSecret != password) {
+            if (cfg.ENROLL_ID !== username || cfg.enrollSecret !== password) {
                 throw Error("Invalid credentials");
             }
             this.user = await this.createUserWithAdminRights(username, password);
@@ -69,8 +73,18 @@ class FabricStarterClient {
         }
     }
 
+    clearUsersPreviousLoginCache(username) {
+        this.client.getStateStore() && this.client.getStateStore().setValue(username, '')
+    }
+
+    async checkClientInitialized() {
+        if (!this.client.getStateStore()) {
+            await this.client.initCredentialStores();
+        }
+    }
+
     async createUserWithAdminRights(username) {
-        let mspId = this.org;
+        let mspId = cfg.org;// this.org;
         return await this.client.createUser({
             username: username,
             mspid: mspId,
@@ -94,18 +108,22 @@ class FabricStarterClient {
         }
     }
 
-    async register(username, password, affiliation) {
+    async register(username, password, affiliation, role, attrs = []) {
         if (cfg.AUTH_MODE === 'CA') {
-            const registrar = this.fabricCaClient.getRegistrar()[0];
+            await this.checkClientInitialized();
+            let fabricCaClient = this.client.getCertificateAuthority()
+            const registrar = fabricCaClient.getRegistrar()[0];
             const admin = await this.client.setUserContext({
-                username: registrar.enrollId,
+                username: registrar.enrollId, //TODO: used to be enrollId, now unexpectedly ENROLL_ID
                 password: registrar.enrollSecret
             });
-            await this.fabricCaClient.register({
+            return await fabricCaClient.register({
                 enrollmentID: username,
                 enrollmentSecret: password,
-                affiliation: affiliation || this.affiliation,
-                maxEnrollments: -1
+                affiliation: affiliation || cfg.org,
+                maxEnrollments: -1,
+                role,
+                attrs
             }, admin);
         }
     }
@@ -130,9 +148,14 @@ class FabricStarterClient {
         return this.registerQueue[username];
     }
 
+    async enroll(enrollmentId, password, profile) {
+        let fabricCaClient = this.client.getCertificateAuthority()
+        return await fabricCaClient.enroll({enrollmentID: enrollmentId, enrollmentSecret: password, profile})
+    }
+
     getSecret() {
         const signingIdentity = this.client._getSigningIdentity(true);
-        const signedBytes = signingIdentity.sign(this.org);
+        const signedBytes = signingIdentity.sign(cfg.org);
         return String.fromCharCode.apply(null, signedBytes);
     }
 
@@ -142,7 +165,7 @@ class FabricStarterClient {
     }
 
     async queryPeers(orgName, peer) {
-        orgName = orgName || this.org;
+        orgName = orgName || cfg.org;
         peer = peer || this.peer;
         const peerQueryResponse = await this.client.queryPeers({target: peer, useAdmin: true});
         let peers = _.get(peerQueryResponse, `local_peers.${orgName}.peers`);
@@ -157,7 +180,7 @@ class FabricStarterClient {
     async createChannel(channelId) {
         try {
             logger.info(`Creating channel ${channelId}`);
-            await fabricCLI.downloadOrdererMSP();
+            // await fabricCLI.downloadOrdererMSP();
 
             const tx_id = this.client.newTransactionID(true);
             let orderer = this.client.getOrderer(cfg.ORDERER_ADDR); //this.createOrderer();
@@ -175,8 +198,8 @@ class FabricStarterClient {
             // let res = await this.client.createChannel(channelReq);
             fabricCLI.createChannelByCli(channelId);
             // if (!res || res.status != "SUCCESS") {
-                // logger.error(res);
-                // throw new Error(res.info);
+            // logger.error(res);
+            // throw new Error(res.info);
             // }
         } finally {
             this.chmodCryptoFolder();
@@ -185,10 +208,10 @@ class FabricStarterClient {
 
     async joinChannel(channelId) {
         logger.info(`Joining channel ${channelId}`);
-        await fabricCLI.downloadOrdererMSP();
+        // await fabricCLI.downloadOrdererMSP();
 
         const tx2_id = this.client.newTransactionID(true);
-        let peers = await this.queryPeers();
+        let peers = [this.peer];//await this.queryPeers();
         let channel = await this.constructChannel(channelId, peers);
         let genesis_block = await channel.getGenesisBlock();//{txId: tx2_id});
         let gen_tx_id = this.client.newTransactionID(true);
@@ -203,55 +226,83 @@ class FabricStarterClient {
         return result;
     }
 
-    async addOrgToChannel(channelId, orgObj) {
+    async addOrgToChannel(channelId, orgObj, certFiles) {
         await this.checkOrgDns(orgObj);
         try {
-            await util.checkRemotePort(`peer0.${orgObj.orgId}.${orgObj.domain || cfg.domain}`, orgObj.peer0Port);
-            let currentChannelConfigFile = fabricCLI.fetchChannelConfig(channelId);
-            let configUpdateRes = await fabricCLI.prepareNewOrgConfig(orgObj);
+            await util.checkRemotePort(cfg.addressFromTemplate(orgObj.peerName || 'peer0', orgObj.orgId, orgObj.domain), orgObj.peer0Port,
+                {from: `addOrgToChannel(${channelId}, ${orgObj})`}); //TODO: , throws: true
+            let currentChannelConfigFile = await fabricCLI.fetchChannelConfig(channelId);
+            let configUpdateRes = await fabricCLI.prepareOrgConfigStruct(orgObj, 'NewOrg.json', {NEWORG_PEER0_PORT: orgObj.peer0Port || cfg.DEFAULT_PEER0PORT}, certFiles);
             let res = await channelManager.applyConfigToChannel(channelId, currentChannelConfigFile, configUpdateRes, this.client);
             this.chmodCryptoFolder();
             return res;
         } catch (e) {
-            return e;
+            logger.error(e)
+            throw e;
         } finally {
             this.invalidateChannelsCache(channelId);
         }
     }
 
-    async addOrgToConsortium(orgObj, consortiumName) {
+    async addOrgToConsortium(orgObj, consortiumName, certFiles) {
         await this.checkOrgDns(orgObj);
-        let currentChannelConfigFile = fabricCLI.fetchChannelConfig(cfg.systemChannelId, certsManager.getOrdererMSPEnv());
-        let configUpdateRes = await fabricCLI.prepareNewConsortiumConfig(orgObj, consortiumName);
-        return channelManager.applyConfigToChannel(cfg.systemChannelId, currentChannelConfigFile, configUpdateRes, this.ordererClient, IS_ADMIN);
+        let currentChannelConfigFile = await fabricCLI.fetchChannelConfig(cfg.systemChannelId, certsManager.getOrdererMSPEnv());
+        let configUpdateRes = await fabricCLI.prepareOrgConfigStruct(orgObj, 'Consortium.json', {CONSORTIUM_NAME: consortiumName || cfg.DEFAULT_CONSORTIUM}, certFiles);
+        try {
+            let ordererClient = await this.initOrdererClient();
+            return channelManager.applyConfigToChannel(cfg.systemChannelId, currentChannelConfigFile, configUpdateRes, ordererClient, IS_ADMIN);
+        } catch (err) {
+            throw new Error("There is no Orderer on this node. Consortium cannot be updated.")
+        }
+
+    }
+
+    async initOrdererClient() {
+        try {
+            const ordererClient = Client.loadFromConfig(networkConfigProvider(cfg.cas)); //this.networkConfig);
+            await ordererClient.initCredentialStores();
+            ordererClient.setAdminSigningIdentity(
+                util.loadPemFromFile(certsManager.getPrivateKeyFilePath()),
+                util.loadPemFromFile(certsManager.getSignCertPath()),
+                cfg.ordererMspId
+            );
+            return ordererClient
+        } catch (err) {
+            logger.info("No orderer on host", err)
+        }
     }
 
     async getConsortiumMemberList(consortiumName = 'SampleConsortium') {
+        logger.debug("About to get consortium members list")
         let result = [];
-        try {
-            // let channel = await (this.client.getChannel(cfg.systemChannelId, false) || this.constructChannel(cfg.systemChannelId));
-            // let sysChannelConfig = await channel.getChannelConfigFromOrderer();
-            let channelConfigBlock = fabricCLI.fetchChannelConfig(cfg.systemChannelId, certsManager.getOrdererMSPEnv());
-            let channelGroupConfig = await fabricCLI.translateChannelConfig(channelConfigBlock);
-            logger.debug(channelGroupConfig);
-            // let consortium = _.get(sysChannelConfig, "config.channel_group.groups.map.Consortiums");
-            // let participants = _.get(consortium, 'value.groups.map.SampleConsortium.value.groups.map');
-            let consortium = _.get(channelGroupConfig, `channel_group.groups.Consortiums.groups.${consortiumName}`);
-            let participants = _.get(consortium, 'groups');
-            // return util.filterOrderersOut(participants);
-            result = _.filter(_.keys(participants), name => {
-                return !(_.startsWith(name, "Orderer") || _.startsWith(name, "orderer"));
-            });
-        } catch (err) {
-            logger.debug("Not enough permissions to access Consortium");
-        }
-        return result;
+        return new Promise(async (resolve, reject) => {
+            try {
+                // let channel = await (this.client.getChannel(cfg.systemChannelId, false) || this.constructChannel(cfg.systemChannelId));
+                // let sysChannelConfig = await channel.getChannelConfigFromOrderer();
+                let channelConfigBlock = await fabricCLI.fetchChannelConfig(cfg.systemChannelId, certsManager.getOrdererMSPEnv());
+                let channelGroupConfig = await fabricCLI.translateChannelConfig(channelConfigBlock);
+                logger.debug(channelGroupConfig);
+                // let consortium = _.get(sysChannelConfig, "config.channel_group.groups.map.Consortiums");
+                // let participants = _.get(consortium, 'value.groups.map.SampleConsortium.value.groups.map');
+                let consortium = _.get(channelGroupConfig, `channel_group.groups.Consortiums.groups.${consortiumName}`);
+                let participants = _.get(consortium, 'groups');
+                // return util.filterOrderersOut(participants);
+                result = _.filter(_.keys(participants), name => {
+                    return !(_.startsWith(name, "Orderer") || _.startsWith(name, "orderer"));
+                });
+                return resolve(result);
+            } catch (err) {
+                logger.debug("Not enough permissions to access Consortium", err);
+                reject(err)
+            }
+
+        })
     }
 
     async checkOrgDns(orgObj) {
         let chaincodeList = await this.queryInstantiatedChaincodes(cfg.DNS_CHANNEL);
-        if (!chaincodeList || !chaincodeList.chaincodes.find(i => i.name === "dns"))
-            return;
+        // if (!chaincodeList || !chaincodeList.chaincodes.find(i => i.name === "dns"))
+        //     return;
         const dns = await this.query(cfg.DNS_CHANNEL, cfg.DNS_CHAINCODE, "get", '["dns"]', {targets: []});
         try {
             // let dnsRecordsList = dns && dns.length && JSON.parse(dns[0]);
@@ -259,29 +310,33 @@ class FabricStarterClient {
             const orgId = _.get(orgObj, "orgId");
             const orgIp = _.get(orgObj, "orgIp");
 
-            if (orgIp){
+            if (orgIp) {
                 await this.invoke(cfg.DNS_CHANNEL, cfg.DNS_CHAINCODE, "registerOrg", [JSON.stringify(orgObj)], {targets: []}, true)
                     .then(() => util.sleep(cfg.DNS_UPDATE_TIMEOUT));
+                await localDns.updateLocalDnsStorageFromChaincode(this)
             }
         } catch (e) {
-            logger.warn("Unparseable", dns);
+            logger.warn("Error on dns info:", dns, e);
         }
     }
+
     async constructChannel(channelId, optionalPeer) {
         let channel = this.client.getChannel(channelId, false);
         if (!channel) {
             channel = this.client.newChannel(channelId);
             channel.addOrderer(this.client.getOrderer(cfg.ORDERER_ADDR)); //this.createOrderer());
             try {
-                optionalPeer = optionalPeer || await this.queryPeers();
+                if (optionalPeer) { //TODO: seems unnecessary code
+                    optionalPeer = optionalPeer || await this.queryPeers();
 
-                if (_.isArray(optionalPeer)) {
-                    optionalPeer = _.find(optionalPeer, p => _.startsWith(p.getName(), "peer0")) || optionalPeer[0];
+                    if (_.isArray(optionalPeer)) {
+                        optionalPeer = _.find(optionalPeer, p => _.startsWith(p.getName(), "peer0")) || optionalPeer[0];
+                    }
+
+                    channel.addPeer(optionalPeer);
                 }
-
-                channel.addPeer(optionalPeer);
             } catch (e) {
-                logger.warn(`Error adding peer ${optionalPeer} to channel ${channelId}`);
+                logger.warn(`Error adding peer ${optionalPeer} to channel ${channelId}`, e);
             }
         }
         return channel;
@@ -321,30 +376,41 @@ class FabricStarterClient {
         //const channelEventHub = channel.getChannelEventHub(this.peer.getName());
         const channelEventHub = channel.newChannelEventHub(this.peer.getName());
         // const channelEventHub = channel.getChannelEventHubsForOrg()[0];
-        channelEventHub.connect(options);
+        channelEventHub.connect(options, (err, data)=>{
+            err && logger.error(`Error at connection to ChannelEventHub: ${channel}`, err)
+        });
         return channelEventHub;
     }
 
-    async installChaincode(chaincodeId, chaincodePath, version, language, storage) {
+    async installChaincodeOld(chaincodeId, chaincodePath, version, language, baseDir) {
         const peer = this.peer;
         const client = this.client;
         let fsClient = this;
         return new Promise((resolve, reject) => {
-            fs.createReadStream(chaincodePath).pipe(unzip.Extract({path: language === 'golang' ? '/opt/gopath/src' : storage}))
+            fs.createReadStream(chaincodePath).pipe(unzip.Extract({path: language === 'golang' ? '/opt/gopath/src' : baseDir}))
                 .on('close', async function () {
                     try {
                         fs.unlinkSync(chaincodePath);
                     } catch (e) {
                         logger.warn("Deleting temp file failed: ", e)
                     }
-                    let fullChaincodePath = path.resolve(__dirname, `${storage}/${chaincodeId}`);
-                    const proposal = {
+
+                    let fullChaincodePath = path.resolve(__dirname, baseDir, chaincodeId);
+                    /*
+                                        const chaincodePackageFile = fabricCLI.packageChaincodeWithInstantiationPolicy(chaincodeId, fullChaincodePath, version, language)
+                                        const proposal = {
+                                            targets: peer,
+                                            chaincodePackage: fs.readFileSync(chaincodePackageFile)
+                                        }
+                    */
+                    let proposal = {
                         targets: peer,
                         chaincodeId: chaincodeId,
                         chaincodePath: language === 'golang' ? chaincodeId : fullChaincodePath,
                         chaincodeVersion: version || '1.0',
                         chaincodeType: language || 'node',
                     };
+
                     try {
                         const result = await client.installChaincode(proposal);
                         fsClient.errorCheck(result);
@@ -355,6 +421,39 @@ class FabricStarterClient {
                         return reject(e);
                     }
                 });
+        });
+    }
+
+
+    async installChaincode(chaincodeId, chaincodePath, version, language) {
+        let that = this;
+        return new Promise(async (resolve, reject) => {
+
+            // let chaincodePath = language === 'golang' ? chaincodeId : path.resolve(/*__dirname,*/ chaincodePath, chaincodeId);
+            /*
+                                const chaincodePackageFile = fabricCLI.packageChaincodeWithInstantiationPolicy(chaincodeId, fullChaincodePath, version, language)
+                                const proposal = {
+                                    targets: peer,
+                                    chaincodePackage: fs.readFileSync(chaincodePackageFile)
+                                }
+            */
+            let proposal = {
+                targets: that.peer,
+                chaincodeId: chaincodeId,
+                chaincodePath: /*language === 'golang' ? chaincodeId :*/ chaincodePath,
+                chaincodeVersion: version || '1.0',
+                chaincodeType: language || 'node',
+            };
+
+            try {
+                const result = await that.client.installChaincode(proposal);
+                that.errorCheck(result);
+                let msg = `Chaincode ${chaincodeId}:${version} successfully installed`;
+                logger.info(msg);
+                resolve(msg);
+            } catch (e) {
+                return reject(e);
+            }
         });
     }
 
@@ -484,14 +583,15 @@ class FabricStarterClient {
         } else {
             proposal.targets = [this.peer];
         }
-        logger.debug("Proposal", proposal);
+        const logArgs = _.map(proposal.args, a => _.toString(a).substring(0, 250) + (_.size(a) > 250 ? ' ...' : ''))
+        logger.debug("Proposal", ({...proposal, args: logArgs}))
 
-        return await util.retryOperation(cfg.INVOKE_RETRY_COUNT, async function () {
+        return await util.retryOperation(cfg.INVOKE_RETRY_COUNT, cfg.CHANNEL_LISTENER_UPDATE_TIMEOUT, async function () {
             const txId = fsClient.client.newTransactionID(/*true*/);
 
             proposal.txId = txId;
 
-            logger.trace('invoke proposal', proposal);
+            // logger.trace('invoke proposal', proposal.chaincodeId, proposal.fcn, proposal.args,);
             let proposalResponse;
             try {
                 proposalResponse = await channel.sendTransactionProposal(proposal);
@@ -539,34 +639,50 @@ class FabricStarterClient {
                 const msg = `timed out waiting for transaction ${id} after ${timeout}`;
                 logger.error(msg);
                 reject(new Error(msg));
+                // resolve({txid:id, msg: msg});
             }, timeout);
         });
 
-        const channelEventHub = this.getChannelEventHub(channel);
+        let channelEventHub;
 
         const eventPromise = new Promise((resolve, reject) => {
             logger.trace(`registerTxEvent ${id}`);
-
-            channelEventHub.registerTxEvent(id, (txid, status, blockNumber) => {
-                logger.debug(`committed transaction ${txid} as ${status} in block ${blockNumber}`);
-                resolve({txid: txid, status: status, blockNumber: blockNumber});
-            }, (e) => {
-                logger.error(`registerTxEvent ${e}`);
-                reject(new Error(e));
-            });
+            if (!cfg.DISABLE_TX_ID_LISTENER) { //TODO: refactor
+                channelEventHub = this.getChannelEventHub(channel);
+                channelEventHub.registerTxEvent(id, (txid, status, blockNumber) => {
+                    logger.debug(`committed transaction ${txid} as ${status} in block ${blockNumber}`);
+                    resolve({txid: txid, status: status, blockNumber: blockNumber});
+                }, (e) => {
+                    logger.error(`registerTxEvent ${e}`);
+                    reject(new Error(e));
+                });
+            } else {
+                this.txEventQueue.waitForTransaction(id,resolve)
+            }
         });
 
         const racePromise = Promise.race([eventPromise, timeoutPromise]);
 
         racePromise.catch(() => {
             clearTimeout(timeoutHandle);
-            channelEventHub.disconnect();
+            channelEventHub && channelEventHub.disconnect();
         }).then(() => {
             clearTimeout(timeoutHandle);
-            channelEventHub.disconnect();
+            channelEventHub && channelEventHub.disconnect();
         });
 
         return racePromise;
+    }
+
+    _blockNumber(block){ //TODO: move to Block object
+        return block.number || _.get(block, "header.number");
+    }
+    _transactions(block) {
+        return block.filtered_transactions || _.map(_.get(block, 'data.data'), d=>{
+            const {tx_id, ...rest} = _.get(d,'payload.header.channel_header');
+            const {status, ...rest1} = _.get(d, 'payload.data.actions[0].payload.action.proposal_response_payload.extension.response')
+            return {txid: tx_id, status: status}
+        })
     }
 
     async query(channelId, chaincodeId, fcn, args, targets) {
@@ -715,7 +831,7 @@ class FabricStarterClient {
         let connectionOptions = {
             'ssl-target-name-override': peerUrl,
             //'ssl-target-name-override': 'localhost',
-            pem: util.loadPemFromFile(`${cfg.PEER_CRYPTO_DIR}/peers/${mspSubPath}/msp/tlscacerts/tlsca.${org || cfg.org}.${domain || cfg.domain}-cert.pem`)
+            pem: util.loadPemFromFile(`${cfg.ORG_CRYPTO_DIR}/peers/${mspSubPath}/msp/tlscacerts/tlsca.${org || cfg.org}.${domain || cfg.domain}-cert.pem`)
         };
         return connectionOptions;
     }

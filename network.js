@@ -1,13 +1,11 @@
 const fs = require('fs');
+const _ = require('lodash');
 const cfg = require('./config.js');
 const certsManager = require('./certs-manager');
 
-const t = {
-  name: 'Network',
-  version: '1.0',
-};
 
-function addOrg(t, org) {
+
+function addOrg(t, org, peerName) {
   if(!t.organizations) {
     t.organizations = {};
   }
@@ -15,39 +13,48 @@ function addOrg(t, org) {
     // mspid: `${org}MSP`,
     mspid: `${org}`,
     peers: [
-      `peer0.${org}.${cfg.domain}:${cfg.peer0Port}`
+      // `${cfg.peerName}.${org}.${cfg.domain}:${cfg.peer0Port}`
+      `${peerName}`
     ]
   };
 
     if (org === cfg.org) {
         const mspPath = certsManager.getMSPConfigDirectory(org);
         const keystorePath = `${mspPath}/keystore`;
-        const keystoreFiles = fs.readdirSync(keystorePath);
-        const keyPath = `${keystorePath}/${keystoreFiles[0]}`;
+        try {
+          const keystoreFiles = fs.readdirSync(keystorePath);
+          if (keystoreFiles.length) {
+            const keyPath = `${keystorePath}/${keystoreFiles[0]}`;
+            t.organizations[org].adminPrivateKey = {
+              path: keyPath
+            };
+          }
+        } catch(e) {
+          console.log('Skipping Admin keystore, not exists: ', keystorePath)
+        }
 
         t.organizations[org].certificateAuthorities = [org];
-        t.organizations[org].adminPrivateKey = {
-            path: keyPath
-        };
         t.organizations[org].signedCert = {
             path: `${mspPath}/signcerts/Admin@${cfg.certificationDomain}-cert.pem` //TODO: use certsManager.getSignCertPath()
         };
     }
 }
 
-function addPeer(t, org, i, peerAddress) {
-  if(!t.peers) {
+function addPeer(t, org, i, peerName, peerUrl=null) {
+  if (!t.peers) {
     t.peers = {};
   }
-    const peerName = `peer${i}.${org}.${cfg.domain}:${cfg.peer0Port}`;
-    t.peers[peerName] = {
-    url: `grpcs://${peerAddress}`,
+  // const [peerName, url] = _.split(peerAddress, '=');
+  // const peerName = peerAddress; //`peer${i}.${org}.${cfg.domain}:${cfg.peer0Port}`;
+  const url = `${peerUrl || peerName}`;
+  t.peers[peerName] = {
+    url: `grpcs://${url}`,
     grpcOptions: {
-       'ssl-target-name-override': `peer${i}.${org}.${cfg.domain}`,
+      'ssl-target-name-override': url, //`${cfg.peerName}.${org}.${cfg.domain}`, //`peer${i}.${org}.${cfg.domain}`,
       //'ssl-target-name-override': 'localhost',
     },
     tlsCACerts: {
-      path: `${cfg.PEER_CRYPTO_DIR}/peers/peer${i}.${org}.${cfg.domain}/msp/tlscacerts/tlsca.${org}.${cfg.domain}-cert.pem`//TODO: use certsManager.getTLSxxx
+      path: `${cfg.ORG_CRYPTO_DIR}/peers/${cfg.peerName}.${org}.${cfg.domain}/msp/tlscacerts/tlsca.${org}.${cfg.domain}-cert.pem`//TODO: use certsManager.getTLSxxx
     }
   };
 }
@@ -63,11 +70,11 @@ function addCA(t, org, caAddress) {
       verify: false
     },
     tlsCACerts: {
-      path: `${cfg.PEER_CRYPTO_DIR}/ca/ca.${org}.${cfg.domain}-cert.pem`
+      path: `${cfg.ORG_CRYPTO_DIR}/ca/ca.${org}.${cfg.domain}-cert.pem` //TODO: tlsca?
     },
     registrar: [
       {
-        enrollId: cfg.enrollId,
+        enrollId: cfg.ENROLL_ID,
         enrollSecret: cfg.enrollSecret
       }
     ],
@@ -80,7 +87,14 @@ function envOptionToSetting(envVarName, optionName, normalizeFactor) {
   return process.env[envVarName] && {[optionName]: optionValue};
 }
 
-module.exports = function () {
+module.exports = function (cas, storeSubPath='') {
+  const t = {
+    name: 'Network',
+    version: '1.0',
+  };
+
+  if (!cas) throw new Error("Certificate Authority is not specified")
+
   t.orderers= {
     [`${cfg.ORDERER_ADDR}`]: {
       url: `grpcs://${cfg.ORDERER_ADDR}`,
@@ -94,9 +108,9 @@ module.exports = function () {
   t.client = {
     organization: cfg.org,
     credentialStore: {
-      path: `hfc-kvs/${cfg.org}`,
+      path: `${cfg.TMP_DIR}/hfc-kvs/${cfg.org}${storeSubPath}`,
       cryptoStore: {
-        path: `hfc-cvs/${cfg.org}`
+        path: `${cfg.TMP_DIR}/hfc-cvs/${cfg.org}${storeSubPath}`
       }
     },
     connection: {
@@ -124,21 +138,22 @@ module.exports = function () {
   }
 
   try {
-    cas = JSON.parse(cfg.cas);
+    cas = JSON.parse(cas);
   } catch (e) {
-    cas = JSON.parse('{' + cfg.cas + '}');
+    cas = JSON.parse('{' + cas + '}');
   }
 
-  Object.keys(orgs).forEach(k => {
-    addOrg(t, k);
-    if (!cfg.isOrderer) {
-      addPeer(t, k, 0, orgs[k]);
-    }
+  Object.keys(orgs).forEach(org => {
+    const [peerName, peerUrl] = _.split(orgs[org], '=');
+    addOrg(t, org, peerName);
+    // if (!cfg.isOrderer) {
+      addPeer(t, org, 0, peerName, peerUrl); //TODO: different peer names are in addOrg and addPeer
+    // }
   });
 
-  if (cfg.isOrderer) {
-    addOrg(t, cfg.ordererName)
-  }
+  // if (cfg.isOrderer) {
+  //   addOrg(t, cfg.ordererName)
+  // }
 
   Object.keys(cas).forEach(k => {
     addCA(t, k, cas[k]);

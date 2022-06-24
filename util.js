@@ -1,49 +1,68 @@
 const fs = require('fs');
+const path = require('path');
 const net = require('net');
 const _ = require('lodash');
-const cfg = require('./config.js');
-const logger = cfg.log4js.getLogger('util');
+const logger = require('./util/log/log4js-configured').getLogger('util')
+const cfg = require('./config')
 
 class Util {
 
-    async checkRemotePort(server, port) {
-        logger.debug(`Check remote port is accessible for: ${server}:${port}`);
+    async checkRemotePort(server, port, options = {throws: true}) {
+        logger.debug(`Check whether remote port is accessible for: ${server}:${port}`, options);
+
         return new Promise(async (resolve, reject) => {
-            let client = net.createConnection({host: server, port: port, timeout: 1000}, ()=>{
-                logger.debug(`Remote port is accessible: ${server}:${port}`);
-                client.end();
-                resolve();
-            });
-            client.on("error", e => {
-                reject(`Endpoint is unreachable: ${server}:${port}. ${e && e.message}`)
-            });
+            if (!cfg.SKIP_CHECK_PORTS_TIMEOUT_SECONDS) {
+                resolveIfTakesLongerThanTimeout(resolve, reject, options);
+                let client = net.createConnection({host: server, port: port}, () => {
+                    logger.debug(`Remote port is accessible: ${server}:${port}`);
+                    client.end();
+                    resolve(true);
+                });
+                client.on("error", e => {
+                    logger.debug(`\nError accessing remote port, ${server}:${port}. Throwing: ${options.throws}\n`, e)
+                    return options.throws
+                        ? reject(`Endpoint is unreachable: ${server}:${port}. ${e && e.message}`)
+                        : resolve(false)
+                });
+            } else {
+                logger.warn(`Skip waiting for peer availability. Waited for ${cfg.SKIP_CHECK_PORTS_TIMEOUT_SECONDS} before continue`)
+                return resolve(true);
+            }
         });
+
+        function resolveIfTakesLongerThanTimeout(resolve, reject, options={}) {
+            setTimeout(() => {
+                return options.throws ? reject(`Timeout checking remote port: ${server}:${port}`) : resolve(false)
+            }, options.timeout || 1000)
+        }
+
     }
 
-    async retryOperation(nTimes, fn) {
+    async retryOperation(nTimes, period, fn) {
         return new Promise(async (resolve, reject) => {
             if (nTimes <= 0) return reject('Retried invocation unsuccessful');
             try {
                 let response = await fn();
                 resolve(response);
-            } catch (err) {
-                logger.trace(`Retry attempt: ${nTimes}. Error: `, err);
-                if (nTimes === 1) {
-                    reject(err);
-                }
-                await this.sleep(cfg.CHANNEL_LISTENER_UPDATE_TIMEOUT);
-                return await this.retryOperation(nTimes - 1, fn);
+            } catch (e) {
+                return reject(e)
+            }
+        }).catch(async (err) => {
+            logger.trace(`Retry attempt: ${nTimes}. Error: `, err);
+            if (nTimes === 1) {
+                throw new Error(err);
+            } else {
+                await this.sleep(period);
+                return await this.retryOperation(nTimes - 1, period, fn);
             }
         });
     }
 
     filterOrderersOut(organizations) {
-        let ordererNames = [cfg.HARDCODED_ORDERER_NAME, `${cfg.HARDCODED_ORDERER_NAME}.${cfg.ORDERER_DOMAIN}`, `${cfg.ordererName}.${cfg.ORDERER_DOMAIN}`];
-        const differenceWith = _.differenceWith(organizations, ordererNames, (org, rejectOrg) => org.id === rejectOrg);
         return _.filter(organizations,
-                o=> !_.includes(_.get(o,'id'), 'orderer')
-                              && !_.includes(_.get(o,'id'), 'osn')
-                              && !_.includes(_.get(o,'id'), 'raft'));
+            o => !_.includes(_.get(o, 'id'), 'orderer')
+                && !_.includes(_.get(o, 'id'), 'osn')
+                && !_.includes(_.get(o, 'id'), 'raft'));
     }
 
     loadPemFromFile(pemFilePath) {
@@ -57,7 +76,7 @@ class Util {
 
 
     convertStringValToMapVal(keyValueMap) {
-        return _.mapValues(keyValueMap, value=>_.keyBy(_.split(value, ' '), v=>v));
+        return _.mapValues(keyValueMap, value => _.keyBy(_.split(value, ' '), v => v));
     }
 
     linesToKeyValueList(currHostsLines) {
@@ -81,11 +100,12 @@ class Util {
         let listMap = this.convertStringValToMapVal(map2);
 
         _.merge(hostsMap, listMap);
-        const result = _.mapValues(hostsMap, valKV=>_.join(_.keys(valKV), ' '));
+        const result = _.mapValues(hostsMap, valKV => _.join(_.keys(valKV), ' '));
         return result;
     }
 
-    writeFile(file, keyValueHostRecords) {
+    writeHostFile(keyValueHostRecords, dir) {
+        const file = path.join(dir, 'hosts')
         if (this.existsAndIsFile(file)) {
             try {
                 const currHostsLines = fs.readFileSync(file, 'utf-8').split('\n');
@@ -119,6 +139,19 @@ class Util {
         }
     }
 
+    splitOutputToMultiline(str) {
+        return _.split(str, '\n')
+    }
+
+    sortAndFilterObjectProps(obj, filterFunc = () => true) {
+        return _.reduce(_.entries(obj).filter(filterFunc).sort(),
+            (res, entry) => {
+                res[entry[0]] = entry[1];
+                return res
+            },
+            {}
+        );
+    }
 
 }
 

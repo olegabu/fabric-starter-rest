@@ -16,20 +16,22 @@ docker-compose -f docker-compose-orderer.yaml -f orderer-ports.yaml up
 
 docker-compose -f docker-compose.yaml -f ports.yaml up
 ```
-Test.
+###Test.
 ```bash
 npm test
 ```
-Develop: run REST server with `nodemon` to reload on changes.
+###Develop
+run REST server with `nodemon` to reload on changes.
 ```bash
 npm run dev
 ```
-Serve. Run REST server.
+###Serve. 
+Run REST server.
 ```bash
 npm start
 ```
-Build docker image.
-First pull latest base rest image:
+### Build docker image.
+1. First pull latest _base_ rest image:
 ```bash
 docker pull olegabu/fabric-starter-rest:latest-base
 ```
@@ -38,10 +40,19 @@ or build if it doesn't exists with `./build-base.sh` (one time for new Hyperledg
 cd docker-images
 ./build-base.sh latest
 ```
-Then build the `fabric-starter-rest` container by using the `./build.sh` script in the `docker-images` folder:
+
+1. Build desired (custom or fabric-starter's) admin webapp, pack as `admin-webapp.tgz` and copy to the `fabric-starter-rest` dir
+```bash
+pushd ../fabric-starter-admin-webapp
+./pack-admin-webapp.sh
+popd
+```
+  
+
+2. Then build the `fabric-starter-rest` container by using the `./build.sh` script in the `docker-images` folder:
 ```bash
 cd docker-images
-./build.sh latest
+./build.sh latest olegabu docker.io admin-webapp.tgz
 ```
 or manually:
 ```bash
@@ -51,7 +62,7 @@ docker build -t olegabu/fabric-starter-rest --build-arg FABRIC_STARTER_VERSION=l
 ```
 
 
-#### Use Custom (external) admin dashboard.
+### Use Custom (external) admin dashboard.
 
 Prepare `admin-webapp.tgz` file with built alternate admin webapp, and copy it to `fabric-starter-rest` folder 
 ```bash
@@ -61,11 +72,11 @@ tar -zcvf admin-webapp.tgz ./build
 cp admin-webapp.tgz ../fabric-starter-rest
 ```
 
-Set `USE_EXTERNAL_ADMIN_WEBAPP=true` and use`./build.sh` script from the docker-images folder:
+Use`./build.sh` script from the docker-images folder:
       
 ```bash
 cd docker-images
-USE_EXTERNAL_ADMIN_WEBAPP=true ./build.sh latest
+./build.sh latest olegabu docker.io admin-webapp.tgz
 ```
 
 # Connection options
@@ -98,3 +109,11 @@ GRPC_MIN_TIME_BETWEEN_PINGS_MS| 300000 (5 minutes)|_Fabric-starter-rest_ resets 
 
 `snapshot-0.1-1.4`:  
 - Tag stable version
+
+
+
+
+
+
+
+peer chaincode package -n reference -v 3.0 -l node -p crypto-config/reference -i "AND('org1.admin')" -s -S crypto-config/pack.cc

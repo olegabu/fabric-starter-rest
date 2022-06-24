@@ -3,14 +3,16 @@
 FABRIC_STARTER_VERSION=${1:-${FABRIC_STARTER_VERSION:-latest}}
 FABRIC_STARTER_REPOSITORY=${2:-${FABRIC_STARTER_REPOSITORY:-olegabu}}
 DOCKER_REGISTRY=${3:-docker.io}
-
 EXTERNAL_ADMIN_WEBAPP_TGZ=${4:-${EXTERNAL_ADMIN_WEBAPP_TGZ}}
+cached=${5-"--no-cache"}
+
+
 [ -n "${EXTERNAL_ADMIN_WEBAPP_TGZ}" ] && USE_EXTERNAL_ADMIN_WEBAPP=true
 
-echo "Using custom admin webapp: ${CUSTOM_ADMIN_WEBAPP}. Set CUSTOM_ADMIN_WEBAPP=true\false to adjust"
+echo "Using custom admin webapp: ${EXTERNAL_ADMIN_WEBAPP_TGZ}."
 pushd ..
 
-docker pull ${DOCKER_REGISTRY}/${FABRIC_STARTER_REPOSITORY}/fabric-starter-rest:${FABRIC_STARTER_VERSION}-base || true
+#docker pull ${DOCKER_REGISTRY}/${FABRIC_STARTER_REPOSITORY}/fabric-starter-rest:${FABRIC_STARTER_VERSION}-base || true
 
 docker build -t ${DOCKER_REGISTRY}/${FABRIC_STARTER_REPOSITORY}/fabric-starter-rest:${FABRIC_STARTER_VERSION}  \
   --build-arg="DOCKER_REGISTRY=${DOCKER_REGISTRY}" --build-arg="FABRIC_STARTER_VERSION=${FABRIC_STARTER_VERSION}" \
@@ -18,6 +20,6 @@ docker build -t ${DOCKER_REGISTRY}/${FABRIC_STARTER_REPOSITORY}/fabric-starter-r
   --build-arg="USE_EXTERNAL_ADMIN_WEBAPP=${USE_EXTERNAL_ADMIN_WEBAPP}" \
   --build-arg="EXTERNAL_ADMIN_WEBAPP_TGZ=${EXTERNAL_ADMIN_WEBAPP_TGZ}" \
   -f Dockerfile .  \
-  --no-cache
+  ${cached}
 
 popd

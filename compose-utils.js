@@ -11,10 +11,10 @@ class ComposeUtils {
         const ordererName = _.get(config, 'ORDERER_NAME', cfg.HARDCODED_ORDERER_NAME);
         const commonEnv = _.assign({}, process.env, {
             ORDERER_NAME: ordererName,
-            ORDERER_DOMAIN: _.get(config, 'ORDERER_DOMAIN', cfg.domain),
+            ORDERER_DOMAIN: _.get(config, 'ordererDomain', cfg.domain),
             WWW_PORT: _.get(config, 'WWW_PORT', "80"),
             RAFT_NODES_COUNT: _.get(config, 'RAFT_NODES_COUNT', "3"),
-            COMPOSE_PROJECT_NAME: `${ordererName}.${config.ORDERER_DOMAIN}`,
+            COMPOSE_PROJECT_NAME: `${ordererName}.${config.ordererDomain}`,
             ORDERER_GENERAL_LISTENPORT: _.get(config, 'ORDERER_PORT', '7050'),
         });
 
