@@ -3,7 +3,6 @@ const _ = require('lodash');
 const log4jsConfigured = require('./util/log/log4js-configured');
 const logger = log4jsConfigured.getLogger('config.js');
 
-// const gostConfig=require('./gost-deps/crypto-suit-config');
 
 let cryptoConfigPath = fs.realpathSync(process.env.CRYPTO_CONFIG_DIR || '../fabric-starter/crypto-config');
 logger.info(`Crypto-config path: ${cryptoConfigPath}`);

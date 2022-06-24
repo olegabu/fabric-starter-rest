@@ -12,5 +12,6 @@ pushd ..
 docker build -t ${DOCKER_REGISTRY}/${FABRIC_STARTER_REPOSITORY}/fabric-starter-rest:${FABRIC_STARTER_VERSION}-base  \
   --build-arg="DOCKER_REGISTRY=${DOCKER_REGISTRY}" --build-arg="FABRIC_STARTER_VERSION=${FABRIC_STARTER_VERSION}" \
   --build-arg="FABRIC_STARTER_REPOSITORY=${FABRIC_STARTER_REPOSITORY}" \
+  --no-cache \
   -f docker-images/pre-build.dockerfile .
 popd
