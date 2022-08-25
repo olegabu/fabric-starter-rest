@@ -13,6 +13,10 @@ class Fabric1xAdapter {
         this.fabricStarterRuntime = fabricStarterRuntime
     }
 
+    async getInstalledChaincodes() {
+        return this.fabricStarterRuntime.getDefaultFabricStarterClient().queryInstalledChaincodes();
+    }
+
     async getInstantiatedChaincodes(channelId) {
         return await this.fabricStarterRuntime.getDefaultFabricStarterClient()
             .queryInstantiatedChaincodes(channelId)
