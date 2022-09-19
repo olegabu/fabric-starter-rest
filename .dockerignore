@@ -14,5 +14,11 @@ examples/
 webapps/*
 bin/
 
+**/__tests__
 **/__test__
 node-config*.json
+gost-deps/
+*.tgz
+*.zip
+*.log
+!admin-webapp.tgz
