@@ -8,10 +8,9 @@ const logger = cfg.log4js.getLogger('ChannelManager');
 
 class ChannelManager {
 
-    async joinChannel(channelId, fabricStarterClient, socketServer) {
+    async joinChannel(channelId, fabricStarterClient) {
         try {
             const ret = await fabricStarterClient.joinChannel(channelId);
-            // await socketServer.registerChannelChainblockListener(channelId);
             return ret;
         } catch(error) {
             logger.error("Error joining channel", error.message);
@@ -20,7 +19,7 @@ class ChannelManager {
     }
 
     async applyConfigToChannel(channelId, currentChannelConfigFile, configUpdateRes, fabricClient, admin) {
-        await fabricCLI.downloadOrdererMSP();
+        // await fabricCLI.downloadOrdererMSP(); //todo: try/catch ?
         let channelGroupConfig = await fabricCLI.translateChannelConfig(currentChannelConfigFile);
         logger.debug(`Got channel config ${channelId}:`, channelGroupConfig);
 
@@ -34,7 +33,7 @@ class ChannelManager {
             }
 
             logger.debug(`Channel updated config ${channelId}:`, updatedConfig);
-            let configUpdate = fabricCLI.computeChannelConfigUpdate(channelId, channelGroupConfig, updatedConfig);
+            let configUpdate = await fabricCLI.computeChannelConfigUpdate(channelId, channelGroupConfig, updatedConfig);
             logger.debug(`Got updated envelope ${channelId}:`, _.toString(configUpdate));
             const txId = fabricClient.newTransactionID(admin);
 

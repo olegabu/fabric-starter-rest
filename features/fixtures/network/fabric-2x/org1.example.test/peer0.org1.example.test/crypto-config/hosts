@@ -1,0 +1,5 @@
+# replaced by writeFile  
+# replaced by writeFile
+172.17.0.1 second-peer-ip-addr
+ 
+172.172.0.1 orderer.example.test www.example.test www.orderer.example.test www.org1.example.test peer0.org1.example.test

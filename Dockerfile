@@ -11,11 +11,9 @@ LABEL MAINTAINER=olegabu
 
 ## install dependencies
 COPY "package.json" .
-#COPY gost-deps/crypto-gost/package.json ./gost-deps/crypto-gost/
-#COPY gost-deps/fabric-client/package.json ./gost-deps/fabric-client/
-#COPY gost-deps/fabric-cryptosuite-gost/package.json ./gost-deps/fabric-cryptosuite-gost/
+COPY "package-lock.json" .
 
-RUN npm install  && npm cache rm --force && apt-get remove -y make python && apt-get purge
+RUN npm install && npm cache rm --force && apt-get remove -y make python && apt-get purge
 #&& npm rebuild
 
 # add project files (see .dockerignore for a list of excluded files)
@@ -40,9 +38,15 @@ RUN if [ -d "/external-admin" ]; then \
     fi;
 
 COPY --from=fabrictools /etc/hyperledger/templates /usr/src/app/templates
+# TODO: use single palce
+COPY --from=fabrictools /etc/hyperledger/templates /etc/hyperledger/templates
 COPY --from=fabrictools /etc/hyperledger/container-scripts /usr/src/app/container-scripts
-COPY --from=fabrictools /etc/hyperledger/docker-compose*.yaml /usr/src/app/
-COPY --from=fabrictools /usr/src/app/routes/* /usr/src/app/routes/
+COPY --from=fabrictools /etc/hyperledger/container-scripts /etc/hyperledger/container-scripts
+#COPY --from=fabrictools /etc/hyperledger/docker-compose*.yaml /usr/src/app/
+COPY --from=fabrictools /etc/hyperledger/docker-compose*.yaml /etc/hyperledger/
+COPY --from=fabrictools /etc/hyperledger/raft /etc/hyperledger/raft
+COPY --from=fabrictools /etc/hyperledger/https /etc/hyperledger/https
+COPY --from=fabrictools /etc/hyperledger/ordering-start.sh /etc/hyperledger/
 
 
 EXPOSE 3000

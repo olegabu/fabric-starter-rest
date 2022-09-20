@@ -33,7 +33,7 @@ bower_components
 build/Release
 
 # Dependency directories
-node_modules/
+**/node_modules/
 jspm_packages/
 
 # TypeScript v1 declaration files
@@ -54,8 +54,13 @@ typings/
 # Yarn Integrity file
 .yarn-integrity
 
+**/.DS_Store
+
 # dotenv environment variables file
-.env
+features/node-components/peer-component/.env
+features/fixtures/network/fabric-*/org1.example.test/peer0.org1.example.test/ledger
+features/fixtures/network/fabric-*/org1.example.test/peer0.org1.example.test/crypto-config
+features/fixtures/network/fabric-*/org1.example.test/peer2.org1.example.test/crypto-config
 
 # next.js build output
 .next
@@ -64,11 +69,13 @@ hfc-*
 
 .idea
 
-package-lock.json
+#package-lock.json
 webapp/scripts
 webapp/src
 ./upload
 appstore/*
-!appstore/.keep
+appstore/.keep
 custom-sources.tgz
 /webapps/
+
+node-config.json

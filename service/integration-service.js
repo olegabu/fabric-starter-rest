@@ -1,23 +1,15 @@
+const fs = require('fs-extra');
+const path = require('path');
 const _ = require('lodash');
 const cfg = require('../config');
-const FabricStarterClient = require('../fabric-starter-client');
+const log4jsConfigured = require('../util/log/log4js-configured');
+const logger = log4jsConfigured.getLogger('IntegrationService');
 const osnManager = require('../osn-manager');
-const logger = cfg.log4js.getLogger('IntegrationManager');
-
-
-async function createDefaultFabricClient() {
-    let client = new FabricStarterClient();
-    await client.init();
-    await client.loginOrRegister(cfg.enrollId, cfg.enrollSecret);
-    return client;
-}
-
-const defaultClientPromise = createDefaultFabricClient();
 
 class IntegrationService {
 
-
-    constructor() {
+    constructor(fabricStarterRuntime, app) {
+        this.fabricStarterRuntime = fabricStarterRuntime
         this.orgsToAccept = {};
     }
 
@@ -31,20 +23,30 @@ class IntegrationService {
         return _.map(this.orgsToAccept, e => e);
     }
 
-    async integrateOrderer(orderer) {
+    async integrateOrderer(orderer, certFiles) {
+        if (_.isEqual(orderer.domain, cfg.ordererDomain)) {
+            throw new Error(`\nConsenter with ${cfg.ordererDomain} should already be integrated\n`)
+        }
         const allowedOrg = await this.checkOrgIsAllowed(orderer);
         logger.debug("integrateOrderer accepting:", allowedOrg);
         const defaultClient = await this.getDefaultClient();
-        const result = await osnManager.OsnManager.addRaftConsenter(orderer, defaultClient);
+        const stream = await osnManager.OsnManager.addRaftConsenter(orderer, defaultClient, certFiles);
         allowedOrg.ordererJoined = true;
-        return result;
+        return stream;
     }
 
-    async integrateOrg(org) {
+    async integrateOrg(org, certFiles) {
+        if (_.isEqual(org.orgId, cfg.org)) {
+            throw new Error(`\nOrg ${org.orgId}.${cfg.domain} should already be in the network\n`)
+        }
         const allowedOrg = await this.checkOrgIsAllowed(org);
         logger.debug("integrateOrg accepting:", allowedOrg);
+        // await fs.emptyDir(path.join(cfg.TMP_DIR, 'peerOrganizations'));
+        // await async.everySeries(certFiles, async certFile => {
+        //     await mspManager.unpackMsp(certFile, cfg.TMP_DIR);
+        // })
         const defaultClient = await this.getDefaultClient();
-        const result = defaultClient.addOrgToChannel(cfg.DNS_CHANNEL, org);
+        const result = await defaultClient.addOrgToChannel(cfg.DNS_CHANNEL, org, certFiles);
         allowedOrg.joined = true;
         return result;
     }
@@ -58,8 +60,8 @@ class IntegrationService {
     async checkOrgIsAllowed(org) {
         const allowedOrg = this.orgsToAccept[org.orgId];
         logger.info("Check org is in accepted:", allowedOrg, "ACCEPT_ALL_ORGS:", cfg.ACCEPT_ALL_ORGS);
-        if (cfg.ACCEPT_ALL_ORGS ||
-            (allowedOrg && !allowedOrg.joined
+        if ((cfg.ACCEPT_ALL_ORGS && _.isEmpty(this.orgsToAccept))
+            || (allowedOrg && !allowedOrg.joined
                 && org.orgIp == allowedOrg.orgIp
                 && org.domain == allowedOrg.domain
                 && org.tlsCert == allowedOrg.tlsCert)) {
@@ -72,11 +74,10 @@ class IntegrationService {
     }
 
     async getDefaultClient() {
-        return await defaultClientPromise;
+        return this.fabricStarterRuntime.getDefaultFabricStarterClient()
     }
 }
 
-
-module.exports = new IntegrationService();
+module.exports = IntegrationService
 
 

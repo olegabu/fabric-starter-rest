@@ -8,16 +8,17 @@
     const logger = cfg.log4js.getLogger('AppManager');
     const archives = require('./service/archive-manager');
     const fabricCLI = require('./fabric-cli');
+    const fileUtils = require('./util/fileUtils')
 
     class AppManager {
 
         async provisionWebApp(fileObj) {
+            let baseFileName = fileUtils.getFileBaseName(_.get(fileObj, 'originalname'));
+            const appFolderPath = path.join(cfg.WEBAPPS_DIR, baseFileName);
 
-            return archives.extract(fileObj.path, fileObj.originalname, cfg.WEBAPPS_DIR)
+            return archives.extract(fileObj.path, fileObj.originalname, cfg.WEBAPPS_DIR, true)
                 .then(() => {
-                    const fileBaseName = this.getFileBaseName(fileObj);
-                    let appFolder = path.resolve(cfg.WEBAPPS_DIR, fileBaseName);
-                    return {context: fileBaseName, folder: appFolder};
+                    return {context: baseFileName, folder: appFolderPath};
                 });
         }
 
@@ -30,14 +31,13 @@
         }
 
         async provisionMiddleware(fileObj) {
-            const readStream = fse.createReadStream(fileObj.path);
             const extractPath = cfg.MIDDLWARE_DIR;
-            if (!fse.existsSync(cfg.MIDDLWARE_DIR)) {
-                fse.mkdir(cfg.MIDDLWARE_DIR);
+            if (!fse.existsSync(extractPath)) {
+                fse.mkdir(extractPath);
             }
 
             return new Promise((resolve, reject) => {
-                const destFile = path.resolve(cfg.MIDDLWARE_DIR, fileObj.originalname);
+                const destFile = path.resolve(extractPath, fileObj.originalname);
                 fse.copyFile(fileObj.path, destFile, err => {
                     return err ? reject(err) : resolve(destFile);
                 });
@@ -57,33 +57,37 @@
             expressApp.use(`/${cfg.WEBAPPS_DIR}/${appContext}`, express.static(appFolder));
         }
 
-        async redeployAllAppstoreApps(expressApp){
+        async redeployAllAppstoreApps(expressApp) {
             let appsCfgs = await this.loadAppStoreConfig();
-            _.each(appsCfgs, cfg=>{
+            _.each(appsCfgs, cfg => {
                 this.deployAppstoreApp(cfg.name, cfg.folder, cfg.port);
             })
         }
 
 
         async provisionAppstoreApp(expressApp, fileObj) {
-            let baseFileName = this.getFileBaseName(fileObj);
-            const appFolderPath = path.join(cfg.APPSTORE_DIR, baseFileName);
-            logger.debug("Provisioning Appstore app", appFolderPath, fileObj);
-            let extractPath = await archives.extract(fileObj.path, fileObj.originalname, appFolderPath);
-            let port = await this.assignPortAndSave(baseFileName, extractPath);
-            return await this.deployAppstoreApp(baseFileName, extractPath, port, expressApp);
+            try {
+                let baseFileName = fileUtils.getFileBaseName(_.get(fileObj, 'originalname'));
+                const appFolderPath = path.join(cfg.APPSTORE_DIR, baseFileName);
+                logger.debug("Provisioning Appstore app", appFolderPath, fileObj);
+                let extractPath = await archives.extract(fileObj.path, fileObj.originalname, appFolderPath, true);
+                let port = await this.assignPortAndSave(baseFileName, extractPath);
+                return await this.deployAppstoreApp(baseFileName, extractPath, port, expressApp);
+            } catch (e) {
+                console.error('Error deploying app:', e)
+                throw e
+            }
         }
 
         async deployAppstoreApp(appName, extractPath, port, app) {
             let result = fabricCLI.execShellCommand("docker-compose up -d --force-recreate", extractPath, {
                 PORT: port
             });
-            logger.debug(result);
-            if (_.get(result, "code") === 0) {
+            if (!result.isError()) {
                 await this.deployWebappIfPresent(extractPath, appName, app);
-                return {error: result.code, output: _.split(result.stdout, '\n')};
+                return result;
             }
-            throw new Error(`Docker-compose up error. Return code: ${result.code}, Console output: ${result.stdout}`);
+            throw new Error(`Docker-compose up error. Return code: ${result.code}, Console output: ${result.output}`);
         }
 
         async assignPortAndSave(appName, extractPath) {
@@ -134,13 +138,6 @@
             const appCfgFile = path.join(cfg.APPSTORE_DIR, "./deployed-apps.cfg");
             return appCfgFile;
         }
-
-
-        getFileBaseName(fileObj) {
-            const fileBaseName = path.basename(fileObj.originalname, path.extname(fileObj.originalname));
-            return fileBaseName;
-        }
-
 
     }
 

@@ -3,8 +3,6 @@ module.exports = async app => {
   const FabricStarterClient = require('../fabric-starter-client');
   const fabricStarterClient = new FabricStarterClient();
 
-  await fabricStarterClient.init();
-
   const channels = await fabricStarterClient.queryChannels();
   logger.info('channels', channels);
 
