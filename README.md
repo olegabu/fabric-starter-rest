@@ -1,4 +1,6 @@
 # fabric-starter-rest
+[![FOSSA Status](https://app.fossa.io/api/projects/git%2Bgithub.com%2Folegabu%2Ffabric-starter-rest.svg?type=shield)](https://app.fossa.io/projects/git%2Bgithub.com%2Folegabu%2Ffabric-starter-rest?ref=badge_shield)
+
 REST API server and client for Hyperledger Fabric built with NodeJS SDK.
 
 See usage examples at 
@@ -111,9 +113,8 @@ GRPC_MIN_TIME_BETWEEN_PINGS_MS| 300000 (5 minutes)|_Fabric-starter-rest_ resets 
 - Tag stable version
 
 
-
-
-
-
-
 peer chaincode package -n reference -v 3.0 -l node -p crypto-config/reference -i "AND('org1.admin')" -s -S crypto-config/pack.cc
+
+## License
+[![FOSSA Status](https://app.fossa.io/api/projects/git%2Bgithub.com%2Folegabu%2Ffabric-starter-rest.svg?type=large)](https://app.fossa.io/projects/git%2Bgithub.com%2Folegabu%2Ffabric-starter-rest?ref=badge_large)
+
