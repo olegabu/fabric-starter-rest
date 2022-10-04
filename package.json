@@ -81,7 +81,7 @@
     "cucumber": "^6.0.5",
     "docker-compose": "^0.23.10",
     "express-swagger-generator": "^1.1.15",
-    "jest": "^25.5.4",
+    "jest": "^29.1.2",
     "mocha": "^7.2.0",
     "nock": "^11.9.1",
     "nodemon": "^1.19.1",
