@@ -1,0 +1,49 @@
+#
+# Copyright . All Rights Reserved.
+#
+version: '3.7'
+
+#networks:
+#  fabric_starter_default:
+#    external: true
+
+services:
+  jar-app:
+    container_name: demo-jar-app.$ORG.$DOMAIN
+    image: openjdk:8-jre
+    environment:
+      - ORG=$ORG
+      - ORDERER_HOST=${ORDERER_NAME}.${ORDERER_DOMAIN}
+      - ORDERER_PORT=${ORDERER_GENERAL_LISTENPORT}
+      - ORDERER_KEY_CRT=/opt/crypto-config/orderers/osn1.$ORG.$DOMAIN/tls/server.crt
+      - PEER_HOST=peer0.$ORG.$DOMAIN
+      - PEER_PORT=${PEER0_PORT}
+#      - PEER_KEY_CRT=/opt/crypto-config/peers/peer0.$ORG.$DOMAIN/tls/server.crt
+      - PEER_DISCOVERY=true
+      - USER_CRT_PATH=/opt/crypto-config/users/admin/admin.crt
+      - USER_KEY_PATH=/opt/crypto-config/users/admin/admin.key
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+      - CNFT_GATE_PORT=8080
+      - ENDORSEMENT_TIMEOUT=3000
+      - QUERYING_INTERVAL=1000
+      - CHANNEL_NAME=service
+      - CNFT_CHAINCODE=cnft
+    volumes:
+      - ${FABRIC_STARTER_HOME:-./}/appstore/demo-jar-app/app:/opt/app
+      - ${FABRIC_STARTER_HOME:-./}/crypto-config/:/opt/crypto-config/
+      - ${FABRIC_STARTER_HOME:-./}/appstore/demo-jar-app/wallet:/opt/cnft/wallet/
+      - /etc/hosts:/etc/hosts
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+    command: java -cp /opt/app/demo-jar-webapp-0.1-jar-with-dependencies.jar com.baeldung.jetty.JettyServer ${JAVA_DEBUG_OPT}
+    ports:
+      - ${PORT:-8080}:8080
+    tty: true
+
+
+networks:
+  default:
+    external: false
+    name: fabric-starter_default

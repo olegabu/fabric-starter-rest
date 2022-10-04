@@ -1,104 +1,242 @@
-const fs=require('fs');
-const log4js = require('log4js');
-log4js.configure({appenders: {stdout: {type: 'stdout'}}, categories: {default: {appenders: ['stdout'], level: 'ALL'}}});
-const logger = log4js.getLogger('config.js');
+const fs = require('fs-extra');
+const _ = require('lodash');
+const log4jsConfigured = require('./util/log/log4js-configured');
+const logger = log4jsConfigured.getLogger('config.js');
 
-const DEFAULT_PEER0PORT = '7051';
-const HARDCODED_ORDERER_NAME = process.env.HARDCODED_ORDERER_NAME || 'orderer';
-
-
-const DOMAIN = process.env.DOMAIN || 'example.com';
-const myorg = process.env.ORG || 'org1';
-const peer0Port = process.env.PEER0_PORT || DEFAULT_PEER0PORT;
-const ordererName = process.env.ORDERER_NAME || 'orderer';
-const ordererDomain = process.env.ORDERER_DOMAIN || process.env.DOMAIN || 'example.com';
-const ordererPort = process.env.ORDERER_GENERAL_LISTENPORT || '7050';
-const ordererNamePrefix = process.env.ORDERER_NAME_PREFIX || 'raft';
-const ordererBatchTimeout = process.env.ORDERER_BATCH_TIMEOUT || '2';
 
 let cryptoConfigPath = fs.realpathSync(process.env.CRYPTO_CONFIG_DIR || '../fabric-starter/crypto-config');
-
 logger.info(`Crypto-config path: ${cryptoConfigPath}`);
 
 const TEMPLATES_DIR = process.env.TEMPLATES_DIR || '/etc/hyperledger/templates';
 const YAMLS_DIR = process.env.YAMLS_DIR || `${TEMPLATES_DIR}/..`;
+const ENROLL_ID = process.env.ENROLL_ID || 'admin';
+const TMP_DIR = process.env.TMP_DIR || cryptoConfigPath;
 
-const enrollId = process.env.ENROLL_ID || 'admin';
-const enrollSecret = process.env.ENROLL_SECRET || 'adminpw';
+const ordererNamePrefix = process.env.ORDERER_NAME_PREFIX || 'raft';
+const ordererBatchTimeout = process.env.ORDERER_BATCH_TIMEOUT || '2';
 
-// default to peer0.org1.example.com:7051 inside docker-compose or export ORGS='{"org1":"peer0.org1.example.com:7051","org2":"peer0.org2.example.com:7051"}'
-let orgs = process.env.ORGS || `"${myorg}":"peer0.${myorg}.${DOMAIN}:${peer0Port}"`;
-let cas = process.env.CAS || `"${myorg}":"ca.${myorg}.${DOMAIN}:7054"`;
+const systemChannelId = process.env.SYSTEM_CHANNEL_ID || "orderer-system-channel";
 
-const ORDERER_CRYPTO_DIR = `${cryptoConfigPath}/ordererOrganizations/${ordererDomain}`;
-const PEER_CRYPTO_DIR = `${cryptoConfigPath}/peerOrganizations/${myorg}.${DOMAIN}`;
+const PEER_CONFIG_FILE = process.env.PEER_CONFIG_FILE || `${TMP_DIR}/node-config${process.env.DEBUG_INSTANCE ? '-' + process.env.DEBUG_INSTANCE : ''}.json`
+logger.info(`PEER_CONFIG_FILE: ${PEER_CONFIG_FILE}`);
 
-const ordererAddr = `${ordererName}.${ordererDomain}:${ordererPort}`;
-const ordererApiPort = process.env.ORDERER_API_PORT || '4500';
-const ordererApiAddr = `api.${ordererDomain}:${ordererApiPort}`;
+const persistedConfig = fs.readJsonSync(PEER_CONFIG_FILE, {throws: false}) || {}
 
-const certificationDomain= /*isOrderer ? */ `${myorg}.${DOMAIN}`;
-
-const systemChannelId = "orderer-system-channel";
+const PEER_ADDRESS_PREFIX_TEMPLATE = process.env.PEER_ADDRESS_PREFIX_TEMPLATE || "${PEER_NAME}."
+//@deprecated
+const PEER_ADDRESS_TEMPLATE = process.env.PEER_ADDRESS_TEMPLATE; // || "${PEER_NAME}.${ORG}.${DOMAIN}" //TODO: deprecated, use PEER_ADDRESS_PREFIX_TEMPLATE
 
 module.exports = {
-    log4js: log4js,
-    domain: DOMAIN,
-    org: myorg,
-
-    enrollId: enrollId,
-    enrollSecret: enrollSecret,
-    orgs: orgs,
-    cas: cas,
-
-    peer0Port: peer0Port,
-    ordererName: ordererName,
-    ORDERER_DOMAIN: ordererDomain,
-    ORDERER_MSPID: `${ordererName}.${ordererDomain}`,
+    log4js:  log4jsConfigured, //TODO: remove from config, use directly
+    systemChannelId: systemChannelId,
+    ENROLL_ID: ENROLL_ID,
     CRYPTO_CONFIG_DIR: cryptoConfigPath,
+    TMP_DIR: TMP_DIR,
     TEMPLATES_DIR: TEMPLATES_DIR,
     YAMLS_DIR: YAMLS_DIR,
-    ORDERER_CRYPTO_DIR: ORDERER_CRYPTO_DIR,
-    ORDERER_TLS_CERT: `${ORDERER_CRYPTO_DIR}/msp/tlscacerts/tlsca.${ordererDomain}-cert.pem`,
-    ORDERER_ADDR: ordererAddr,
-    ORDERER_WWW_PORT: process.env.ORDERER_WWW_PORT || 80,
-    ORDERER_API_ADDR: ordererApiAddr,
-    ordererPort: ordererPort,
-    isOrderer: ordererName == myorg,
+    FABRIC_STARTER_HOME: process.env.FABRIC_STARTER_HOME || process.env.FABRIC_STARTER_PWD || './',
+    FABRIC_VERSION: process.env.FABRIC_VERSION,
+    FABRIC_STARTER_VERSION: process.env.FABRIC_STARTER_VERSION,
     DEFAULT_CONSORTIUM: process.env.DEFAULT_CONSORTIUM || 'SampleConsortium',
-
-    PEER_CRYPTO_DIR: PEER_CRYPTO_DIR,
-
-    certificationDomain: certificationDomain,
-
-    orgCryptoConfigPath: (org) => `${cryptoConfigPath}/peerOrganizations/${org}.${DOMAIN}`,
-
-    systemChannelId: systemChannelId,
+    BOOTSTRAP_SERVICE_URL: process.env.BOOTSTRAP_SERVICE_URL || 'https',
+    BOOTSTRAP_EXTERNAL_PORT: process.env.BOOTSTRAP_EXTERNAL_PORT || '443',
+    API_PORT: process.env.API_PORT || '4000',
 
     USE_SERVICE_DISCOVERY: typeof process.env.USE_SERVICE_DISCOVERY === "undefined" || process.env.USE_SERVICE_DISCOVERY === "true",
     WEBADMIN_DIR: process.env.WEBADMIN_DIR || "./admin",
 
     WEBAPPS_DIR: process.env.WEBAPPS_DIR || "webapps",
     MIDDLWARE_DIR: process.env.MIDDLWARE_DIR || "./routes",
+    APPSTORE_DIR: process.env.APPSTORE_DIR || "./appstore",
 
     UI_LISTEN_BLOCK_OPTS: process.env.UI_LISTEN_BLOCK_OPTS === "true" || process.env.UI_LISTEN_BLOCK_OPTS,
 
     DNS_CHANNEL: process.env.DNS_CHANNEL || "common",
-    DNS_UPDATE_TIMEOUT: process.env.DNS_UPDATE_TIMEOUT ||4000,
-    CHANNEL_LISTENER_UPDATE_TIMEOUT: process.env.CHANNEL_LISTENER_UPDATE_TIMEOUT ||10000,
+    DNS_CHAINCODE: process.env.DNS_CHAINCODE || "dns",
+    DNS_UPDATE_TIMEOUT: process.env.DNS_UPDATE_TIMEOUT || 4000,
+    CHANNEL_LISTENER_UPDATE_TIMEOUT: process.env.CHANNEL_LISTENER_UPDATE_TIMEOUT || 10000,
     CHAINCODE_PROCESSING_TIMEOUT: process.env.CHAINCODE_PROCESSING_TIMEOUT || 120000,
 
-    INVOKE_RETRY_COUNT: process.env.INVOKE_RETRY_COUNT || 3,
+    INVOKE_RETRY_COUNT: process.env.INVOKE_RETRY_COUNT || 1,
     JOIN_RETRY_COUNT: process.env.JOIN_RETRY_COUNT || 10,
     LISTENER_RETRY_COUNT: process.env.LISTENER_RETRY_COUNT || 20,
 
-    RAFT0_PORT: process.env.RAFT0_PORT || ordererPort,
-    RAFT1_PORT: process.env.RAFT1_PORT || ordererPort,
-    RAFT2_PORT: process.env.RAFT2_PORT || ordererPort,
     ORDERER_NAME_PREFIX: ordererNamePrefix,
     ORDERER_BATCH_TIMEOUT: ordererBatchTimeout,
 
-    DEFAULT_PEER0PORT: DEFAULT_PEER0PORT,
-    HARDCODED_ORDERER_NAME: HARDCODED_ORDERER_NAME
+    DEFAULT_PEER0PORT: '7051',
+    HARDCODED_ORDERER_NAME: process.env.HARDCODED_ORDERER_NAME || 'orderer',
 
+    get SDK_API_URL() { return process.env.SDK_API_URL || `http://sdk.${this.org}.${this.domain}:8080`},
+
+    get org() {return persistedConfig.ORG || process.env.ORG || ''},
+
+    setOrg(val) {
+        persistedConfig.ORG = val
+        persistConfig()
+    },
+
+    get domain() {return persistedConfig.DOMAIN || process.env.DOMAIN || 'example.com'},
+
+    setDomain(val) {
+        persistedConfig.DOMAIN = val
+        persistConfig()
+    },
+
+    get internalDomain() {return persistedConfig.INTERNAL_DOMAIN || process.env.INTERNAL_DOMAIN },
+
+    get peerName() {return persistedConfig.PEER_NAME || process.env.PEER_NAME || 'peer0'},
+
+    setPeerName(val) {
+        persistedConfig.PEER_NAME = val
+        persistConfig()
+    },
+
+    get myIp() {return persistedConfig.MY_IP || process.env.MY_IP},
+
+    setMyIp(val) {
+        persistedConfig.MY_IP = val
+        persistConfig()
+    },
+
+    get masterIp() {return persistedConfig.MASTER_IP || process.env.MASTER_IP || this.myIp},
+
+    setMasterIp(val) {
+        persistedConfig.MASTER_IP = val
+        persistConfig()
+    },
+
+    get bootstrapIp() {return persistedConfig.BOOTSTRAP_IP || process.env.BOOTSTRAP_IP},
+
+    setBootstrapIp(val) {
+        persistedConfig.BOOTSTRAP_IP = val
+        persistConfig()
+    },
+
+    get peer0Port() {return persistedConfig.PEER0_PORT || process.env.PEER0_PORT || this.DEFAULT_PEER0PORT},
+
+    setPeer0Port(val) {
+        persistedConfig.PEER0_PORT = val
+        persistConfig()
+    },
+
+    get ordererName() {return persistedConfig.ORDERER_NAME || process.env.ORDERER_NAME || 'orderer';},
+
+    setOrdererName(val) {
+        persistedConfig.ORDERER_NAME = val
+        persistConfig()
+    },
+
+    get ordererDomain() {return persistedConfig.ORDERER_DOMAIN || process.env.ORDERER_DOMAIN || this.domain;},
+
+    setOrdererDomain(val) {
+        persistedConfig.ORDERER_DOMAIN = val
+        persistConfig()
+    },
+
+    get ordererMspId() {return persistedConfig.ORDERER_MSPID || `${this.ordererName}.${this.ordererDomain}`},
+
+    setOrdererMspId(val) {
+        persistedConfig.ORDERER_MSPID = val
+        persistConfig()
+    },
+
+    get ordererPort() {return persistedConfig.ORDERER_PORT || process.env.ORDERER_GENERAL_LISTENPORT || '7050'},
+
+    setOrdererPort(val) {
+        persistedConfig.ORDERER_PORT = val
+        persistConfig()
+    },
+
+    get ORDERER_ADDR() {return persistedConfig.ORDERER_ADDR || `${this.ordererName}.${this.internalDomain || this.ordererDomain}:${this.ordererPort}`},
+
+    setOrdererAddr(val) {
+        persistedConfig.ORDERER_ADDR = val
+        persistConfig()
+    },
+
+    get ordererWwwPort() {return persistedConfig.ORDERER_WWW_PORT || process.env.ORDERER_WWW_PORT || 79},
+
+    setOrdererWwwPort(val) {
+        persistedConfig.ORDERER_WWW_PORT = val
+        persistConfig()
+    },
+
+    get enrollSecret() {return persistedConfig.ENROLL_SECRET || process.env.ENROLL_SECRET || 'adminpw';},
+
+    setEnrollSecret(val) {
+        persistedConfig.ENROLL_SECRET = val
+        persistConfig()
+    },
+
+    get masterCAPort() {return persistedConfig.MASTER_CA_PORT || process.env.MASTER_CA_PORT || '7054'},
+
+    setMasterCAPort(val) {
+        persistedConfig.MASTER_CA_PORT = val
+        persistConfig()
+    },
+
+    get masterTLSCAPort() {return persistedConfig.MASTER_TLSCA_PORT || process.env.MASTER_TLSCA_PORT || '7055'},
+
+    setMasterTLSCAPort(val) {
+        persistedConfig.MASTER_TLSCA_PORT = val
+        persistConfig()
+    },
+
+    get ordererCryptoDir() {return `${cryptoConfigPath}/ordererOrganizations/${this.ordererDomain}` },
+    get ORDERER_TLS_CERT() {return `${this.ordererCryptoDir}/msp/tlscacerts/tlsca.${this.ordererDomain}-cert.pem` },
+
+    get PEER_ADDRESS_PREFIX_TEMPLATE() {return PEER_ADDRESS_PREFIX_TEMPLATE},
+    peerAddressPrefix(peer) {
+        return _.replace(this.PEER_ADDRESS_PREFIX_TEMPLATE, '${PEER_NAME}', peer)
+    },
+
+    addressFromTemplate: (peer, org, domain) =>{
+        const template = PEER_ADDRESS_TEMPLATE ? PEER_ADDRESS_TEMPLATE : `${PEER_ADDRESS_PREFIX_TEMPLATE}\${ORG}.\${DOMAIN}`
+        let result = _.replace(template, '${PEER_NAME}', peer);
+        result = _.replace(result , '${ORG}', org);
+        result = _.replace(result , '${DOMAIN}', domain);
+        return result
+    },
+
+    // default to peer0.org1.example.com:7051 inside docker-compose or export ORGS='{"org1":"peer0.org1.example.com:7051","org2":"peer0.org2.example.com:7051"}'
+    // get orgs() {return process.env.ORGS || `"${this.org}":"${this.peerName}.${this.org}.${this.domain}:${this.peer0Port}"`},
+    get cas() {return process.env.CAS || `"${this.org}":"ca.${this.org}.${this.domain}:${this.masterCAPort}"`},
+    get tlsCas() {return process.env.TLS_CAS || `"${this.org}":"tlsca.${this.org}.${this.domain}:${this.masterTLSCAPort}"`},
+
+    get orgs() {return process.env.ORGS || `"${this.org}":"${this.addressFromTemplate(this.peerName, this.org, this.internalDomain || this.domain)}:${this.peer0Port}"`},
+    // get cas() {return process.env.CAS || `"${this.org}":"${this.corePeerAddress('ca', this.org, this.domain)}:${this.masterCAPort}"`},
+    // get tlsCas() {return process.env.TLS_CAS || `"${this.org}":"${this.corePeerAddress('tlsca', this.org, this.domain)}:${this.masterTLSCAPort}"`},
+
+    get PEEER_ORG_NAME() {return persistedConfig.PEEER_ORG_NAME || process.env.PEEER_ORG_NAME || `${this.peerName}.${this.org}`},
+
+    get ORG_CRYPTO_DIR() {return `${cryptoConfigPath}/peerOrganizations/${this.org}.${this.domain}`},
+
+    get CORE_PEER_LOCALMSPID() {return this.org},
+    get CORE_PEER_MSPCONFIGPATH() {return `${cryptoConfigPath}/peerOrganizations/${this.org}.${this.domain}/users/Admin@${this.org}.${this.domain}/msp`},
+
+    get certificationDomain() { return `${this.org}.${this.domain}`},
+
+    get RAFT0_CONSENTER_PORT(){return process.env.RAFT0_CONSENTER_PORT || this.ordererPort},
+    RAFT1_CONSENTER_PORT: process.env.RAFT1_CONSENTER_PORT || '7150',
+    RAFT2_CONSENTER_PORT: process.env.RAFT2_CONSENTER_PORT || '7250',
+
+    ACCEPT_ALL_ORGS: process.env.ACCEPT_ALL_ORGS !== 'false',
+
+    CUSTOM_APP_PORTS: process.env.CUSTOM_APP_PORTS || '8081-8089',
+
+    AUTH_MODE: process.env.AUTH_MODE || (process.env.CRYPTO_ALGORITHM === 'GOST' ? 'ADMIN' : 'CA'),
+    SIGNATURE_HASH_FAMILY: process.env.SIGNATURE_HASH_FAMILY || (process.env.CRYPTO_ALGORITHM === 'GOST' ? 'SM3' : 'SHA2'),
+    CRYPTO_SUIT_CONFIG: process.env.CRYPTO_ALGORITHM === 'GOST' ? require('./gost-deps/crypto-suit-config') : {},
+
+    AUTH_JWT_EXPIRES_IN: (/^\d+$/.test(process.env.AUTH_JWT_EXPIRES_IN) ? parseInt(process.env.AUTH_JWT_EXPIRES_IN) : process.env.AUTH_JWT_EXPIRES_IN) || '8h',
+    DOCKER_COMPOSE_EXTRA_ARGS: process.env.DOCKER_COMPOSE_EXTRA_ARGS || '',
+    PRIVATE_KEYS_FILTER : '.*\/keystore.*|.*\/sk.pem|.*/\*.key|.*\/priv_sk',
+    SKIP_CHECK_PORTS_TIMEOUT_SECONDS: process.env.SKIP_CHECK_PORTS_TIMEOUT_SECONDS ? process.env.SKIP_CHECK_PORTS_TIMEOUT_SECONDS * 1000 : '',
+    DISABLE_TX_ID_LISTENER: process.env.DISABLE_TX_ID_LISTENER === "true" || process.env.DISABLE_TX_ID_LISTENER,
+    REQUEST_LIMIT: process.env.REQUEST_LIMIT || -1
 };
+
+function persistConfig() {
+    fs.outputJsonSync(PEER_CONFIG_FILE, persistedConfig)
+}

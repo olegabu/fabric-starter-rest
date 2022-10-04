@@ -1,0 +1,849 @@
+openapi: 3.0.0
+info:
+  description: API server for Hyperledger Fabric
+  title: fabric-starter-rest
+  version: FABRIC_STARTER_REST_VERSION=latest
+paths:
+  /users:
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/User"
+        description: User object
+        required: true
+      description: |-
+
+        Login or register user.
+      tags:
+        - users
+      responses:
+        "200":
+          description: User logged in and his JWT returned
+        default:
+          description: Unexpected error
+  /domain:
+    get:
+      description: |-
+
+        Show network name (as defined by DOMAIN env variable at setup time)
+      tags:
+        - config
+      responses:
+        "200":
+          description: DOMAIN
+        default:
+          description: Unexpected error
+  /mspid:
+    get:
+      description: |-
+
+        Show name (MSPID) of my organization
+      tags:
+        - config
+      responses:
+        "200":
+          description: MSPID
+        default:
+          description: Unexpected error
+  /config:
+    get:
+      description: >-
+
+        Network config json to aid debugging; use for development only as it may expose sensitive data
+      tags:
+        - config
+      responses:
+        "200":
+          description: Network config
+        default:
+          description: Unexpected error
+  /chaincodes:
+    get:
+      description: |-
+
+        Query chaincodes installed on the first peer of my organization
+      tags:
+        - chaincodes
+      responses:
+        "200":
+          description: Array of chaincode objects
+        default:
+          description: Unexpected error
+      security:
+        - JWT: []
+    post:
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                channelId:
+                  description: "channel - eg: common"
+                  type: string
+                file:
+                  description: "chaincode source code archived in zip - eg:
+                    chaincode_example02.zip"
+                  type: string
+                  format: binary
+                targets:
+                  description: 'list of peers to install to - eg:
+                    ["peer0.org1.example.com:7051"]'
+                  type: string
+                version:
+                  description: "(default 1.0) - chaincode version - eg: 1.0"
+                  type: string
+                language:
+                  description: "(default node) - chaincode language - eg: golang"
+                  type: string
+              required:
+                - channelId
+                - file
+                - targets
+      description: |-
+
+        Install chaincode
+      tags:
+        - chaincodes
+      responses:
+        "200":
+          description: Chaincode installed
+        default:
+          description: Unexpected error
+      security:
+        - JWT: []
+  /storage/chaincodes:
+    get:
+      description: |-
+
+        Query chaincodes packages saved in a storage and ready for install
+      tags:
+        - chaincodes
+      responses:
+        "200":
+          description: Array of chaincode package objects
+        default:
+          description: Unexpected error
+      security:
+        - JWT: []
+  /chaincodes/external:
+    post:
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                channelId:
+                  description: "channel - eg: common"
+                  type: string
+                version:
+                  description: "(default 1.0) - chaincode version - eg: 1.0"
+                  type: string
+                file:
+                  description: "chaincode source code archived in tar.gz - eg:
+                    chaincode_example02.tar.gz"
+                  type: string
+                  format: binary
+              required:
+                - channelId
+                - file
+      description: |-
+
+        Install chaincode as external service
+      tags:
+        - chaincodes
+      responses:
+        "200":
+          description: Chaincode installed
+        default:
+          description: Unexpected error
+      security:
+        - JWT: []
+  /channels:
+    get:
+      description: |-
+
+        Query channels joined by the first peer of my organization
+      tags:
+        - channels
+      responses:
+        "200":
+          description: Array of channel objects
+        default:
+          description: Unexpected error
+      security:
+        - JWT: []
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Channel"
+        description: Channel object in form {channelId:"channelId"}
+        required: true
+      description: |-
+
+        Create channel and join it
+      tags:
+        - channels
+      responses:
+        "200":
+          description: Channel created
+        default:
+          description: Unexpected error
+      security:
+        - JWT: []
+  "/channels/{channelId}":
+    post:
+      parameters:
+        - name: channelId
+          in: path
+          description: "channel - eg: common"
+          required: true
+          schema:
+            type: string
+      description: |-
+
+        Join channel
+      tags:
+        - channels
+      responses:
+        "200":
+          description: Channel joined
+        default:
+          description: Unexpected error
+      security:
+        - JWT: []
+    get:
+      parameters:
+        - name: channelId
+          in: path
+          description: "channel - eg: common"
+          required: true
+          schema:
+            type: string
+      description: |-
+
+        Query channel info
+      tags:
+        - channels
+      responses:
+        "200":
+          description: Channel block info
+        default:
+          description: Unexpected error
+      security:
+        - JWT: []
+  "/channels/{channelId}/orgs":
+    get:
+      parameters:
+        - name: channelId
+          in: path
+          description: "channel - eg: common"
+          required: true
+          schema:
+            type: string
+        - name: filter
+          in: query
+          description: reject orderer name flag
+          required: true
+          schema:
+            type: boolean
+      description: |-
+
+        Query organizations in a channel
+      tags:
+        - channels
+      responses:
+        "200":
+          description: Array of organization objects with names (MSPIDs)
+        default:
+          description: Unexpected error
+      security:
+        - JWT: []
+    post:
+      parameters:
+        - name: channelId
+          in: path
+          description: "channel - eg: common"
+          required: true
+          schema:
+            type: string
+      requestBody:
+        $ref: "#/components/requestBodies/Organization"
+      description: |-
+
+        Add organization to a channel
+      tags:
+        - channels
+      responses:
+        "200":
+          description: Organization added
+        default:
+          description: Unexpected error
+      security:
+        - JWT: []
+  "/channels/{channelId}/peers":
+    get:
+      parameters:
+        - name: channelId
+          in: path
+          description: "channel - eg: common"
+          required: true
+          schema:
+            type: string
+      description: |-
+
+        Query peers that joined a channel
+      tags:
+        - channels
+      responses:
+        "200":
+          description: Array of peer names
+        default:
+          description: Unexpected error
+      security:
+        - JWT: []
+  "/orgs/{org}/peers":
+    get:
+      parameters:
+        - name: org
+          in: path
+          description: "organization - eg: org1"
+          required: true
+          schema:
+            type: string
+      description: |-
+
+        Query peers of an organization
+      tags:
+        - orgs
+      responses:
+        "200":
+          description: Array of peer objects
+        default:
+          description: Unexpected error
+      security:
+        - JWT: []
+  /network/orgs:
+    get:
+      description: >-
+
+        Get all organizations registered in DNS service (currently matches with common channel orgs, but not necessary in future)
+      tags:
+        - orgs
+      responses:
+        "200":
+          description: Array of organization objects
+        default:
+          description: Unexpected error
+      security:
+        - JWT: []
+  "/channels/{channelId}/blocks/{number}":
+    get:
+      parameters:
+        - name: channelId
+          in: path
+          description: "channel - eg: common"
+          required: true
+          schema:
+            type: string
+        - name: number
+          in: path
+          description: "block number - eg: 1"
+          required: true
+          schema:
+            type: integer
+      description: |-
+
+        Query a given block in a channel
+      tags:
+        - channels
+      responses:
+        "200":
+          description: Block
+        default:
+          description: Unexpected error
+      security:
+        - JWT: []
+  "/channels/{channelId}/transactions/{id}":
+    get:
+      parameters:
+        - name: channelId
+          in: path
+          description: "channel - eg: common"
+          required: true
+          schema:
+            type: string
+        - name: id
+          in: path
+          description: "transaction id - eg: 5e4c57948cf6fe465..."
+          required: true
+          schema:
+            type: string
+      description: |-
+
+        Query a given transaction in a channel
+      tags:
+        - channels
+      responses:
+        "200":
+          description: Transaction
+        default:
+          description: Unexpected error
+      security:
+        - JWT: []
+  "/channels/{channelId}/chaincodes":
+    get:
+      parameters:
+        - name: channelId
+          in: path
+          description: "channel - eg: common"
+          required: true
+          schema:
+            type: string
+      description: |-
+
+        Query chaincodes instantiated on a channel
+      tags:
+        - channels
+      responses:
+        "200":
+          description: Object with an array of chaincodes
+        default:
+          description: Unexpected error
+      security:
+        - JWT: []
+    post:
+      parameters:
+        - name: channelId
+          in: path
+          description: "channel - eg: common"
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Instantiate"
+        description: instantiate request
+        required: true
+      description: |-
+
+        Instantiate chaincode
+      tags:
+        - channels
+      responses:
+        "200":
+          description: Transaction id
+        default:
+          description: Unexpected error
+      security:
+        - JWT: []
+  "/channels/{channelId}/chaincodes/upgrade":
+    post:
+      parameters:
+        - name: channelId
+          in: path
+          description: "channel - eg: common"
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Upgrade"
+        description: upgrade request
+        required: true
+      description: |-
+
+        Upgrade chaincode
+      tags:
+        - channels
+      responses:
+        "200":
+          description: Transaction id
+        default:
+          description: Unexpected error
+      security:
+        - JWT: []
+  "/channels/{channelId}/chaincodes/{chaincodeId}":
+    get:
+      parameters:
+        - name: channelId
+          in: path
+          description: "channel - eg: common"
+          required: true
+          schema:
+            type: string
+        - name: chaincodeId
+          in: path
+          description: "channel - eg: reference"
+          required: true
+          schema:
+            type: string
+        - name: fcn
+          in: query
+          description: "chaincode function name - eg: list"
+          required: true
+          schema:
+            type: string
+        - name: args
+          in: query
+          description: 'string encoded arguments to chaincode function - eg: ["account"]'
+          required: true
+          schema:
+            type: string
+        - name: targets
+          in: query
+          description: 'list of peers to query - eg: ["peer0.org1.example.com:7051"]'
+          required: false
+          schema:
+            type: string
+        - name: unescape
+          in: query
+          description: return not array of strings but array of json objects - eg. true
+          required: false
+          schema:
+            type: boolean
+      description: |-
+
+        Query chaincode
+      tags:
+        - chaincode
+      responses:
+        "200":
+          description: An array of query results
+        default:
+          description: Unexpected error
+      security:
+        - JWT: []
+    post:
+      parameters:
+        - name: channelId
+          in: path
+          description: "channel - eg: common"
+          required: true
+          schema:
+            type: string
+        - name: chaincodeId
+          in: path
+          description: "channel - eg: reference"
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Invoke"
+        description: invoke request
+        required: true
+      description: |-
+
+        Invoke chaincode
+      tags:
+        - chaincode
+      responses:
+        "200":
+          description: Transaction id
+        default:
+          description: Unexpected error
+      security:
+        - JWT: []
+  /consortium/members:
+    get:
+      description: |-
+
+        Query member organizations of current consortium
+      tags:
+        - consortium
+      responses:
+        "200":
+          description: Array of MSPIDs
+        default:
+          description: Unexpected error
+      security:
+        - JWT: []
+    post:
+      requestBody:
+        $ref: "#/components/requestBodies/Organization"
+      description: |-
+
+        Add organization to the consortium
+      tags:
+        - consortium
+      responses:
+        "200":
+          description: Organization added
+        default:
+          description: Unexpected error
+      security:
+        - JWT: []
+  /applications:
+    get:
+      description: |-
+
+        Get list of deployed custom web applications
+      tags:
+        - applications
+      responses:
+        default:
+          description: Unexpected error
+      security:
+        - JWT: []
+    post:
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  description: "application compiled folder archived in zip - eg:
+                    coolwebapp.zip"
+                  type: string
+                  format: binary
+              required:
+                - file
+      description: |-
+
+        Deploy new web application
+      tags:
+        - applications
+      responses:
+        default:
+          description: Unexpected error
+      security:
+        - JWT: []
+  /middlewares:
+    get:
+      description: |-
+
+        Get list of deployed custom middlewares
+      tags:
+        - middlewares
+      responses:
+        default:
+          description: Unexpected error
+      security:
+        - JWT: []
+    post:
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  description: middlewares's js file
+                  type: string
+                  format: binary
+              required:
+                - file
+      description: |-
+
+        Deploy new middleware
+      tags:
+        - middlewares
+      responses:
+        default:
+          description: Unexpected error
+      security:
+        - JWT: []
+  /appstore/app:
+    post:
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  description: "folder with compiled application archived in zip - eg:
+                    coolwebapp.zip"
+                  type: string
+                  format: binary
+              required:
+                - file
+      description: |-
+
+        Deploy new integrated
+      tags:
+        - appstore
+      responses:
+        default:
+          description: Unexpected error
+      security:
+        - JWT: []
+tags:
+  - name: users
+    description: Authentication and operations about users
+  - name: config
+    description: Queries for config
+  - name: chaincodes
+    description: Queries and operations on chaincode
+  - name: channels
+    description: Queries and operations on channels
+  - name: orgs
+    description: Queries for organizations
+  - name: chaincode
+    description: Invoke and query chaincode
+  - name: consortium
+    description: view and control participants
+  - name: applications
+    description: Web applications
+  - name: middlewares
+    description: Middlewares
+  - name: appstore
+    description: market applications
+servers:
+  - url: /
+components:
+  requestBodies:
+    Organization:
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Organization"
+      description: Org object
+      required: true
+  securitySchemes:
+    JWT:
+      type: apiKey
+      in: header
+      name: Authorization
+      description: "Paste the jwt you received from logging in by a post to /users ex.:
+        Bearer eyJhbGci..."
+  schemas:
+    User:
+      required:
+        - username
+        - password
+      properties:
+        username:
+          type: string
+          description: "username "
+          example: oleg
+        password:
+          type: string
+          description: "password "
+          example: pass
+    Channel:
+      required:
+        - channelId
+      properties:
+        channelId:
+          type: string
+          description: "channel name "
+          example: common
+    Organization:
+      required:
+        - orgId
+        - domain
+        - orgIp
+      properties:
+        orgId:
+          type: string
+          description: organization name by convention same as MSPID
+          example: org1
+        domain:
+          type: string
+          description: domain
+        orgIp:
+          type: string
+          description: IP of current peer
+        masterIp:
+          type: string
+          description: Ip of main (anchor) peer of Org
+        peer0Port:
+          type: string
+          description: peer's port
+        wwwPort:
+          type: string
+          description: www port (certs provisioning)
+        peerName:
+          type: string
+          description: peer name
+    Instantiate:
+      required:
+        - chaincodeId
+      properties:
+        chaincodeId:
+          type: string
+          description: "chaincode name "
+          example: reference
+        fcn:
+          type: string
+          description: "(default fcn) - chaincode function name "
+          example: init
+        args:
+          type: array
+          items:
+            type: string
+        chaincodeVersion:
+          type: string
+          description: "chaincode version (default 1.0) "
+          example: "1.0"
+        chaincodeType:
+          type: string
+          description: "chaincode language (default node) "
+          example: golang
+        targets:
+          type: array
+          items:
+            type: string
+        waitForTransactionEvent:
+          type: boolean
+          description: "respond only when transaction commits "
+          example: true
+    Upgrade:
+      required:
+        - chaincodeId
+        - chaincodeType
+        - fcn
+        - args
+        - chaincodeVersion
+      properties:
+        chaincodeId:
+          type: string
+          description: Id of the chaincode to upgrade
+        chaincodeType:
+          type: string
+          description: chaincode type
+        fcn:
+          type: string
+          description: domain
+        args:
+          type: array
+          description: array ofInit function args
+          items: {}
+        chaincodeVersion:
+          type: string
+          description: new version
+    Invoke:
+      required:
+        - fcn
+        - args
+      properties:
+        fcn:
+          type: string
+          description: "chaincode function name "
+          example: put
+        args:
+          type: array
+          items:
+            type: string
+        targets:
+          type: array
+          items:
+            type: string
+        waitForTransactionEvent:
+          type: boolean
+          description: "respond only when transaction commits "
+          example: true

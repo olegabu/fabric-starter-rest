@@ -1,24 +1,53 @@
-FROM olegabu/fabric-tools-extended
+ARG DOCKER_REGISTRY
+ARG FABRIC_STARTER_VERSION
+ARG FABRIC_STARTER_REPOSITORY
 
-MAINTAINER olegabu
+ARG USE_EXTERNAL_ADMIN_WEBAPP
 
-# Create app directory
-WORKDIR /usr/src/app
+FROM ${DOCKER_REGISTRY:-docker.io}/${FABRIC_STARTER_REPOSITORY:-olegabu}/fabric-tools-extended:${FABRIC_STARTER_VERSION:-latest} as fabrictools
+FROM ${DOCKER_REGISTRY:-docker.io}/${FABRIC_STARTER_REPOSITORY:-olegabu}/fabric-starter-rest:${FABRIC_STARTER_VERSION:-latest}-base as external_admin_webapp_false
+
+LABEL MAINTAINER=olegabu
 
 ## install dependencies
-# COPY ["package.json", "package-lock.json"] .
 COPY "package.json" .
+COPY "package-lock.json" .
 
-RUN apt-get update && apt-get install python make  \
-&& npm install && npm cache rm --force \
-&& apt-get remove -y python make && apt-get purge
-
-
-RUN git clone https://github.com/olegabu/fabric-starter-admin-web.git --branch stable --depth 1 admin && npm install aurelia-cli -g && cd admin && npm install
-RUN cd admin && au build --env prod
+RUN npm install && npm cache rm --force && apt-get remove -y make python && apt-get purge
+#&& npm rebuild
 
 # add project files (see .dockerignore for a list of excluded files)
 COPY . .
+
+# if set USE_EXTERNAL_ADMIN_WEBAPP=true then this layer is invoked, so add external admin webapp package
+FROM external_admin_webapp_false as external_admin_webapp_true
+ONBUILD ADD admin-webapp.tgz /external-admin
+ONBUILD RUN rm admin-webapp.tgz
+
+# previous layer will be invoked if USE_EXTERNAL_ADMIN_WEBAPP=true
+FROM external_admin_webapp_${USE_EXTERNAL_ADMIN_WEBAPP:-false}
+
+# and copy external admin instead of built-in one
+RUN if [ -d "/external-admin" ]; then \
+        rm -rf admin/node-modules; \
+        mkdir -p webapps/admin-old; \
+        cp -r admin/* webapps/admin-old; \
+        rm -rf admin; \
+        cp -r /external-admin/ /usr/src/app/admin; \
+        rm -rf /external-admin; \
+    fi;
+
+COPY --from=fabrictools /etc/hyperledger/templates /usr/src/app/templates
+# TODO: use single palce
+COPY --from=fabrictools /etc/hyperledger/templates /etc/hyperledger/templates
+COPY --from=fabrictools /etc/hyperledger/container-scripts /usr/src/app/container-scripts
+COPY --from=fabrictools /etc/hyperledger/container-scripts /etc/hyperledger/container-scripts
+#COPY --from=fabrictools /etc/hyperledger/docker-compose*.yaml /usr/src/app/
+COPY --from=fabrictools /etc/hyperledger/docker-compose*.yaml /etc/hyperledger/
+COPY --from=fabrictools /etc/hyperledger/raft /etc/hyperledger/raft
+COPY --from=fabrictools /etc/hyperledger/https /etc/hyperledger/https
+COPY --from=fabrictools /etc/hyperledger/ordering-start.sh /etc/hyperledger/
+
 
 EXPOSE 3000
 CMD [ "npm", "start" ]

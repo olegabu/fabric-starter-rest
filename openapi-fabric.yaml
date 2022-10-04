@@ -1,0 +1,139 @@
+openapi: 3.0.0
+info:
+  description: Hyperledger Fabric Peer partial API
+  title: Hyperledger Fabric Peer
+  version: "2.2"
+paths:
+  /Endorser.ProcessProposal:
+    post:
+      requestBody:
+        content:
+          application/grpc:
+            schema:
+              $ref: "#/components/schemas/SignedProposal"
+        description: Signed Tx Proposal
+        required: true
+      description: |-
+
+        Receive and process (endorse) transaction proposal from client.
+      tags:
+        - Peer
+      responses:
+        "200":
+          description: Transaction is endorsed
+          content:
+            application/grpc:
+              schema:
+                $ref: "#/components/schemas/ProposalResponse"
+
+  /AtomicBroadcast.Broadcast:
+    post:
+      requestBody:
+        content:
+          application/grpc:
+            schema:
+              type: array
+              items:
+                $ref: "#/components/schemas/Envelope"
+      tags:
+        - Orderer
+      responses:
+        "200":
+          description: Stream of Broadcast responses
+          content:
+            application/grpc:
+              schema:
+                $ref: "#/components/schemas/BroadcastResponse"
+
+
+  /AtomicBroadcast.Deliver:
+    post:
+      requestBody:
+        content:
+          application/grpc:
+            schema:
+              type: array
+              items:
+                $ref: "#/components/schemas/Envelope"
+      tags:
+        - Orderer
+      responses:
+        "200":
+          description: Stream of Delivered blocks
+          content:
+            application/grpc:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/DeliverResponse"
+
+
+
+tags:
+  - name: Peer
+    description: Transaction Proposal
+  - name: Orderer
+    description: Transaction Broadcasting
+
+components:
+
+  schemas:
+
+    Proposal:
+      properties:
+        header:
+          type: object
+          description: "Header"
+          example: "{}"
+        chaincodeProposalPayload:
+          type: object
+          description: "Proposal "
+          example: "{}"
+
+    SignedProposal:
+      required:
+        - Signature
+        - Proposal
+      properties:
+        signature:
+          type: string
+          description: "Signature"
+          example: D6 FE BX...
+        proposal:
+          $ref: "#/components/schemas/Proposal"
+
+    Endorsement:
+      properties:
+        endorser:
+          type: string
+          description: "endrose peer's certificate "
+        signature:
+          type: string
+
+    ProposalResponse:
+      properties:
+        endorsement:
+          $ref: "#/components/schemas/Endorsement"
+        proposalResponsePayload:
+          type: object
+          description: "Result of Proposal evaluation, read\\write sets"
+
+
+    Envelope:
+      properties:
+        payload:
+          type: object
+        signature:
+          type: string
+
+    BroadcastResponse:
+      properties:
+        status:
+          type: integer
+
+    DeliverResponse:
+      properties:
+        status:
+          type: integer
+        block:
+          type: object

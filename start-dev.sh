@@ -10,8 +10,8 @@ export CRYPTO_CONFIG_DIR=${CRYPTO_CONFIG_DIR:-../fabric-starter/crypto-config}
 export MSP_DIR=${CRYPTO_CONFIG_DIR}/peerOrganizations/${ORG:-org1}.${DOMAIN:-example.com}/msp
 
 export CORE_PEER_LOCALMSPID=${ORG:-org1}
-export CORE_PEER_MSPCONFIGPATH=${CRYPTO_CONFIG_DIR}/peerOrganizations/${ORG:-org1}.${DOMAIN:-example.com}/users/Admin@o${ORG:-org1}.${DOMAIN:-example.com}/msp
-export CORE_PEER_ADDRESS=peer0.${ORG:-org1}.${DOMAIN:-example.com}:7051
+export CORE_PEER_MSPCONFIGPATH=${CRYPTO_CONFIG_DIR}/peerOrganizations/${ORG:-org1}.${DOMAIN:-example.com}/users/Admin@${ORG:-org1}.${DOMAIN:-example.com}/msp
+export CORE_PEER_ADDRESS=${PEER_NAME:-peer0}.${ORG:-org1}.${DOMAIN:-example.com}:7051
 
 export DISCOVER_AS_LOCALHOST=true
 

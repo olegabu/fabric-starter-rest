@@ -1,0 +1,9 @@
+Feature: Orderer component deployment
+  Deployment of orderer component by backend agent
+
+  Background: Remote Main node org1.example.test is started (orderer, peer, api).
+    Given first-org-primary-node org1.example.test is up
+
+  Scenario: Local Secondary orderer deployment
+    Given Org name is "org1", domain is "example.com", primary host is "127.0.0.1"
+

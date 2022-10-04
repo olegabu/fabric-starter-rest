@@ -1,14 +1,16 @@
-module.exports = function(app, server) {
+module.exports = async function(app, server, fabricStarterRuntime, chaincodeService, storageService) {
 
   const fs = require("fs");
   const path = require('path');
   const os = require('os');
-  const logger = require('log4js').getLogger('api');
-  const jsonwebtoken = require('jsonwebtoken');
-  const jwt = require('express-jwt');
   const _ = require('lodash');
+  const rateLimit = require('express-rate-limit')
+
   const cfg = require('./config.js');
-  const util = require('./util');
+  const log4jsConfigured = require('./util/log/log4js-configured');
+  const logger = log4jsConfigured.getLogger('Api');
+  const asyncMiddleware = require('./api/async-middleware-error-handler');
+  const Org = require('./model/Org')
 
   // upload for chaincode and app installation
   const uploadDir = os.tmpdir() || './upload';
@@ -19,34 +21,28 @@ module.exports = function(app, server) {
     {name: 'args', maxCount: 1},{name: 'chaincodeType', maxCount: 1},{name: 'chaincodeId', maxCount: 1},
     {name: 'chaincodeVersion', maxCount: 1},{name: 'waitForTransactionEvent', maxCount: 1},{name: 'policy', maxCount: 1}]);
 
-  // fabric client
-  const FabricStarterClient = require('./fabric-starter-client');
-  const fabricStarterClient = new FabricStarterClient();
-  const webAppManager = require('./web-app-manager');
+  const certificatesUpload = upload.fields([{name: 'certFiles', maxCount: 1}]); //TODO: refactor upload duplicates
 
-  // socket.io server to pass blocks to webapps
-  const Socket = require('./rest-socket-server');
-  const socket = new Socket(fabricStarterClient);
-  socket.startSocketServer(server, cfg.UI_LISTEN_BLOCK_OPTS).then(() => {
-    logger.info('started socket server');
-  });
+  const channelManager = require('./channel-manager');
+  const appManager = require('./app-manager');
+  const fileUtils = require('./util/fileUtils')
+  const utils = require('./util')
 
-// parse json payload and urlencoded params
-  const bodyParser = require("body-parser");
-  app.use(bodyParser.json({limit: '100MB', type: 'application/json'}));
-  app.use(bodyParser.urlencoded({extended: true, limit: '100MB'}));
-
-// allow CORS from all urls
-  const cors = require('cors');
-  app.use(cors());
-  app.options('*', cors());
-
-// serve admin and custom web apps as static
-  const express = require("express");
+  if (cfg.REQUEST_LIMIT !== -1 ) {
+    const limiter = rateLimit({
+      windowMs: 1000, // 1 sec
+      max: cfg.REQUEST_LIMIT, // Limit each IP to 100 requests per `window` (here, per 15 minutes)
+      standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
+      legacyHeaders: false, // Disable the `X-RateLimit-*` headers
+    })
+    app.use(limiter)
+  }
+/*
   const webappDir = process.env.WEBAPP_DIR || './webapp';
   app.use('/webapp', express.static(webappDir));
   logger.info(`serving webapp at /webapp from ${webappDir}`);
   app.use('/admin', express.static(cfg.WEBADMIN_DIR));
+  app.use('/admin/!*', express.static(cfg.WEBADMIN_DIR));
   logger.info(`serving admin at /admin from ${cfg.WEBADMIN_DIR}`);
 
 // serve msp directory with certificates as static
@@ -62,46 +58,14 @@ module.exports = function(app, server) {
     app.use(favicon(path.join(webappDir, 'favicon.ico')));
   }
 
-// catch promise rejections and return 500 errors
-  const asyncMiddleware = fn =>
-    (req, res, next) => {
-      // logger.debug('asyncMiddleware');
-      Promise.resolve(fn(req, res, next))
-        .catch(e => {
-          logger.error('asyncMiddleware', e);
-          res.status((e && e.status) || 500).json(e && e.message);
-          next();
-        });
-    };
-
-// require presence of JWT in Authorization Bearer header
-  const jwtSecret = fabricStarterClient.getSecret();
-  app.use(jwt({secret: jwtSecret}).unless({path: ['/', '/users', '/domain', '/mspid', '/config', new RegExp('/api-docs'), '/api-docs.json', /\/webapp/, /\/webapps\/.*/, '/admin/', '/msp/']}));
-
-// use fabricStarterClient for every logged in user
-  const mapFabricStarterClient = {};
-
-  app.use((req, res, next) => {
-    if (req.user) {
-      const login = req.user.sub;
-      let client = mapFabricStarterClient[login];
-      if (client) {
-        logger.debug('cached client for', login);
-        req.fabricStarterClient = client;
-      } else {
-        throw (new jwt.UnauthorizedError("No client context", {message: 'User is not logged in.'}));
-      }
-    }
-    next();
-  });
-
   app.get('/', (req, res) => {
     res.status(200).send('Welcome to fabric-starter REST server');
   });
 
   app.post('/cert', (req, res) => {
-    res.json(fabricStarterClient.decodeCert(req.body.cert));
+    res.json(x509util.decodeCert(req.body.cert));
   });
+ */
 
   /**
    * Show network name (as defined by DOMAIN env variable at setup time)
@@ -122,7 +86,7 @@ module.exports = function(app, server) {
    * @returns {Error}  default - Unexpected error
    */
   app.get('/mspid', (req, res) => {
-    res.json(fabricStarterClient.getMspid());
+    res.json(cfg.org/*fabricStarterClient.getMspid()*/); //todo: check
   });
 
   //TODO use for development only as it may expose sensitive data
@@ -133,8 +97,8 @@ module.exports = function(app, server) {
    * @returns {object} 200 - Network config
    * @returns {Error}  default - Unexpected error
    */
-  app.get('/config', (req, res) => {
-    res.json(fabricStarterClient.getNetworkConfig());
+  app.get('/config', (req, res) => {//todo: remove
+    res.json(req.fabricStarterClient.getNetworkConfig());
   });
 
   /**
@@ -146,6 +110,19 @@ module.exports = function(app, server) {
    * @security JWT
    */
   app.get('/chaincodes', asyncMiddleware(async(req, res, next) => {
+    // res.json(await req.fabricStarterClient.queryInstalledChaincodes());
+    res.json(await chaincodeService.getInstalledChaincodes());
+  }));
+
+  /**
+   * Query chaincodes packages saved in a storage and ready for install
+   * @route GET /storage/chaincodes
+   * @group chaincodes - Queries and operations on chaincode
+   * @returns {object} 200 - Array of chaincode package objects
+   * @returns {Error}  default - Unexpected error
+   * @security JWT
+   */
+  app.get('/storage/chaincodes', asyncMiddleware(async(req, res, next) => {
     res.json(await req.fabricStarterClient.queryInstalledChaincodes());
   }));
 
@@ -163,40 +140,48 @@ module.exports = function(app, server) {
    * @security JWT
    * @consumes multipart/form-data
    */
-  app.post('/chaincodes', fileUpload, asyncMiddleware(async(req, res, next) => {
-    res.json(await req.fabricStarterClient.installChaincode(
-      req.files['file'][0].originalname.substring(0, req.files['file'][0].originalname.length - 4),
-      req.files['file'][0].path, req.body.version, req.body.language, uploadDir));
+  app.post('/chaincodes', fileUpload, asyncMiddleware(async (req, res, next) => {
+    let fileUploadObj = _.get(req, "files.file[0]");
+
+    const fileName = _.get(fileUploadObj, 'originalname');
+    const fileBaseName = fileUtils.getFileBaseName(fileName);
+    const archiveType = path.extname(fileName)
+    const result = await chaincodeService.installChaincode(fileBaseName, {...req.body, archiveType}, fileUploadObj.path);
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', "GET, POST, PUT, DELETE, OPTIONS");
+    res.setHeader("Access-Control-Allow-Headers", "Authorization, Cache-Control, Access-Control-Allow-Headers, Origin,Accept, X-Requested-With, Content-Type, Access-Control-Request-Method, Access-Control-Request-Headers");
+    res.setHeader("Vary", "Accept")
+    res.json(result)
   }));
 
   /**
-   * @typedef User
-   * @property {string} username.required - username - eg: oleg
-   * @property {string} password.required - password - eg: pass
-   */
-
-  /**
-   * Login or register user.
-   * @route POST /users
-   * @group users - Authentication and operations about users
-   * @param {User.model} user.body.required
-   * @returns {object} 200 - User logged in and his JWT returned
+   * Install chaincode as external service
+   * @route POST /chaincodes/external
+   * @group chaincodes - Queries and operations on chaincode
+   * @param {string} channelId.formData.required - channel - eg: common
+   * @param {string} version.formData (default 1.0) - chaincode version - eg: 1.0
+   * @param {file} file.formData.required - chaincode source code archived in tar.gz - eg: chaincode_example02.tar.gz
+   * @returns {object} 200 - Chaincode installed
    * @returns {Error}  default - Unexpected error
+   * @security JWT
+   * @consumes multipart/form-data
    */
-  app.post('/users', asyncMiddleware(async(req, res, next) => {
-    // let namePasswordKey=`${req.body.username}.${req.body.password}`;
-    // if(!mapFabricStarterClient[namePasswordKey]) {
-    // }
-    mapFabricStarterClient[req.body.username] && mapFabricStarterClient[req.body.username].logoutUser(req.body.username);
-    mapFabricStarterClient[req.body.username]=new FabricStarterClient();
-    req.fabricStarterClient = mapFabricStarterClient[req.body.username];
-    await req.fabricStarterClient.init();
+  app.post('/chaincodes/external', fileUpload, asyncMiddleware(async (req, res, next) => {
+    let fileUploadObj = _.get(req, "files.file[0]");
 
-    await req.fabricStarterClient.loginOrRegister(req.body.username, req.body.password || req.body.username);
+    const fileName = _.get(fileUploadObj, 'originalname');
+    const fileBaseName = fileUtils.getFileBaseName(fileName);
+    const archiveType = path.extname(fileName)
 
-    const token = jsonwebtoken.sign({sub: req.fabricStarterClient.user.getName()}, jwtSecret);
-    logger.debug('token', token);
-    res.json(token);
+    res.json(await chaincodeService
+        .installChaincodeAsExternalService(fileBaseName, {...req.body, archiveType}, fileUpload.stream/*, fileUploadObj.path*/))
+  }));
+
+  app.post('/chaincodes/shared/:chaincodeId', asyncMiddleware(async (req, res, next) => {
+
+    // storageService.
+    res.json(await chaincodeService
+        .installChaincode(fileBaseName, {...req.body, archiveType}, fileUploadObj.path))
   }));
 
   /**
@@ -226,8 +211,9 @@ module.exports = function(app, server) {
    * @returns {Error}  default - Unexpected error
    * @security JWT
    */
-  app.post('/channels/:channelId', asyncMiddleware(async(req, res, next) => {
-    let ret = await joinChannel(req.params.channelId, req.fabricStarterClient);
+  app.post('/channels/:channelId', asyncMiddleware(async (req, res, next) => {
+    let ret = await channelManager.joinChannel(req.params.channelId, req.fabricStarterClient);
+    await fabricStarterRuntime.subscribeToChannelEvents(req.params.channelId); //TODO: shouldn't be moved to channelManager.joinChannel ?
     res.json(ret);
   }));
 
@@ -236,28 +222,15 @@ module.exports = function(app, server) {
    * Create channel and join it
    * @route POST /channels
    * @group channels - Queries and operations on channels
-   * @param {Channel.model} channel.body.required
+   * @param {Channel.model} channel.body.required - Channel object in form {channelId:"channelId"}
    * @returns {object} 200 - Channel created
    * @returns {Error}  default - Unexpected error
    * @security JWT
    */
   app.post('/channels', asyncMiddleware(async(req, res, next) => {
     await req.fabricStarterClient.createChannel(req.body.channelId);
-    res.json(await joinChannel(req.body.channelId, req.fabricStarterClient));
+    res.json(await channelManager.joinChannel(req.body.channelId, req.fabricStarterClient));
   }));
-
-  async function joinChannel(channelId, fabricStarterClient) {
-    try {
-      const ret = await fabricStarterClient.joinChannel(channelId);
-      util.retryOperation(cfg.LISTENER_RETRY_COUNT, async function () {
-        await socket.registerChannelChainblockListener(channelId);
-      });
-      return ret;
-    } catch(error) {
-      logger.error(error.message);
-      throw new Error(error.message);
-    }
-  }
 
   /**
    * Query channel info
@@ -277,7 +250,7 @@ module.exports = function(app, server) {
    * @route GET /channels/{channelId}/orgs
    * @group channels - Queries and operations on channels
    * @param {string} channelId.path.required - channel - eg: common
-   * @param {boolean} filter.path.required - reject orderer name flag
+   * @param {boolean} filter.query.required - reject orderer name flag
    * @returns {object} 200 - Array of organization objects with names (MSPIDs)
    * @returns {Error}  default - Unexpected error
    * @security JWT
@@ -315,6 +288,12 @@ module.exports = function(app, server) {
   /**
    * @typedef Organization
    * @property {string} orgId.required - organization name by convention same as MSPID- eg: org1
+   * @property {string} domain.required - domain
+   * @property {string} orgIp.required - IP of current peer
+   * @property {string} masterIp - Ip of main (anchor) peer of Org
+   * @property {string} peer0Port - peer's port
+   * @property {string} wwwPort - www port (certs provisioning)
+   * @property {string} peerName - peer name
    */
 
   /**
@@ -322,17 +301,37 @@ module.exports = function(app, server) {
    * @route POST /channels/{channelId}/orgs
    * @group channels - Queries and operations on channels
    * @param {string} channelId.path.required - channel - eg: common
-   * @param {Organization.model} organization.body.required
+   * @param {Organization.model} organization.body.required - Org object
    * @returns {object} 200 - Organization added
    * @returns {Error}  default - Unexpected error
    * @security JWT
    */
-  app.post('/channels/:channelId/orgs', asyncMiddleware(async(req, res, next) => {
-    res.json(await req.fabricStarterClient.addOrgToChannel(req.params.channelId, orgFromHttpBody(req.body)));
+  app.post('/channels/:channelId/orgs', certificatesUpload, asyncMiddleware(async(req, res, next) => {
+    res.json(await req.fabricStarterClient.addOrgToChannel(req.params.channelId, Org.fromHttpBody(req.body), _.get(req, 'files.certFiles')));
   }));
 
-  function orgFromHttpBody(body){
-    return {orgId: body.orgId, orgIp: body.orgIp, peer0Port: body.peerPort, wwwPort: body.wwwPort}
+
+  /**
+   * Get all organizations registered in DNS service (currently matches with common channel orgs, but not necessary in future)
+   * @route GET /network/orgs
+   * @group orgs - Organizations registered in the blockchain network
+   * @returns {object} 200 - Array of organization objects
+   * @returns {Error}  default - Unexpected error
+   * @security JWT
+   */
+  app.get('/network/orgs', asyncMiddleware(async(req, res, next) => {
+    let storedOrgs = await req.fabricStarterClient.query(cfg.DNS_CHANNEL, cfg.DNS_CHAINCODE, "get", '["orgs"]');
+    let orgsArray =_.values(JSON.parse(_.get(storedOrgs,'[0]')||'[]'));
+    res.json(orgsArray);
+  }));
+
+  function ordererFromHttpBody(body) {//TODO: move to model
+    let orderer = {
+      ordererName: body.ordererName, domain: body.domain, ordererPort: body.ordererPort,
+      ordererIp: body.ordererIp, wwwPort: body.wwwPort, orgId: body.orgId, orgIp: body.ordererIp
+    };
+    logger.info('Orderer: ', orderer);
+    return orderer;
   }
 
   /**
@@ -373,9 +372,11 @@ module.exports = function(app, server) {
    * @security JWT
    */
   app.get('/channels/:channelId/chaincodes', asyncMiddleware(async(req, res, next) => {
-    res.json(await req.fabricStarterClient.queryInstantiatedChaincodes(req.params.channelId));
+    // res.json(await req.fabricStarterClient.queryInstantiatedChaincodes(req.params.channelId));
+    const newVar = await chaincodeService.getInstantiatedChaincodes(_.get(req,'params.channelId')/*, req.fabricStarterClient*/);
+    res.json(newVar)
   }));
-
+``
   /**
    * @typedef Instantiate
    * @property {string} chaincodeId.required - chaincode name - eg: reference
@@ -398,6 +399,10 @@ module.exports = function(app, server) {
    * @security JWT
    */
   app.post('/channels/:channelId/chaincodes', fileUpload, asyncMiddleware(async(req, res, next) => {
+    const isInitRequired = !_.isEmpty(_.get(req, 'body.fcn'));// TODO: for 2x only; need to be updated for 1x
+    res.json(await chaincodeService.instantiateChaincode(req.params.channelId, req.body.chaincodeId, req.body.chaincodeVersion, req.body.packageId, isInitRequired))
+    return
+//TODO: move to v1
     if(req.files && req.files['file'])
       res.json(await req.fabricStarterClient.instantiateChaincode(req.params.channelId, req.body.chaincodeId,
         req.body.chaincodeType, req.body.fcn, extractArgs(req.body.args), req.body.chaincodeVersion, req.body.targets, req.body.waitForTransactionEvent, req.body.policy, req.files['file'][0].path));
@@ -406,12 +411,23 @@ module.exports = function(app, server) {
             req.body.chaincodeType, req.body.fcn, extractArgs(req.body.args), req.body.chaincodeVersion, req.body.targets, req.body.waitForTransactionEvent, req.body.policy));
   }));
 
+
+  /**
+   * @typedef Upgrade
+   * @property {string} chaincodeId.required - Id of the chaincode to upgrade
+   * @property {string} chaincodeType.required - chaincode type
+   * @property {string} fcn.required - domain
+   * @property {array} args.required - array ofInit function args
+   * @property {string} chaincodeVersion.required - new version
+   */
+
+
     /**
      * Upgrade chaincode
      * @route POST /channels/{channelId}/chaincodes/upgrade
      * @group channels - Queries and operations on channels
      * @param {string} channelId.path.required - channel - eg: common
-     * @param {upgrade.model} upgrade.body.required - upgrade request
+     * @param {Upgrade.model} upgrade.body.required - upgrade request
      * @returns {object} 200 - Transaction id
      * @returns {Error}  default - Unexpected error
      * @security JWT
@@ -501,13 +517,14 @@ module.exports = function(app, server) {
    * Add organization to the consortium
    * @route POST /consortium/members
    * @group consortium - view and control participants
-   * @param {Organization.model} organization.body.required
+   * @param {Organization.model} organization.body.required Org object
    * @returns {object} 200 - Organization added
    * @returns {Error}  default - Unexpected error
    * @security JWT
    */
-  app.post('/consortium/members', asyncMiddleware(async(req, res, next) => {
-    res.json(await req.fabricStarterClient.addOrgToConsortium(orgFromHttpBody(req.body)));
+  app.post('/consortium/members', certificatesUpload, asyncMiddleware(async(req, res, next) => {
+    let consortiumName = null // TODO:
+    res.json(await req.fabricStarterClient.addOrgToConsortium(Org.fromHttpBody(req.body), consortiumName, _.get(req, 'files.certFiles')));
   }));
 
   /**
@@ -518,12 +535,13 @@ module.exports = function(app, server) {
    * @security JWT
    */
   app.get('/applications', fileUpload, asyncMiddleware(async(req, res, next) => {
-    res.json(await webAppManager.getWebAppsList());
+    res.json(await appManager.getWebAppsList());
   }));
 
   /**
    * Deploy new web application
    * @route POST /applications
+   * @consumes multipart/form-data
    * @group applications - Web applications
    * @param {file} file.formData.required - application compiled folder archived in zip - eg: coolwebapp.zip
    * @returns {Error}  default - Unexpected error
@@ -531,12 +549,11 @@ module.exports = function(app, server) {
    */
   app.post('/applications', fileUpload, asyncMiddleware(async (req, res, next) => {
       let fileUploadObj = _.get(req, "files.file[0]");
-      const fileBaseName = path.basename(fileUploadObj.originalname, path.extname(fileUploadObj.originalname));
-      res.json(await webAppManager.provisionWebAppFromPackage(fileUploadObj)
-          .then(extractParentPath => {
-              let appFolder=path.resolve(extractParentPath, fileBaseName);
-              webAppManager.redeployWebapp(app, fileBaseName, appFolder);
-              return webAppManager.getWebAppsList();
+      res.json(await appManager.provisionWebApp(fileUploadObj)
+          .then(appInf => {
+              // let appFolder=path.resolve(extractParentPath, fileBaseName);
+              appManager.redeployWebapp(app, appInf.context, appInf.folder);
+              return appManager.getWebAppsList();
       }));
   }));
 
@@ -548,14 +565,47 @@ module.exports = function(app, server) {
    * @returns {Error}  default - Unexpected error
    * @security JWT
    */
+  app.get('/appstore/app', fileUpload, asyncMiddleware(async(req, res, next) => {
+    const list = await appManager.getAppstoreList();
+    res.json(list);
+  }));
+
+
+  /**
+   * Deploy new integrated
+   * @route POST /appstore/app
+   * @consumes multipart/form-data
+   * @group appstore - market applications
+   * @param {file} file.formData.required - folder with compiled application archived in zip - eg: coolwebapp.zip
+   * @returns {Error}  default - Unexpected error
+   * @security JWT
+   */
+  app.post('/appstore/app', fileUpload, asyncMiddleware(async (req, res, next) => {
+      let fileUploadObj = _.get(req, "files.file[0]");
+    res.json(await appManager.provisionAppstoreApp(app, fileUploadObj));
+  }));
+
+  app.get('/appstore/status/:appName', fileUpload, asyncMiddleware(async (req, res, next) => {
+    res.json(await appManager.getAppStatus(req.params.appName));
+  }));
+
+
+  /**
+   * Get list of deployed custom middlewares
+   * @route GET /middlewares
+   * @group middlewares - Middlewares
+   * @returns {Error}  default - Unexpected error
+   * @security JWT
+   */
   app.get('/middlewares', fileUpload, asyncMiddleware(async(req, res, next) => {
-      const list = await webAppManager.getMiddlewareList();
+      const list = await appManager.getMiddlewareList();
       res.json(list);
   }));
 
   /**
    * Deploy new middleware
    * @route POST /middlewares
+   * @consumes multipart/form-data
    * @group middlewares - Web applications
    * @param {file} file.formData.required - middlewares's js file
    * @returns {Error}  default - Unexpected error
@@ -563,11 +613,11 @@ module.exports = function(app, server) {
    */
   app.post('/middlewares', fileUpload, asyncMiddleware(async (req, res, next) => {
       let fileUploadObj = _.get(req, "files.file[0]");
-      res.json(await webAppManager.provisionMiddleware(fileUploadObj)
-          .then(extractParentPath => {
+      res.json(await appManager.provisionMiddleware(fileUploadObj)
+          .then(() => {
               const route = require(extractParentPath);
               route(app, asyncMiddleware);
-              return webAppManager.getMiddlewareList();
+              return appManager.getMiddlewareList();
       }));
   }));
 
@@ -584,17 +634,15 @@ module.exports = function(app, server) {
   function extractTargets(req, prop) {
     const result = {};
     let targets = _.get(req, `${prop}.targets`);
-
-    try {
-      targets = JSON.parse(targets);
-    } catch(e) {
-      logger.warn("Targets are not parseable", targets, e.message);
-    }
-    if(targets) result.targets = targets;
-
-    if(!targets) {
+    if (targets) {
+      try {
+        result.targets = JSON.parse(targets);
+      } catch (e) {
+        logger.warn("Targets are not parseable", targets, e.message);
+      }
+    } else {
       let peers = _.concat([], _.get(req, `${prop}.peer`) || _.get(req, `${prop}.peers`) || []);
-      if(!_.isEmpty(peers)) {
+      if (!_.isEmpty(peers)) {
         result.peers = _.map(peers, p => {
           const parts = _.split(p, "/"); //format: org/peer0
           const peerOrg = parts[0];
