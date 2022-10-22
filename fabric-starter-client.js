@@ -179,6 +179,11 @@ class FabricStarterClient {
 
     async createChannel(channelId) {
         try {
+            // regex for whitelisting channelId
+            if (!/^[a-z][a-z0-9.-]*$/g.test(channelId)) {
+                throw new Error("channelId contains invalid characters.")
+            }
+            
             logger.info(`Creating channel ${channelId}`);
             // await fabricCLI.downloadOrdererMSP();
 
@@ -229,6 +234,11 @@ class FabricStarterClient {
     async addOrgToChannel(channelId, orgObj, certFiles) {
         await this.checkOrgDns(orgObj);
         try {
+            // regex for whitelisting channelId
+            if (!/^[a-z][a-z0-9.-]*$/g.test(channelId)) {
+                throw new Error("channelId contains invalid characters.")
+            }
+                        
             await util.checkRemotePort(cfg.addressFromTemplate(orgObj.peerName || 'peer0', orgObj.orgId, orgObj.domain), orgObj.peer0Port,
                 {from: `addOrgToChannel(${channelId}, ${orgObj})`}); //TODO: , throws: true
             let currentChannelConfigFile = await fabricCLI.fetchChannelConfig(channelId);
