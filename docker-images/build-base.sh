@@ -4,7 +4,7 @@
 # first build fabric-tools-extended image then use this ./build-base.sh for building base image,
 # and then ./build.sh for building final fabric-starter-rest image
 
-FABRIC_STARTER_VERSION=${1:-${FABRIC_STARTER_VERSION:-latest}}
+FABRIC_STARTER_VERSION=${1:-${FABRIC_STARTER_VERSION:-hlf-2.3-snapshot-0.14}}
 FABRIC_STARTER_REPOSITORY=${2:-${FABRIC_STARTER_REPOSITORY:-olegabu}}
 DOCKER_REGISTRY=${3:-docker.io}
 
